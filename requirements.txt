@@ -1,0 +1,16 @@
+click
+coverage
+helpsk
+jupyter-contrib-nbextensions
+notebook
+numpy
+pandas
+plotly
+plotly-express
+pytest
+python-dateutil
+python-dotenv
+PyYAML
+ruff
+scikit-learn
+xmltodict

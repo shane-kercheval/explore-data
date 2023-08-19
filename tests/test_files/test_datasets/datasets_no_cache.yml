@@ -1,0 +1,21 @@
+dataset_1:
+  type: PickledDataLoader
+  description: Dataset description
+  dependencies:
+    - SNOWFLAKE.SCHEMA.TABLE
+  directory: .
+  cache: False
+other_dataset_2:
+  type: PickledDataLoader
+  description: Other dataset description
+  dependencies:
+    - dataset_1
+  directory: .
+  cache: False
+dataset_3_csv:
+  type: CsvDataLoader
+  description: Other dataset description
+  dependencies:
+    - other_dataset_2
+  directory: .
+  cache: False

@@ -1,0 +1,31 @@
+2023-06-03 17:27:02 - INFO     | FUNCTION: EXTRACT
+2023-06-03 17:27:02 - INFO     | Timer Started: FUNCTION=source.service.etl:extract
+2023-06-03 17:27:02 - INFO     | Downloading credit data from https://www.openml.org/d/31
+2023-06-03 17:27:02 - INFO     | Timer Finished: FUNCTION=source.service.etl:extract (0.03 seconds)
+2023-06-03 17:27:02 - INFO     | Credit data downloaded with 1000 rows and 21 columns.
+2023-06-03 17:27:02 - INFO     | Saving data `raw__credit` to `data/raw/raw__credit.pkl`
+2023-06-03 17:27:02 - INFO     | Backing up current data `raw__credit` to `data/raw/raw__credit.pkl.2023_06_03_17_27_02`
+2023-06-03 17:27:03 - INFO     | Loading data `raw__credit` from `data/raw/raw__credit.pkl`
+2023-06-03 17:27:03 - INFO     | Transforming credit data.
+2023-06-03 17:27:03 - INFO     | FUNCTION: TRANSFORM
+2023-06-03 17:27:03 - INFO     | PARAMS:
+2023-06-03 17:27:03 - INFO     |     args: (    checking_status  duration  ... foreign_worker target
+0                <0       6.0  ...            yes   good
+1          0<=X<200      48.0  ...            yes    bad
+2       no checking      12.0  ...            yes   good
+3                <0      42.0  ...            yes   good
+4                <0      24.0  ...            yes    bad
+..              ...       ...  ...            ...    ...
+995     no checking      12.0  ...            yes   good
+996              <0      30.0  ...            yes   good
+997     no checking      12.0  ...            yes   good
+998              <0      45.0  ...            yes    bad
+999        0<=X<200      45.0  ...            yes   good
+
+[1000 rows x 21 columns],)
+2023-06-03 17:27:03 - INFO     | Timer Started: FUNCTION=source.service.etl:transform
+2023-06-03 17:27:03 - INFO     | Timer Finished: FUNCTION=source.service.etl:transform (0.00 seconds)
+2023-06-03 17:27:03 - INFO     | Saving data `credit` to `data/processed/credit.pkl`
+2023-06-03 17:27:03 - INFO     | Backing up current data `credit` to `data/processed/credit.pkl.2023_06_03_17_27_03`
+2023-06-03 17:27:05 - INFO     | Loading data `credit` from `data/processed/credit.pkl`
+2023-06-03 17:27:07 - INFO     | Loading data `credit` from `data/processed/credit.pkl`

@@ -1,0 +1,14 @@
+raw__credit:
+  type: PickledDataLoader
+  description: credit data from https://www.openml.org/d/31
+  dependencies:
+    -
+  directory: data/raw
+  cache: False
+credit:
+  type: PickledDataLoader
+  description: credit data from https://www.openml.org/d/31
+  dependencies:
+    - raw__credit
+  directory: data/processed
+  cache: False
