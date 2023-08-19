@@ -1,5 +1,5 @@
-click
 coverage
+dash
 helpsk
 jupyter-contrib-nbextensions
 notebook
@@ -12,5 +12,3 @@ python-dateutil
 python-dotenv
 PyYAML
 ruff
-scikit-learn
-xmltodict
