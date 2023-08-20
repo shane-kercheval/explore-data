@@ -68,7 +68,7 @@ app.layout = dbc.Container([
                     ),
                 ]),
                 dbc.Col(width=9, children=[
-                    dash_table.DataTable(id='table3', page_size=20),
+                    dash_table.DataTable(id='table_uploaded_data', page_size=20),
                 ]),
             ]),
         ]),
@@ -109,7 +109,7 @@ app.layout = dbc.Container([
                         config={'staticPlot': False, 'displayModeBar': True},
                         style={'width': '100%', 'height': '41.9vw'},  # 100% / 1.6 = 62.5%; (1-.33)/1.6 = .41875
                     ),
-                    dash_table.DataTable(id='table', page_size=20),
+                    dash_table.DataTable(id='table_visualize', page_size=20),
                 ]),
             ]),
         ]),
@@ -123,8 +123,8 @@ app.layout = dbc.Container([
     Output('y_column_dropdown', 'options'),
     Output('y_column_dropdown', 'value'),
     Output('data_store', 'data'),
-    Output('table', 'data'),
-    Output('table3', 'data'),
+    Output('table_visualize', 'data'),
+    Output('table_uploaded_data', 'data'),
     Input('load_from_url_button', 'n_clicks'),
     Input('upload-data', 'contents'),
     State('upload-data', 'filename'),
