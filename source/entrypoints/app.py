@@ -199,6 +199,8 @@ def update_graph(
         ) -> dict:
     """Triggered when the user selects columns from the dropdown."""
     print("update_graph", flush=True)
+    print("x_column", x_column, flush=True)
+    print("y_column", y_column, flush=True)
     fig = {}
     if x_column and data:
         fig = px.histogram(
