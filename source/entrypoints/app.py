@@ -129,6 +129,7 @@ app.layout = dbc.Container([
     Input('upload-data', 'contents'),
     State('upload-data', 'filename'),
     State('load_from_url', 'value'),
+    prevent_initial_call=True,
 )
 def load_data(load_from_url_button: int, upload_data_contents: str, upload_data_filename: str, load_from_url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
@@ -188,6 +189,7 @@ def load_data(load_from_url_button: int, upload_data_contents: str, upload_data_
     Input('y_column_dropdown', 'value'),
     Input('n_bins', 'value'),
     State('data_store', 'data'),
+    prevent_initial_call=True,
 )
 def update_graph(
             x_column: list,
