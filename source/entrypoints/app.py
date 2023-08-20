@@ -1,6 +1,5 @@
 """Dash app entry point."""
-from dash import Dash, html, dash_table, dcc
-from dash.dependencies import Input, Output, State
+from dash import Dash, html, dash_table, dcc, Output, Input, State
 import pandas as pd
 import numpy as np
 import dash_bootstrap_components as dbc
