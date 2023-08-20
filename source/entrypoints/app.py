@@ -25,7 +25,7 @@ app.layout = dbc.Container([
         dbc.Tab(label="Load Data", children=[
             html.Br(),
             dbc.Row([
-                dbc.Col(width=4, children=[
+                dbc.Col(width=3, children=[
                     html.H4("Load .csv from URL"),
                     html.Button('Load', id='load_from_url_button', n_clicks=0, style={'width': '20%', 'padding': '0px'}),
                     dcc.Input(
@@ -57,7 +57,7 @@ app.layout = dbc.Container([
                         multiple=False,
                     ),
                 ]),
-                dbc.Col(width=8, children=[
+                dbc.Col(width=9, children=[
                     dash_table.DataTable(id='table3', page_size=20),
                 ]),
             ]),
