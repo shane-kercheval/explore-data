@@ -25,9 +25,9 @@ app.layout = html.Div([
                 'borderStyle': 'dashed',
                 'borderRadius': '5px',
                 'textAlign': 'center',
-                'margin': '10px'
+                'margin': '10px',
             },
-            multiple=False
+            multiple=False,
         ),
         html.Button('Load Data', id='load-button'),
     ]),
