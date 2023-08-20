@@ -27,7 +27,12 @@ app.layout = dbc.Container([
             dbc.Row([
                 dbc.Col(width=3, children=[
                     html.H4("Load .csv from URL"),
-                    html.Button('Load', id='load_from_url_button', n_clicks=0, style={'width': '20%', 'padding': '0px'}),
+                    html.Button(
+                        'Load',
+                        id='load_from_url_button',
+                        n_clicks=0,
+                        style={'width': '20%', 'padding': '0px'},
+                    ),
                     dcc.Input(
                         id='load_from_url',
                         type='text',
@@ -42,7 +47,10 @@ app.layout = dbc.Container([
                     html.H4("Load .csv or .pkl from file"),
                     dcc.Upload(
                         id='upload-data',
-                        children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
+                        children=html.Div([
+                            'Drag and Drop or ',
+                            html.A('Select Files', style={'color': 'blue'})
+                        ]),
                         style={
                             'width': '100%',
                             'height': '60px',
