@@ -14,7 +14,7 @@ GOLDEN_RATIO = 1.618
 external_stylesheets = [
     dbc.themes.BOOTSTRAP,
     'https://codepen.io/chriddyp/pen/bWLwgP.css',
-    'custom.css',
+    # 'custom.css',
 ]
 app = Dash(__name__, title="Data Explorer", external_stylesheets=external_stylesheets)
 
@@ -71,7 +71,13 @@ app.layout = dbc.Container([
                     ),
                 ]),
                 dbc.Col(width=9, children=[
-                    dash_table.DataTable(id='table_uploaded_data', page_size=20),
+                    dash_table.DataTable(
+                        id='table_uploaded_data',
+                        page_size=20,
+                        style_header={
+                            'fontWeight': 'bold',
+                        },
+                    ),
                 ]),
             ]),
         ]),
@@ -126,13 +132,122 @@ app.layout = dbc.Container([
                         style={'width': '100%', 'height': f'{(1-(3/12)) / GOLDEN_RATIO * 100: .1f}vw'},  # noqa
                     ),
                     html.Hr(),
-                    dash_table.DataTable(id='table_visualize', page_size=20),
+                    dash_table.DataTable(
+                        id='table_visualize',
+                        page_size=20,
+                        style_header={
+                            'fontWeight': 'bold',
+                        },
+                    ),
                 ]),
             ]),
+        ]),
+        dbc.Tab(label="Numeric Summary", children=[
+            dash_table.DataTable(
+                id='numeric_summary_table',
+                page_size=30,
+                style_header={
+                    'fontWeight': 'bold',
+                },
+                style_data_conditional=[
+                    {
+                       'if': {'column_id': 'Column Name'},
+                        'fontWeight': 'bold',
+                    },
+                    {
+                        'if': {
+                            'filter_query': '{# of Nulls} > 0',
+                            'column_id': '# of Nulls',
+                        },
+                        'backgroundColor': 'tomato',
+                        'color': 'white',
+                    },
+                    {
+                        'if': {
+                            'filter_query': '{% Nulls} > 0',
+                            'column_id': '% Nulls',
+                        },
+                        'backgroundColor': 'tomato',
+                        'color': 'white',
+                    },
+                    {
+                        'if': {
+                            'filter_query': '{# of Zeros} > 0',
+                            'column_id': '# of Zeros',
+                        },
+                        'backgroundColor': 'orange',
+                        'color': 'white',
+                    },
+                    {
+                        'if': {
+                            'filter_query': '{% Zeros} > 0',
+                            'column_id': '% Zeros',
+                        },
+                        'backgroundColor': 'orange',
+                        'color': 'white',
+                    },
+                ],
+            ),
+        ]),
+        dbc.Tab(label="Non-Numeric Summary", children=[
+            dash_table.DataTable(
+                id='non_numeric_summary_table',
+                page_size=30,
+                style_header={
+                    'fontWeight': 'bold',
+                },
+                style_data_conditional=[
+                    {
+                       'if': {'column_id': 'Column Name'},
+                        'fontWeight': 'bold',
+                    },
+                    {
+                        'if': {
+                            'filter_query': '{# of Nulls} > 0',
+                            'column_id': '# of Nulls',
+                        },
+                        'backgroundColor': 'tomato',
+                        'color': 'white',
+                    },
+                    {
+                        'if': {
+                            'filter_query': '{% Nulls} > 0',
+                            'column_id': '% Nulls',
+                        },
+                        'backgroundColor': 'tomato',
+                        'color': 'white',
+                    },
+                ],
+            ),
         ]),
     ]),
 ], className="app-container", fluid=True, style={"max-width": "99%"})
 
+@app.callback(
+    Output('non_numeric_summary_table', 'data'),
+    Input('data_store', 'data'),
+    prevent_initial_call=True,
+)
+def non_numeric_summary_table(data: dict) -> dict:
+    """Triggered when the user clicks on the Load button."""
+    if data:
+        non_numeric_summary = hp.non_numeric_summary(pd.DataFrame(data), return_style=False).\
+            reset_index().rename(columns={'index': 'Column Name'})
+        return non_numeric_summary.to_dict('records')
+    return []
+
+@app.callback(
+    Output('numeric_summary_table', 'data'),
+    Input('data_store', 'data'),
+    prevent_initial_call=True,
+)
+def numeric_summary_table(data: dict) -> dict:
+    """Triggered when the user clicks on the Load button."""
+    if data:
+        numeric_summary = hp.numeric_summary(pd.DataFrame(data), return_style=False).\
+            reset_index().rename(columns={'index': 'Column Name'})
+        return numeric_summary.to_dict('records')
+    return []
 
 @app.callback(
     Output('x_column_dropdown', 'options'),
