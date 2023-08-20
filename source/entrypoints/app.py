@@ -257,20 +257,19 @@ def update_graph(
 @app.callback(
     Output('facet_variable_div', 'style'),
     Output('facet_variable_dropdown', 'options'),
-    Output('facet_variable_dropdown', 'value'),
     Input('x_column_dropdown', 'value'),
     State('non_numeric_columns', 'data'),
     prevent_initial_call=True,
 )
-def update_facet_visibility(x_column_dropdown: str, non_numeric_columns: dict) -> dict:
+def facet_variable_div(x_column_dropdown: str, non_numeric_columns: dict) -> dict:
     """Triggered when the user selects columns from the dropdown."""
-    print("update_facet_visibility", flush=True)
+    print("facet_variable_div", flush=True)
     if x_column_dropdown:
         print("returning display: block", flush=True)
         options = [{'label': col, 'value': col} for col in non_numeric_columns]
-        return {'display': 'block'}, options, None
+        return {'display': 'block'}, options
     print('returning display: none', flush=True)
-    return  {'display': 'none'}, [], None
+    return  {'display': 'none'}, []
 
 
 if __name__ == '__main__':
