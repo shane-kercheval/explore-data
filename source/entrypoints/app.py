@@ -94,7 +94,7 @@ app.layout = dbc.Container([
                     html.Div(className="options-panel", children=[
                         html.Label("Select x variable:"),
                         dcc.Dropdown(
-                            id='x_column_dropdown',
+                            id='x_variable_dropdown',
                             multi=False,
                             value=None,
                             placeholder="Select a variable",
@@ -102,7 +102,7 @@ app.layout = dbc.Container([
                         html.Br(),
                         html.Label("Select y variable:"),
                         dcc.Dropdown(
-                            id='y_column_dropdown',
+                            id='y_variable_dropdown',
                             multi=False,
                             value=None,
                             placeholder="Select a variable",
@@ -261,8 +261,8 @@ def numeric_summary_table(numeric_summary: dict) -> dict:
     return []
 
 @app.callback(
-    Output('x_column_dropdown', 'options'),
-    Output('y_column_dropdown', 'options'),
+    Output('x_variable_dropdown', 'options'),
+    Output('y_variable_dropdown', 'options'),
     Output('table_visualize', 'data'),
     Output('table_uploaded_data', 'data'),
     Output('numeric_summary', 'data'),
@@ -367,28 +367,30 @@ def load_data(  # noqa
 
 @app.callback(
     Output('primary-graph', 'figure'),
-    Input('x_column_dropdown', 'value'),
-    Input('y_column_dropdown', 'value'),
+    Input('x_variable_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
+    Input('facet_variable_dropdown', 'value'),
     Input('n_bins', 'value'),
     State('data_store', 'data'),
     prevent_initial_call=True,
 )
 def update_graph(
-            x_column: list,
-            y_column: list,
+            x_variable: str,
+            y_variable: str,
+            facet_variable: str,
             n_bins: int,
             data: dict,
         ) -> dict:
     """Triggered when the user selects columns from the dropdown."""
     print("update_graph", flush=True)
-    print("x_column", x_column, flush=True)
-    print("y_column", y_column, flush=True)
+    print("x_variable", x_variable, flush=True)
+    print("y_variable", y_variable, flush=True)
     fig = {}
-    if x_column and data:
+    if x_variable and data:
         fig = px.histogram(
             data,
-            x=x_column,
-            y=y_column,
+            x=x_variable,
+            y=y_variable,
             nbins=n_bins,
         )
     return fig
@@ -397,14 +399,14 @@ def update_graph(
 @app.callback(
     Output('facet_variable_div', 'style'),
     Output('facet_variable_dropdown', 'options'),
-    Input('x_column_dropdown', 'value'),
+    Input('x_variable_dropdown', 'value'),
     State('non_numeric_columns', 'data'),
     prevent_initial_call=True,
 )
-def facet_variable_div(x_column_dropdown: str, non_numeric_columns: dict) -> dict:
+def facet_variable_div(x_variable_dropdown: str, non_numeric_columns: dict) -> dict:
     """Triggered when the user selects columns from the dropdown."""
     print("facet_variable_div", flush=True)
-    if x_column_dropdown:
+    if x_variable_dropdown:
         print("returning display: block", flush=True)
         options = [{'label': col, 'value': col} for col in non_numeric_columns]
         return {'display': 'block'}, options
