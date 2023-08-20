@@ -1,19 +1,10 @@
-import dash
-import dash_core_components as dcc
-import dash_html_components as html
-from dash.dependencies import Input, Output
-import pandas as pd
-import numpy as np
-
-
-import dash
-import dash_core_components as dcc
-import dash_html_components as html
+"""Dash app entry point."""
+from dash import Dash, html, dash_table, dcc
 from dash.dependencies import Input, Output, State
 import pandas as pd
 import numpy as np
 
-app = dash.Dash(__name__)
+app = Dash(__name__)
 
 app.layout = html.Div([
     html.H1("CSV Data Visualization"),
@@ -22,23 +13,26 @@ app.layout = html.Div([
     html.Label("Select numeric columns:"),
     dcc.Dropdown(id='column-dropdown', multi=True),
     dcc.Store(id='data-store'),  # Store component to hold the loaded data
-    dcc.Graph(id='histogram')
+    dcc.Graph(id='histogram'),
+    dash_table.DataTable(id='table', page_size=10),
 ])
 
 @app.callback(
     [Output('column-dropdown', 'options'),
      Output('column-dropdown', 'value'),
-     Output('data-store', 'data')],  # Update the data in the store
+     Output('data-store', 'data'),
+     Output('table', 'data'),
+    ],  # Update the data in the store
     [Input('load-button', 'n_clicks')],
-    [State('url-input', 'value')]
+    [State('url-input', 'value')],
 )
 def load_data(n_clicks, url):
     if n_clicks > 0 and url:
         loaded_data = pd.read_csv(url)
         numeric_columns = loaded_data.select_dtypes(include=[np.number]).columns
         dropdown_options = [{'label': col, 'value': col} for col in numeric_columns]
-        return dropdown_options, [], loaded_data.to_dict('records')  # Store data in the store
-    return [], [], None
+        return dropdown_options, [], loaded_data.to_dict('records'), loaded_data.to_dict('records')  # Store data in the store
+    return [], [], None, None
 
 @app.callback(
     Output('histogram', 'figure'),
