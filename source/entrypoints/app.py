@@ -76,6 +76,7 @@ app.layout = dbc.Container([
     ]),
 ], className="app-container", fluid=True, style={"max-width": "99%"})
 
+
 @app.callback(
     Output('x_column_dropdown', 'options'),
     Output('x_column_dropdown', 'value'),
@@ -97,6 +98,7 @@ def load_data(n_clicks: int, url: str) -> tuple:
         data = data.to_dict('records')
         return options, None, options, None, data, data, data
     return [], None, [], None, None, None, None
+
 
 @app.callback(
     Output('primary-graph', 'figure'),
