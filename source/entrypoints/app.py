@@ -108,12 +108,18 @@ app.layout = dbc.Container([
                             placeholder="Select a variable",
                         ),
                         html.Br(),
+
+
+
                         html.Div(
                             id='facet_variable_div',
                             className='graph_variable_options',
                             style={'display': 'none'},
                             children=[
-                                html.Label("Select facet variable:"),
+                                html.Label(
+                                    "Select facet variable:",
+                                    className='graph_options_label',
+                                ),
                                 dcc.Dropdown(
                                     id='facet_variable_dropdown',
                                     multi=False,
@@ -122,12 +128,46 @@ app.layout = dbc.Container([
                                 ),
                                 html.Br(),
                         ]),
-                        html.Label("Graph options:"),
-                        dcc.Slider(
-                            10, 100, 20,
-                            value=40,
-                            id='n_bins',
-                        ),
+                        html.Div(
+                            id='n_bins_div',
+                            className='graph_variable_options',
+                            # style={'display': 'none'},
+                            children=[
+                                html.Label(
+                                    "# of Bins:",
+                                    className='graph_options_label',
+                                ),
+                                dcc.Slider(
+                                    10, 100, 20,
+                                    value=40,
+                                    id='n_bins',
+                                ),
+                                html.Br(),
+                        ]),
+                        # html.Label("# of Bins:"),
+                        # dcc.Slider(
+                        #     10, 100, 20,
+                        #     value=40,
+                        #     id='n_bins',
+                        # ),
+                        html.Div(
+                            id='title_div',
+                            className='graph_variable_options',
+                            # style={'display': 'none'},
+                            children=[
+                                html.Label(
+                                    "Title:",
+                                    className='graph_options_label',
+                                ),
+                                dcc.Input(
+                                    id='title_textbox',
+                                    # multi=False,
+                                    value=None,
+                                    placeholder="Title",
+                                    style={'width': '100%'},
+                                ),
+                                html.Br(),
+                        ]),
                     ]),
                 ]),
                 dbc.Col(width=9, children=[
@@ -371,6 +411,7 @@ def load_data(  # noqa
     Input('y_variable_dropdown', 'value'),
     Input('facet_variable_dropdown', 'value'),
     Input('n_bins', 'value'),
+    Input('title_textbox', 'value'),
     State('data_store', 'data'),
     prevent_initial_call=True,
 )
@@ -379,6 +420,7 @@ def update_graph(
             y_variable: str,
             facet_variable: str,
             n_bins: int,
+            title_textbox: str,
             data: dict,
         ) -> dict:
     """Triggered when the user selects columns from the dropdown."""
@@ -391,6 +433,7 @@ def update_graph(
             data,
             x=x_variable,
             y=y_variable,
+            title=title_textbox,
             nbins=n_bins,
         )
     return fig
