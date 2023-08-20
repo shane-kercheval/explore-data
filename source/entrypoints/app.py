@@ -57,19 +57,13 @@ app.layout = html.Div([
 ], className="app-container")
 
 @app.callback(
-    [
-        Output('column-dropdown', 'options'),
-        Output('column-dropdown', 'value'),
-        Output('data-store', 'data'),
-        Output('table', 'data'),
-        Output('table3', 'data'),
-    ],
-    [
-        Input('load-button', 'n_clicks')
-    ],
-    [
-        State('url-input', 'value')
-    ],
+    Output('column-dropdown', 'options'),
+    Output('column-dropdown', 'value'),
+    Output('data-store', 'data'),
+    Output('table', 'data'),
+    Output('table3', 'data'),
+    Input('load-button', 'n_clicks'),
+    State('url-input', 'value'),
 )
 def load_data(n_clicks: int, url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
@@ -83,8 +77,8 @@ def load_data(n_clicks: int, url: str) -> tuple:
 
 @app.callback(
     Output('primary-graph', 'figure'),
-    [Input('column-dropdown', 'value'), Input('graph-options', 'value')],
-    [State('data-store', 'data')]
+    Input('column-dropdown', 'value'), Input('graph-options', 'value'),
+    State('data-store', 'data'),
 )
 def update_graph(selected_columns: list, graph_options: list, data: dict) -> dict:
     """Triggered when the user selects columns from the dropdown."""
@@ -99,6 +93,7 @@ def update_graph(selected_columns: list, graph_options: list, data: dict) -> dic
                     graphs.append({'x': data.index, 'y': data[col], 'mode': 'markers', 'name': f'{col} (scatter)'})
         return {'data': graphs, 'layout': {'title': 'Graphs'}}
     return {'data': [], 'layout': {}}
+
 
 if __name__ == '__main__':
     app.run_server(host='0.0.0.0', debug=True, port=8050)
