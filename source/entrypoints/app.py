@@ -19,7 +19,7 @@ app = Dash(__name__, external_stylesheets=external_stylesheets)
 # external_stylesheets = [dbc.themes.BOOTSTRAP]#, 'custom.css']
 # app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
-app.layout = html.Div([
+app.layout = dbc.Container([
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
             dcc.Input(
@@ -33,26 +33,36 @@ app.layout = html.Div([
             dash_table.DataTable(id='table3', page_size=20),
         ]),
         dbc.Tab(label="Visualize", children=[
-            html.Div(className="split-view", children=[
-                html.Div(className="options-panel", children=[
-                    html.Label("Select numeric columns:"),
-                    dcc.Dropdown(id='column-dropdown', multi=True),
-                    html.Label("Graph options:"),
-                    dcc.Slider(
-                        10, 100, 20,
-                        value=40,
-                        id='n_bins',
-                    ),
+            dbc.Row([
+
+            dbc.Col([
+                html.Div(className="split-view", children=[
+                    html.Div(className="options-panel", children=[
+                        html.Label("Select numeric columns:"),
+                        dcc.Dropdown(id='column-dropdown', multi=True),
+                        html.Label("Graph options:"),
+                        dcc.Slider(
+                            10, 100, 20,
+                            value=40,
+                            id='n_bins',
+                        ),
+                    ]),
                 ]),
+            ], width=3),
+            dbc.Col([
                 html.Div(className="visualization-panel", children=[
                     dcc.Store(id='data-store'),
                     dcc.Graph(id='primary-graph'),
                     dash_table.DataTable(id='table', page_size=20),
                 ]),
+
+            ], width=9),
+            
             ]),
+            
         ]),
     ]),
-], className="app-container")
+], className="app-container", fluid=True, style={"max-width": "99%"})
 
 @app.callback(
     Output('column-dropdown', 'options'),
@@ -89,7 +99,10 @@ def update_graph(
     print("update_graph", flush=True)
     fig = {}
     if selected_columns and data:
-        fig = px.histogram(data, x=selected_columns[0], y=selected_columns[0], nbins=n_bins)
+        fig = px.histogram(
+            data, x=selected_columns[0], y=selected_columns[0], nbins=n_bins,
+            height=700,
+        )
         # print("graph", flush=True)
         # print(f"selected_columns[0]: {selected_columns[0]}", flush=True)
         # graphs = []
