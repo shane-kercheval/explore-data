@@ -28,19 +28,28 @@ app.layout = dbc.Container([
                 placeholder='Enter CSV URL',
                 value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
             ),
-            html.Button('Load', id='load-button', n_clicks=0),
-            html.Br(), html.Br(),
+            html.Button('Load', id='load-button', n_clicks=0), html.Br(), html.Br(),
             dash_table.DataTable(id='table3', page_size=20),
         ]),
         dbc.Tab(label="Visualize", children=[
             dbc.Row([
-                dbc.Col([
+                dbc.Col(width=3, children=[
                     html.Div(className="split-view", children=[
                         html.Div(className="options-panel", children=[
                             html.Label("Select x variable:"),
-                            dcc.Dropdown(id='x_column_dropdown', multi=False, value=None,placeholder="Select a variable"),
+                            dcc.Dropdown(
+                                id='x_column_dropdown',
+                                multi=False,
+                                value=None,
+                                placeholder="Select a variable",
+                            ),
                             html.Label("Select y variable:"),
-                            dcc.Dropdown(id='y_column_dropdown', multi=False, value=None,placeholder="Select a variable"),
+                            dcc.Dropdown(
+                                id='y_column_dropdown',
+                                multi=False,
+                                value=None,
+                                placeholder="Select a variable",
+                            ),
                             html.Label("Graph options:"),
                             dcc.Slider(
                                 10, 100, 20,
@@ -49,22 +58,19 @@ app.layout = dbc.Container([
                             ),
                         ]),
                     ]),
-                ], width=3),
-                dbc.Col([
-                    html.Div(
-                        className="visualization-panel",
-                        children=[
-                            dcc.Store(id='data-store'),
-                            # dcc.Graph(id='primary-graph'),
-                            dcc.Graph(
-                                id='primary-graph',
-                                config={'staticPlot': False, 'displayModeBar': True},
-                                style={'width': '100%', 'height': '41.9vw'},  # 100% / 1.6 = 62.5%; (1-.33)/1.6 = .41875
-                            ),
-                            dash_table.DataTable(id='table', page_size=20),
-                        ],
-                    ),
-                ], width=9),
+                ]),
+                dbc.Col(width=9, children=[
+                    html.Div(className="visualization-panel", children=[
+                        dcc.Store(id='data-store'),
+                        # dcc.Graph(id='primary-graph'),
+                        dcc.Graph(
+                            id='primary-graph',
+                            config={'staticPlot': False, 'displayModeBar': True},
+                            style={'width': '100%', 'height': '41.9vw'},  # 100% / 1.6 = 62.5%; (1-.33)/1.6 = .41875
+                        ),
+                        dash_table.DataTable(id='table', page_size=20),
+                    ]),
+                ]),
             ]),
         ]),
     ]),
