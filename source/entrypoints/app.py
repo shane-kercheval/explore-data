@@ -6,6 +6,7 @@ from dash import Dash, html, dash_table, dcc, Output, Input, State, callback_con
 import plotly.express as px
 import pandas as pd
 import numpy as np
+import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
 
 # prints the current working directory
@@ -23,6 +24,13 @@ app = Dash(__name__, title="Data Explorer", external_stylesheets=external_styles
 # app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 app.layout = dbc.Container([
+    dcc.Store(id='data_store'),
+    dcc.Store(id='numeric_columns'),
+    dcc.Store(id='non_numeric_columns'),
+    dcc.Store(id='date_columns'),
+    dcc.Store(id='categorical_columns'),
+    dcc.Store(id='string_columns'),
+
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
             html.Br(),
@@ -93,6 +101,20 @@ app.layout = dbc.Container([
                             placeholder="Select a variable",
                         ),
                         html.Br(),
+                        html.Div(
+                            id='facet_variable_div',
+                            className='graph_variable_options',
+                            style={'display': 'none'},
+                            children=[
+                                html.Label("Select facet variable:"),
+                                dcc.Dropdown(
+                                    id='facet_variable_dropdown',
+                                    multi=False,
+                                    value=None,
+                                    placeholder="Select a variable",
+                                ),
+                                html.Br(),
+                        ]),
                         html.Label("Graph options:"),
                         dcc.Slider(
                             10, 100, 20,
@@ -102,7 +124,6 @@ app.layout = dbc.Container([
                     ]),
                 ]),
                 dbc.Col(width=9, children=[
-                    dcc.Store(id='data_store'),
                     # dcc.Graph(id='primary-graph'),
                     dcc.Graph(
                         id='primary-graph',
@@ -120,12 +141,15 @@ app.layout = dbc.Container([
 
 @app.callback(
     Output('x_column_dropdown', 'options'),
-    Output('x_column_dropdown', 'value'),
     Output('y_column_dropdown', 'options'),
-    Output('y_column_dropdown', 'value'),
-    Output('data_store', 'data'),
     Output('table_visualize', 'data'),
     Output('table_uploaded_data', 'data'),
+    Output('data_store', 'data'),
+    Output('numeric_columns', 'data'),
+    Output('non_numeric_columns', 'data'),
+    Output('date_columns', 'data'),
+    Output('categorical_columns', 'data'),
+    Output('string_columns', 'data'),
     Input('load_from_url_button', 'n_clicks'),
     Input('upload-data', 'contents'),
     State('upload-data', 'filename'),
@@ -138,7 +162,7 @@ def load_data(load_from_url_button: int, upload_data_contents: str, upload_data_
     if not callback_context.triggered:
         print("not triggered")
         print(f"callback_context.triggered: `{callback_context.triggered}`", flush=True)
-        return [], None, [], None, None, None, None
+        return [], [], None, None, None, None, None, None, None, None
 
     triggered = callback_context.triggered[0]['prop_id']
     print(f"triggered: {triggered}", flush=True)
@@ -179,9 +203,26 @@ def load_data(load_from_url_button: int, upload_data_contents: str, upload_data_
     else:
         raise ValueError(f"Unknown trigger: {triggered}")
 
+    numeric_columns = hp.get_numeric_columns(data)
+    non_numeric_columns = hp.get_non_numeric_columns(data)
+    date_columns = hp.get_date_columns(data)
+    categorical_columns = hp.get_categorical_columns(data)
+    string_columns = hp.get_string_columns(data)
+
     options = [{'label': col, 'value': col} for col in data.columns]
     data = data.to_dict('records')
-    return options, None, options, None, data, data, data
+    return (
+        options,
+        options,
+        data,
+        data,
+        data,
+        numeric_columns,
+        non_numeric_columns,
+        date_columns,
+        categorical_columns,
+        string_columns,
+    )
 
 
 @app.callback(
@@ -211,6 +252,25 @@ def update_graph(
             nbins=n_bins,
         )
     return fig
+
+
+@app.callback(
+    Output('facet_variable_div', 'style'),
+    Output('facet_variable_dropdown', 'options'),
+    Output('facet_variable_dropdown', 'value'),
+    Input('x_column_dropdown', 'value'),
+    State('non_numeric_columns', 'data'),
+    prevent_initial_call=True,
+)
+def update_facet_visibility(x_column_dropdown: str, non_numeric_columns: dict) -> dict:
+    """Triggered when the user selects columns from the dropdown."""
+    print("update_facet_visibility", flush=True)
+    if x_column_dropdown:
+        print("returning display: block", flush=True)
+        options = [{'label': col, 'value': col} for col in non_numeric_columns]
+        return {'display': 'block'}, options, None
+    print('returning display: none', flush=True)
+    return  {'display': 'none'}, [], None
 
 
 if __name__ == '__main__':
