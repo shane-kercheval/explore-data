@@ -1,4 +1,5 @@
 """Dash app entry point."""
+import json
 from dash import Dash, html, dash_table, dcc, Output, Input, State, callback_context
 import plotly.express as px
 import pandas as pd
@@ -22,14 +23,44 @@ app = Dash(__name__, external_stylesheets=external_stylesheets)
 app.layout = dbc.Container([
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
-            dcc.Input(
-                id='url-input',
-                type='text',
-                placeholder='Enter CSV URL',
-                value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
-            ),
-            html.Button('Load', id='load-button', n_clicks=0), html.Br(), html.Br(),
-            dash_table.DataTable(id='table3', page_size=20),
+            html.Br(),
+            dbc.Row([
+                dbc.Col(width=4, children=[
+                    html.H4("Load .csv from URL"),
+                    html.Button('Load', id='load_from_url_button', n_clicks=0, style={'width': '20%', 'padding': '0px'}),
+                    dcc.Input(
+                        id='load_from_url',
+                        type='text',
+                        placeholder='Enter CSV URL',
+                        # value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
+                        value='https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv',
+                        style={
+                            'width': '80%',
+                        },
+                    ),
+                    html.Br(),html.Br(),
+                    html.H4("Load .csv or .pkl from file"),
+                    dcc.Upload(
+                        id='upload-data',
+                        children=html.Div(['Drag and Drop or ', html.A('Select Files')]),
+                        style={
+                            'width': '100%',
+                            'height': '60px',
+                            'lineHeight': '60px',
+                            'borderWidth': '1px',
+                            'borderStyle': 'dashed',
+                            'borderRadius': '5px',
+                            'textAlign': 'center',
+                            'align-items': 'center',
+                            # 'margin': '0px',
+                        },
+                        multiple=False,
+                    ),
+                ]),
+                dbc.Col(width=8, children=[
+                    dash_table.DataTable(id='table3', page_size=20),
+                ]),
+            ]),
         ]),
         dbc.Tab(label="Visualize", children=[
             dbc.Row([
@@ -61,7 +92,7 @@ app.layout = dbc.Container([
                 ]),
                 dbc.Col(width=9, children=[
                     html.Div(className="visualization-panel", children=[
-                        dcc.Store(id='data-store'),
+                        dcc.Store(id='data_store'),
                         # dcc.Graph(id='primary-graph'),
                         dcc.Graph(
                             id='primary-graph',
@@ -82,17 +113,27 @@ app.layout = dbc.Container([
     Output('x_column_dropdown', 'value'),
     Output('y_column_dropdown', 'options'),
     Output('y_column_dropdown', 'value'),
-    Output('data-store', 'data'),
+    Output('data_store', 'data'),
     Output('table', 'data'),
     Output('table3', 'data'),
-    Input('load-button', 'n_clicks'),
-    State('url-input', 'value'),
+    Input('load_from_url_button', 'n_clicks'),
+    State('load_from_url', 'value'),
 )
-def load_data(n_clicks: int, url: str) -> tuple:
+def load_data(load_from_url_button: int, load_from_url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
-    print("load_data", flush=True)
-    if n_clicks > 0 and url:
-        data = pd.read_csv(url)
+    print("load_data()", flush=True)
+    triggered = callback_context.triggered[0]['prop_id']
+    print(f"triggered: {triggered}", flush=True)
+    # ctx = callback_context
+    # ctx_msg = json.dumps({
+    #     'states': ctx.states,
+    #     'triggered': ctx.triggered,
+    #     'inputs': ctx.inputs,
+    # }, indent=2)
+    # print(ctx_msg, flush=True)
+    if triggered == 'load_from_url_button.n_clicks' and load_from_url:
+        print("Loading from CSV URL", flush=True)
+        data = pd.read_csv(load_from_url)
         # numeric_cols = data.select_dtypes(include=[np.number]).columns
         options = [{'label': col, 'value': col} for col in data.columns]
         data = data.to_dict('records')
@@ -105,7 +146,7 @@ def load_data(n_clicks: int, url: str) -> tuple:
     Input('x_column_dropdown', 'value'),
     Input('y_column_dropdown', 'value'),
     Input('n_bins', 'value'),
-    State('data-store', 'data'),
+    State('data_store', 'data'),
 )
 def update_graph(
             x_column: list,
