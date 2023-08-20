@@ -6,12 +6,10 @@ app = Dash(__name__, external_stylesheets=external_stylesheets)
 
 options = ["New York City", "Montréal", "San Francisco"]
 
-app.layout = html.Div(
-    [
-        dcc.Checklist(["All"], [], id="all-checklist", inline=True),
-        dcc.Checklist(options, [], id="city-checklist", inline=True),
-    ]
-)
+app.layout = html.Div([
+    dcc.Checklist(["All"], [], id="all-checklist", inline=True),
+    dcc.Checklist(options, [], id="city-checklist", inline=True),
+])
 @callback(
     Output("city-checklist", "value"),
     Output("all-checklist", "value"),
@@ -19,8 +17,11 @@ app.layout = html.Div(
     Input("all-checklist", "value"),
 )
 def sync_checklists(cities_selected, all_selected):
+    print("sync_checklists", flush=True)
     ctx = callback_context
     input_id = ctx.triggered[0]["prop_id"].split(".")[0]
+    print(f"ctx.triggered: {ctx.triggered}", flush=True)
+    print(f"input_id: {input_id}", flush=True)
     if input_id == "city-checklist":
         all_selected = ["All"] if set(cities_selected) == set(options) else []
     else:
