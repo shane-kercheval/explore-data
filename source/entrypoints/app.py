@@ -1,58 +1,60 @@
-from dash import Dash, html, dcc, callback, Output, Input
-import plotly.express as px
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output
 import pandas as pd
+import numpy as np
 
-default_csv_url = 'https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv'
 
-app = Dash(__name__)
+import dash
+import dash_core_components as dcc
+import dash_html_components as html
+from dash.dependencies import Input, Output, State
+import pandas as pd
+import numpy as np
+
+app = dash.Dash(__name__)
 
 app.layout = html.Div([
-    html.H1(children='Title of Dash App', style={'textAlign':'center'}),
-    dcc.Input(id='csv-url', type='text', value=default_csv_url),
+    html.H1("CSV Data Visualization"),
+    dcc.Input(id='url-input', type='text', placeholder='Enter CSV URL'),
     html.Button('Load', id='load-button', n_clicks=0),
-    dcc.Dropdown(id='dropdown-selection'),
-    dcc.Graph(id='graph-content'),
-    html.Label('Filter Year Range:'),
-    dcc.RangeSlider(id='year-range', marks={}, step=None),
+    html.Label("Select numeric columns:"),
+    dcc.Dropdown(id='column-dropdown', multi=True),
+    dcc.Store(id='data-store'),  # Store component to hold the loaded data
+    dcc.Graph(id='histogram')
 ])
 
-@callback(
-    [Output('dropdown-selection', 'options'),
-     Output('dropdown-selection', 'value')],
-    [Input('csv-url', 'value'),
-     Input('load-button', 'n_clicks')]
+@app.callback(
+    [Output('column-dropdown', 'options'),
+     Output('column-dropdown', 'value'),
+     Output('data-store', 'data')],  # Update the data in the store
+    [Input('load-button', 'n_clicks')],
+    [State('url-input', 'value')]
 )
-def update_dropdown(csv_url, n_clicks):
-    df = pd.read_csv(csv_url)
-    country_options = [{'label': country, 'value': country} for country in df.country.unique()]
-    default_country = df.country.unique()[0]
-    year_marks = {str(year): str(year) for year in df.year.unique()}
-    return country_options, default_country
+def load_data(n_clicks, url):
+    if n_clicks > 0 and url:
+        loaded_data = pd.read_csv(url)
+        numeric_columns = loaded_data.select_dtypes(include=[np.number]).columns
+        dropdown_options = [{'label': col, 'value': col} for col in numeric_columns]
+        return dropdown_options, [], loaded_data.to_dict('records')  # Store data in the store
+    return [], [], None
 
-@callback(
-    [Output('graph-content', 'figure'),
-     Output('year-range', 'marks'),
-     Output('year-range', 'min'),
-     Output('year-range', 'max'),
-     Output('year-range', 'value')],
-    [Input('dropdown-selection', 'value'),
-     Input('load-button', 'n_clicks')]
+@app.callback(
+    Output('histogram', 'figure'),
+    [Input('column-dropdown', 'value')],
+    [State('data-store', 'data')]  # Access the data from the store
 )
-def update_graph(value, n_clicks):
-    df = pd.read_csv(default_csv_url)  # Read the CSV again using the default URL
-    dff = df[df.country==value]
-    year_marks = {str(year): str(year) for year in dff.year.unique()}
-    min_year = min(dff.year)
-    max_year = max(dff.year)
-    selected_year_range = [min_year, max_year]
-    return (
-        px.line(dff, x='year', y='pop'),
-        year_marks,
-        min_year,
-        max_year,
-        selected_year_range
-    )
+def update_histogram(selected_columns, data_store):
+    if data_store and selected_columns:
+        loaded_data = pd.DataFrame.from_records(data_store)  # Convert stored data to DataFrame
+        data = []
+        for col in selected_columns:
+            data.append({'x': loaded_data[col], 'type': 'histogram', 'name': col})
+        return {'data': data, 'layout': {'title': 'Histogram'}}
+    return {'data': [], 'layout': {'title': 'Histogram'}}
 
 
 if __name__ == '__main__':
     app.run_server(host='0.0.0.0', debug=True, port=8050)
+#https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv
