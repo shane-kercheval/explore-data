@@ -20,12 +20,14 @@ app = Dash(__name__, title="Data Explorer", external_stylesheets=external_styles
 
 app.layout = dbc.Container([
     dcc.Store(id='data_store'),
+    dcc.Store(id='numeric_summary'),
+    dcc.Store(id='non_numeric_summary'),
     dcc.Store(id='numeric_columns'),
     dcc.Store(id='non_numeric_columns'),
     dcc.Store(id='date_columns'),
     dcc.Store(id='categorical_columns'),
     dcc.Store(id='string_columns'),
-
+    dcc.Loading(type="default", children=[
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
             html.Br(),
@@ -61,11 +63,6 @@ app.layout = dbc.Container([
                         n_clicks=0,
                         style={'width': '20%', 'padding': '0px'},
                     ),
-                    # dcc.Loading(
-                    #     # id="loading",
-                    #     type="default",
-                    #     children=[
-
                     dcc.Input(
                         id='load_from_url',
                         type='text',
@@ -76,7 +73,6 @@ app.layout = dbc.Container([
                             'width': '80%',
                         },
                     ),
-                        # ]),
                 ]),
             ]),
             html.Br(),
@@ -233,37 +229,34 @@ app.layout = dbc.Container([
             ),
         ]),
     ]),
+    ]),
 ], className="app-container", fluid=True, style={"max-width": "99%"})
 
 @app.callback(
     Output('non_numeric_summary_table', 'data'),
-    Input('data_store', 'data'),
+    Input('non_numeric_summary', 'data'),
     prevent_initial_call=True,
 )
-def non_numeric_summary_table(data: dict) -> dict:
+def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
     """Triggered when the user clicks on the Load button."""
-    if data:
-        non_numeric_summary = hp.non_numeric_summary(pd.DataFrame(data), return_style=False)
-        if non_numeric_summary is not None and len(non_numeric_summary) > 0:
-            non_numeric_summary = non_numeric_summary.\
-                reset_index().\
-                rename(columns={'index': 'Column Name'})
-            return non_numeric_summary.to_dict('records')
+    if non_numeric_summary:
+        non_numeric_summary = pd.DataFrame(non_numeric_summary).\
+            reset_index().\
+            rename(columns={'index': 'Column Name'})
+        return non_numeric_summary.to_dict('records')
     return []
 
 @app.callback(
     Output('numeric_summary_table', 'data'),
-    Input('data_store', 'data'),
+    Input('numeric_summary', 'data'),
     prevent_initial_call=True,
 )
-def numeric_summary_table(data: dict) -> dict:
+def numeric_summary_table(numeric_summary: dict) -> dict:
     """Triggered when the user clicks on the Load button."""
-    if data:
-        numeric_summary = hp.numeric_summary(pd.DataFrame(data), return_style=False)
-        if numeric_summary is not None and len(numeric_summary) > 0:
-            numeric_summary = numeric_summary.\
-                reset_index().\
-                rename(columns={'index': 'Column Name'})
+    if numeric_summary:
+        numeric_summary = pd.DataFrame(numeric_summary).\
+            reset_index().\
+            rename(columns={'index': 'Column Name'})
         return numeric_summary.to_dict('records')
     return []
 
@@ -272,6 +265,8 @@ def numeric_summary_table(data: dict) -> dict:
     Output('y_column_dropdown', 'options'),
     Output('table_visualize', 'data'),
     Output('table_uploaded_data', 'data'),
+    Output('numeric_summary', 'data'),
+    Output('non_numeric_summary', 'data'),
     Output('data_store', 'data'),
     Output('numeric_columns', 'data'),
     Output('non_numeric_columns', 'data'),
@@ -290,7 +285,7 @@ def load_data(load_from_url_button: int, upload_data_contents: str, upload_data_
     if not callback_context.triggered:
         print("not triggered")
         print(f"callback_context.triggered: `{callback_context.triggered}`", flush=True)
-        return [], [], None, None, None, None, None, None, None, None
+        return [], [], None, None, None, None, None, None, None, None, None, None
 
     triggered = callback_context.triggered[0]['prop_id']
     print(f"triggered: {triggered}", flush=True)
@@ -337,6 +332,17 @@ def load_data(load_from_url_button: int, upload_data_contents: str, upload_data_
     categorical_columns = hp.get_categorical_columns(data)
     string_columns = hp.get_string_columns(data)
 
+    numeric_summary = hp.numeric_summary(data, return_style=False)
+    if numeric_summary is not None and len(numeric_summary) > 0:
+        numeric_summary = numeric_summary.to_dict('records')
+    else:
+        numeric_summary = None
+    non_numeric_summary = hp.non_numeric_summary(data, return_style=False)
+    if non_numeric_summary is not None and len(non_numeric_summary) > 0:
+        non_numeric_summary = non_numeric_summary.to_dict('records')
+    else:
+        non_numeric_summary = None
+
     options = [{'label': col, 'value': col} for col in data.columns]
     data = data.to_dict('records')
     return (
@@ -344,6 +350,8 @@ def load_data(load_from_url_button: int, upload_data_contents: str, upload_data_
         options,
         data,
         data,
+        numeric_summary,
+        non_numeric_summary,
         data,
         numeric_columns,
         non_numeric_columns,
