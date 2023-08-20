@@ -17,7 +17,7 @@ external_stylesheets = [
     'https://codepen.io/chriddyp/pen/bWLwgP.css',
     'custom.css',
 ]
-app = Dash(__name__, external_stylesheets=external_stylesheets)
+app = Dash(__name__, title="Data Explorer", external_stylesheets=external_stylesheets)
 # external_stylesheets = None
 # external_stylesheets = [dbc.themes.BOOTSTRAP]#, 'custom.css']
 # app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -109,6 +109,7 @@ app.layout = dbc.Container([
                         config={'staticPlot': False, 'displayModeBar': True},
                         style={'width': '100%', 'height': '41.9vw'},  # 100% / 1.6 = 62.5%; (1-.33)/1.6 = .41875
                     ),
+                    html.Hr(),
                     dash_table.DataTable(id='table_visualize', page_size=20),
                 ]),
             ]),
