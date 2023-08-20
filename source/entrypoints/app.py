@@ -1,4 +1,6 @@
 """Dash app entry point."""
+import base64
+import io
 import json
 from dash import Dash, html, dash_table, dcc, Output, Input, State, callback_context
 import plotly.express as px
@@ -49,7 +51,7 @@ app.layout = dbc.Container([
                         id='upload-data',
                         children=html.Div([
                             'Drag and Drop or ',
-                            html.A('Select Files', style={'color': 'blue'})
+                            html.A('Select Files', style={'color': 'blue'}),
                         ]),
                         style={
                             'width': '100%',
@@ -124,9 +126,11 @@ app.layout = dbc.Container([
     Output('table', 'data'),
     Output('table3', 'data'),
     Input('load_from_url_button', 'n_clicks'),
+    Input('upload-data', 'contents'),
+    State('upload-data', 'filename'),
     State('load_from_url', 'value'),
 )
-def load_data(load_from_url_button: int, load_from_url: str) -> tuple:
+def load_data(load_from_url_button: int, upload_data_contents: str, upload_data_filename: str, load_from_url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
     print("load_data()", flush=True)
     triggered = callback_context.triggered[0]['prop_id']
@@ -138,6 +142,32 @@ def load_data(load_from_url_button: int, load_from_url: str) -> tuple:
     #     'inputs': ctx.inputs,
     # }, indent=2)
     # print(ctx_msg, flush=True)
+
+    if triggered == 'upload-data.contents':
+        print(f"load_from_url_button: {load_from_url_button}", flush=True)
+        print(f"upload_data_filename: {upload_data_filename}", flush=True)
+        _, content_string = upload_data_contents.split(',')
+        decoded = base64.b64decode(content_string)
+        try:
+            if '.pkl' in upload_data_filename:
+                # Assume that the user uploaded a CSV file
+                data = pd.read_pickle(io.BytesIO( base64.b64decode(content_string)))
+            if '.csv' in upload_data_filename:
+                # Assume that the user uploaded a CSV file
+                data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+            elif 'xls' in upload_data_filename:
+                # Assume that the user uploaded an excel file
+                data = pd.read_excel(io.BytesIO(decoded))
+        except Exception as e:
+            print(e)
+            # print(e.with_traceback())
+            return html.Div([
+                'There was an error processing this file.',
+            ])
+        options = [{'label': col, 'value': col} for col in data.columns]
+        data = data.to_dict('records')
+        return options, None, options, None, data, data, data
+
     if triggered == 'load_from_url_button.n_clicks' and load_from_url:
         print("Loading from CSV URL", flush=True)
         data = pd.read_csv(load_from_url)
