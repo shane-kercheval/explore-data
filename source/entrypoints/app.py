@@ -31,24 +31,6 @@ app.layout = dbc.Container([
             html.Br(),
             dbc.Row([
                 dbc.Col(width=3, children=[
-                    html.H4("Load .csv from URL"),
-                    html.Button(
-                        'Load',
-                        id='load_from_url_button',
-                        n_clicks=0,
-                        style={'width': '20%', 'padding': '0px'},
-                    ),
-                    dcc.Input(
-                        id='load_from_url',
-                        type='text',
-                        placeholder='Enter CSV URL',
-                        # value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
-                        value='https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv',
-                        style={
-                            'width': '80%',
-                        },
-                    ),
-                    html.Br(),html.Br(),
                     html.H4("Load .csv or .pkl from file"),
                     dcc.Upload(
                         id='upload-data',
@@ -70,15 +52,37 @@ app.layout = dbc.Container([
                         multiple=False,
                     ),
                 ]),
-                dbc.Col(width=9, children=[
-                    dash_table.DataTable(
-                        id='table_uploaded_data',
-                        page_size=20,
-                        style_header={
-                            'fontWeight': 'bold',
+                dbc.Col(width=1, children=[]),
+                dbc.Col(width=7, children=[
+                    html.H4("Load .csv from URL"),
+                    html.Button(
+                        'Load',
+                        id='load_from_url_button',
+                        n_clicks=0,
+                        style={'width': '20%', 'padding': '0px'},
+                    ),
+                    dcc.Input(
+                        id='load_from_url',
+                        type='text',
+                        placeholder='Enter CSV URL',
+                        # value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
+                        value='https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv',
+                        style={
+                            'width': '80%',
                         },
                     ),
                 ]),
+            ]),
+            html.Br(),
+            dbc.Row(children=[
+                html.Hr(),
+                dash_table.DataTable(
+                    id='table_uploaded_data',
+                    page_size=20,
+                    style_header={
+                        'fontWeight': 'bold',
+                    },
+                ),
             ]),
         ]),
         dbc.Tab(label="Visualize", children=[
