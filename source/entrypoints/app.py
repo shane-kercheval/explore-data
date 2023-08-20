@@ -51,11 +51,19 @@ app.layout = dbc.Container([
                     ]),
                 ], width=3),
                 dbc.Col([
-                    html.Div(className="visualization-panel", children=[
-                        dcc.Store(id='data-store'),
-                        dcc.Graph(id='primary-graph'),
-                        dash_table.DataTable(id='table', page_size=20),
-                    ]),
+                    html.Div(
+                        className="visualization-panel",
+                        children=[
+                            dcc.Store(id='data-store'),
+                            # dcc.Graph(id='primary-graph'),
+                            dcc.Graph(
+                                id='primary-graph',
+                                config={'staticPlot': False, 'displayModeBar': True},
+                                style={'width': '100%', 'height': '41.9vw'},  # 100% / 1.6 = 62.5%; (1-.33)/1.6 = .41875
+                            ),
+                            dash_table.DataTable(id='table', page_size=20),
+                        ],
+                    ),
                 ], width=9),
             ]),
         ]),
@@ -106,18 +114,7 @@ def update_graph(
             x=x_column,
             y=y_column,
             nbins=n_bins,
-            height=700,
         )
-        # print("graph", flush=True)
-        # print(f"selected_columns[0]: {selected_columns[0]}", flush=True)
-        # graphs = []
-        # for col in selected_columns:
-        #     for graph_type in graph_options:
-        #         if graph_type == 'histogram':
-        #             graphs.append({'x': data[col], 'type': 'histogram', 'name': f'{col} (histogram)'})
-        #         elif graph_type == 'scatter':
-        #             graphs.append({'x': data.index, 'y': data[col], 'mode': 'markers', 'name': f'{col} (scatter)'})
-        # return {'data': graphs, 'layout': {'title': 'Graphs'}}
     return fig
 
 
