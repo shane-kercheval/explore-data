@@ -25,28 +25,33 @@ app.layout = html.Div([
             'borderStyle': 'dashed',
             'borderRadius': '5px',
             'textAlign': 'center',
-            'margin': '10px'
+            'margin': '10px',
         },
         # Allow multiple files to be uploaded
-        multiple=True
+        multiple=True,
     ),
     html.Div(id='output-data-upload'),
 ])
 
 def parse_contents(contents, filename, date):
     content_type, content_string = contents.split(',')
-
+    print(content_type, flush=True)
+    print(filename, flush=True)
+    print(date, flush=True)
     decoded = base64.b64decode(content_string)
     try:
-        if 'csv' in filename:
+        if '.pkl' in filename:
             # Assume that the user uploaded a CSV file
-            df = pd.read_csv(
-                io.StringIO(decoded.decode('utf-8')))
+            df = pd.read_pickle(io.BytesIO( base64.b64decode(content_string)))
+        if '.csv' in filename:
+            # Assume that the user uploaded a CSV file
+            df = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
         elif 'xls' in filename:
             # Assume that the user uploaded an excel file
             df = pd.read_excel(io.BytesIO(decoded))
     except Exception as e:
         print(e)
+        print(e.with_traceback())
         return html.Div([
             'There was an error processing this file.'
         ])
@@ -82,4 +87,4 @@ def update_output(list_of_contents, list_of_names, list_of_dates):
         return children
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run_server(host='0.0.0.0', debug=True, port=8050)
