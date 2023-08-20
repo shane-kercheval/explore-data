@@ -133,13 +133,18 @@ app.layout = dbc.Container([
 def load_data(load_from_url_button: int, upload_data_contents: str, upload_data_filename: str, load_from_url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
     print("load_data()", flush=True)
+    if not callback_context.triggered:
+        print("not triggered")
+        print(f"callback_context.triggered: `{callback_context.triggered}`", flush=True)
+        return [], None, [], None, None, None, None
+
     triggered = callback_context.triggered[0]['prop_id']
     print(f"triggered: {triggered}", flush=True)
-    # ctx = callback_context
     # ctx_msg = json.dumps({
-    #     'states': ctx.states,
-    #     'triggered': ctx.triggered,
-    #     'inputs': ctx.inputs,
+    #     'states': callback_context.states,
+    #     'triggered': callback_context.triggered,
+    #     'triggered2': callback_context.triggered[0]['prop_id'],
+    #     'inputs': callback_context.inputs,
     # }, indent=2)
     # print(ctx_msg, flush=True)
 
@@ -150,12 +155,14 @@ def load_data(load_from_url_button: int, upload_data_contents: str, upload_data_
         decoded = base64.b64decode(content_string)
         try:
             if '.pkl' in upload_data_filename:
-                # Assume that the user uploaded a CSV file
+                print("loading from .pkl", flush=True)
                 data = pd.read_pickle(io.BytesIO( base64.b64decode(content_string)))
             if '.csv' in upload_data_filename:
+                print("loading from .csv", flush=True)
                 # Assume that the user uploaded a CSV file
                 data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
             elif 'xls' in upload_data_filename:
+                print("loading from .xls", flush=True)
                 # Assume that the user uploaded an excel file
                 data = pd.read_excel(io.BytesIO(decoded))
         except Exception as e:
@@ -164,18 +171,15 @@ def load_data(load_from_url_button: int, upload_data_contents: str, upload_data_
             return html.Div([
                 'There was an error processing this file.',
             ])
-        options = [{'label': col, 'value': col} for col in data.columns]
-        data = data.to_dict('records')
-        return options, None, options, None, data, data, data
-
-    if triggered == 'load_from_url_button.n_clicks' and load_from_url:
+    elif triggered == 'load_from_url_button.n_clicks' and load_from_url:
         print("Loading from CSV URL", flush=True)
         data = pd.read_csv(load_from_url)
-        # numeric_cols = data.select_dtypes(include=[np.number]).columns
-        options = [{'label': col, 'value': col} for col in data.columns]
-        data = data.to_dict('records')
-        return options, None, options, None, data, data, data
-    return [], None, [], None, None, None, None
+    else:
+        raise ValueError(f"Unknown trigger: {triggered}")
+
+    options = [{'label': col, 'value': col} for col in data.columns]
+    data = data.to_dict('records')
+    return options, None, options, None, data, data, data
 
 
 @app.callback(
