@@ -61,6 +61,11 @@ app.layout = dbc.Container([
                         n_clicks=0,
                         style={'width': '20%', 'padding': '0px'},
                     ),
+                    # dcc.Loading(
+                    #     # id="loading",
+                    #     type="default",
+                    #     children=[
+
                     dcc.Input(
                         id='load_from_url',
                         type='text',
@@ -71,6 +76,7 @@ app.layout = dbc.Container([
                             'width': '80%',
                         },
                     ),
+                        # ]),
                 ]),
             ]),
             html.Br(),
@@ -147,6 +153,7 @@ app.layout = dbc.Container([
             ]),
         ]),
         dbc.Tab(label="Numeric Summary", children=[
+            html.Br(),
             dash_table.DataTable(
                 id='numeric_summary_table',
                 page_size=30,
@@ -194,6 +201,7 @@ app.layout = dbc.Container([
             ),
         ]),
         dbc.Tab(label="Non-Numeric Summary", children=[
+            html.Br(),
             dash_table.DataTable(
                 id='non_numeric_summary_table',
                 page_size=30,
@@ -235,9 +243,12 @@ app.layout = dbc.Container([
 def non_numeric_summary_table(data: dict) -> dict:
     """Triggered when the user clicks on the Load button."""
     if data:
-        non_numeric_summary = hp.non_numeric_summary(pd.DataFrame(data), return_style=False).\
-            reset_index().rename(columns={'index': 'Column Name'})
-        return non_numeric_summary.to_dict('records')
+        non_numeric_summary = hp.non_numeric_summary(pd.DataFrame(data), return_style=False)
+        if non_numeric_summary is not None and len(non_numeric_summary) > 0:
+            non_numeric_summary = non_numeric_summary.\
+                reset_index().\
+                rename(columns={'index': 'Column Name'})
+            return non_numeric_summary.to_dict('records')
     return []
 
 @app.callback(
@@ -248,8 +259,11 @@ def non_numeric_summary_table(data: dict) -> dict:
 def numeric_summary_table(data: dict) -> dict:
     """Triggered when the user clicks on the Load button."""
     if data:
-        numeric_summary = hp.numeric_summary(pd.DataFrame(data), return_style=False).\
-            reset_index().rename(columns={'index': 'Column Name'})
+        numeric_summary = hp.numeric_summary(pd.DataFrame(data), return_style=False)
+        if numeric_summary is not None and len(numeric_summary) > 0:
+            numeric_summary = numeric_summary.\
+                reset_index().\
+                rename(columns={'index': 'Column Name'})
         return numeric_summary.to_dict('records')
     return []
 
