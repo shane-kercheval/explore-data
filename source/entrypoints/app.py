@@ -1,17 +1,15 @@
 """Dash app entry point."""
 import base64
 import io
-import json
 from dash import Dash, html, dash_table, dcc, Output, Input, State, callback_context
 import plotly.express as px
 import pandas as pd
-import numpy as np
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
 
-# prints the current working directory
-import os
-print(os.getcwd())
+
+GOLDEN_RATIO = 1.618
+
 
 external_stylesheets = [
     dbc.themes.BOOTSTRAP,
@@ -19,9 +17,6 @@ external_stylesheets = [
     'custom.css',
 ]
 app = Dash(__name__, title="Data Explorer", external_stylesheets=external_stylesheets)
-# external_stylesheets = None
-# external_stylesheets = [dbc.themes.BOOTSTRAP]#, 'custom.css']
-# app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 app.layout = dbc.Container([
     dcc.Store(id='data_store'),
@@ -124,11 +119,11 @@ app.layout = dbc.Container([
                     ]),
                 ]),
                 dbc.Col(width=9, children=[
-                    # dcc.Graph(id='primary-graph'),
                     dcc.Graph(
                         id='primary-graph',
                         config={'staticPlot': False, 'displayModeBar': True},
-                        style={'width': '100%', 'height': '41.9vw'},  # 100% / 1.6 = 62.5%; (1-.33)/1.6 = .41875
+                        # 3/12 because the sidebar is 3/12 of the width
+                        style={'width': '100%', 'height': f'{(1-(3/12)) / GOLDEN_RATIO * 100: .1f}vw'},  # noqa
                     ),
                     html.Hr(),
                     dash_table.DataTable(id='table_visualize', page_size=20),
