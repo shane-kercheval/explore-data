@@ -279,7 +279,11 @@ def numeric_summary_table(numeric_summary: dict) -> dict:
     State('load_from_url', 'value'),
     prevent_initial_call=True,
 )
-def load_data(load_from_url_button: int, upload_data_contents: str, upload_data_filename: str, load_from_url: str) -> tuple:
+def load_data(  # noqa
+        load_from_url_button: int,
+        upload_data_contents: str,
+        upload_data_filename: str,
+        load_from_url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
     print("load_data()", flush=True)
     if not callback_context.triggered:
