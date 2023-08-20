@@ -1,5 +1,6 @@
 """Dash app entry point."""
-from dash import Dash, html, dash_table, dcc, Output, Input, State
+from dash import Dash, html, dash_table, dcc, Output, Input, State, callback_context
+import plotly.express as px
 import pandas as pd
 import numpy as np
 import dash_bootstrap_components as dbc
@@ -37,13 +38,10 @@ app.layout = html.Div([
                     html.Label("Select numeric columns:"),
                     dcc.Dropdown(id='column-dropdown', multi=True),
                     html.Label("Graph options:"),
-                    dcc.Checklist(
-                        id='graph-options',
-                        options=[
-                            {'label': 'Show histogram', 'value': 'histogram'},
-                            {'label': 'Show scatter plot', 'value': 'scatter'}
-                        ],
-                        value=['histogram'],
+                    dcc.Slider(
+                        10, 100, 20,
+                        value=40,
+                        id='n_bins',
                     ),
                 ]),
                 html.Div(className="visualization-panel", children=[
@@ -67,6 +65,7 @@ app.layout = html.Div([
 )
 def load_data(n_clicks: int, url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
+    print("load_data", flush=True)
     if n_clicks > 0 and url:
         data = pd.read_csv(url)
         numeric_cols = data.select_dtypes(include=[np.number]).columns
@@ -77,22 +76,31 @@ def load_data(n_clicks: int, url: str) -> tuple:
 
 @app.callback(
     Output('primary-graph', 'figure'),
-    Input('column-dropdown', 'value'), Input('graph-options', 'value'),
+    Input('column-dropdown', 'value'),
+    Input('n_bins', 'value'),
     State('data-store', 'data'),
 )
-def update_graph(selected_columns: list, graph_options: list, data: dict) -> dict:
+def update_graph(
+            selected_columns: list,
+            n_bins: int,
+            data: dict,
+        ) -> dict:
     """Triggered when the user selects columns from the dropdown."""
+    print("update_graph", flush=True)
+    fig = {}
     if selected_columns and data:
-        data = pd.DataFrame(data)
-        graphs = []
-        for col in selected_columns:
-            for graph_type in graph_options:
-                if graph_type == 'histogram':
-                    graphs.append({'x': data[col], 'type': 'histogram', 'name': f'{col} (histogram)'})
-                elif graph_type == 'scatter':
-                    graphs.append({'x': data.index, 'y': data[col], 'mode': 'markers', 'name': f'{col} (scatter)'})
-        return {'data': graphs, 'layout': {'title': 'Graphs'}}
-    return {'data': [], 'layout': {}}
+        fig = px.histogram(data, x=selected_columns[0], y=selected_columns[0], nbins=n_bins)
+        # print("graph", flush=True)
+        # print(f"selected_columns[0]: {selected_columns[0]}", flush=True)
+        # graphs = []
+        # for col in selected_columns:
+        #     for graph_type in graph_options:
+        #         if graph_type == 'histogram':
+        #             graphs.append({'x': data[col], 'type': 'histogram', 'name': f'{col} (histogram)'})
+        #         elif graph_type == 'scatter':
+        #             graphs.append({'x': data.index, 'y': data[col], 'mode': 'markers', 'name': f'{col} (scatter)'})
+        # return {'data': graphs, 'layout': {'title': 'Graphs'}}
+    return fig
 
 
 if __name__ == '__main__':
