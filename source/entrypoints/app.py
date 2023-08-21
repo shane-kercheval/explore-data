@@ -373,6 +373,31 @@ def toggle_filter_panel(n: int, is_open: bool) -> bool:
     return is_open
 
 
+@app.callback(
+    Output("collapse-graph-options", "is_open"),
+    Input("panel-graph-options-toggle", "n_clicks"),
+    State("collapse-graph-options", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_graph_options_panel(n: int, is_open: bool) -> bool:
+    """Toggle the graph-options panel."""
+    if n:
+        return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("collapse-other-options", "is_open"),
+    Input("panel-other-options-toggle", "n_clicks"),
+    State("collapse-other-options", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_other_options_panel(n: int, is_open: bool) -> bool:
+    """Toggle the other-options panel."""
+    if n:
+        return not is_open
+    return is_open
+
 
 @app.callback(
     Output('non_numeric_summary_table', 'data'),
