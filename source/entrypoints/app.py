@@ -4,6 +4,7 @@ import io
 from dash import Dash, html, dash_table, dcc, Output, Input, State, callback_context
 import plotly.express as px
 import pandas as pd
+import numpy as np
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
 
@@ -18,11 +19,17 @@ external_stylesheets = [
 app = Dash(__name__, title="Data Explorer", external_stylesheets=external_stylesheets)
 
 
-def create_control(label: str, id: str, component: html.Div) -> html.Div:  # noqa: A002
+def create_control(
+        label: str,
+        id: str,  # noqa: A002
+        component: html.Div,
+        hidden: bool = False) -> html.Div:
     """Create a generic control with a given component (e.g. dropdown)."""
+    style = {'display': 'none'} if hidden else {}
     return html.Div(
         id=f'{id}_div',
         className='graph_options',
+        style=style,
         children=[
             html.Label(
                 f"{label}:",
@@ -34,6 +41,7 @@ def create_control(label: str, id: str, component: html.Div) -> html.Div:  # noq
 def create_dropdown_control(
         label: str,
         id: str,  # noqa: A002
+        hidden: bool = False,
         multi: bool = False,
         options: list[dict] | None = None,
         value: str | None = None,
@@ -51,12 +59,49 @@ def create_dropdown_control(
     return create_control(
         label=label,
         id=id,
+        hidden=hidden,
         component=dcc.Dropdown(
             id=component_id,
             multi=multi,
             options=options,
             value=value,
             placeholder=placeholder,
+        ),
+    )
+
+def create_slider_control(
+        label: str,
+        id: str,  # noqa: A002
+        min: int | float,  # noqa: A002
+        max: int | float,  # noqa: A002
+        value: int | float | list[int] | list[float],
+        step: int | float | None = None,
+        hidden: bool = False,
+        component_id: dict | None = None,
+        ) -> html.Div:
+    """Create a dropdown control."""
+    if component_id is None:
+        component_id = f'{id}_slider'
+    else:
+        assert isinstance(component_id, dict)
+
+    if step is None:
+        # step should create 5 steps
+        step = (max - min) / 5
+
+    slider_type = dcc.RangeSlider if isinstance(value, list) else dcc.Slider
+
+    return create_control(
+        label=label,
+        id=id,
+        hidden=hidden,
+        component=slider_type(
+            min=min,
+            max=max,
+            step=step,
+            # marks={i: str(i) for i in np.arange(min, max + step, step)},
+            value=value,
+            id=component_id,
         ),
     )
 
@@ -201,22 +246,30 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         ),
                         dbc.Collapse(id="collapse-graph-options", is_open=True, children=[
                             dbc.CardBody([
-                                html.Div(
-                                    id='n_bins_div',
-                                    className='graph_options',
-                                    # style={'display': 'none'},
-                                    children=[
-                                        html.Label(
-                                            "# of Bins:",
-                                            className='graph_options_label',
-                                        ),
-                                        dcc.Slider(
-                                            10, 100, 20,
-                                            value=40,
-                                            id='n_bins',
-                                        ),
-                                        html.Br(),
-                                ]),
+                                create_slider_control(
+                                    label="# of Bins",
+                                    id="n_bins",
+                                    min=20,
+                                    max=100,
+                                    step=20,
+                                    value=40,
+                                ),
+                                # html.Div(
+                                #     id='n_bins_div',
+                                #     className='graph_options',
+                                #     # style={'display': 'none'},
+                                #     children=[
+                                #         html.Label(
+                                #             "# of Bins:",
+                                #             className='graph_options_label',
+                                #         ),
+                                #         dcc.Slider(
+                                #             10, 100, 20,
+                                #             value=40,
+                                #             id='n_bins',
+                                #         ),
+                                #         html.Br(),
+                                # ]),
                             ]),
                         ]),
                     ]),
@@ -391,6 +444,14 @@ def update_filter_controls(
                 ))
             if column in numeric_columns:
                 print('create slider', flush=True)
+                components.append(create_slider_control(
+                    label=column,
+                    id=f"filter_control_{column}",
+                    min=data[column].min(),
+                    max=data[column].max(),
+                    value=[data[column].min(), data[column].max()],
+                    component_id={"type": "filter-control-slider", "index": column},
+                ))
     return components
 
 
@@ -614,7 +675,7 @@ def load_data(  # noqa
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
     Input('facet_variable_dropdown', 'value'),
-    Input('n_bins', 'value'),
+    Input('n_bins_slider', 'value'),
     Input('title_textbox', 'value'),
     State('data_store', 'data'),
     prevent_initial_call=True,
@@ -631,6 +692,9 @@ def update_graph(
     print("update_graph", flush=True)
     print("x_variable", x_variable, flush=True)
     print("y_variable", y_variable, flush=True)
+    print("facet_variable", facet_variable, flush=True)
+    print("n_bins", n_bins, flush=True)
+    print("type(n_bins)", type(n_bins), flush=True)
     fig = {}
     if x_variable and data:
         fig = px.histogram(
