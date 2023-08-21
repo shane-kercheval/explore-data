@@ -154,52 +154,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     name="facet_variable",
                                     placeholder="Select a variable",
                                 ),
-                                # html.Div(
-                                #     id='x_variable_div',
-                                #     className='graph_options',
-                                #     children=[
-                                #         html.Label(
-                                #             "X variable:",
-                                #             className='graph_options_label',
-                                #         ),
-                                #         dcc.Dropdown(
-                                #             id='x_variable_dropdown',
-                                #             multi=False,
-                                #             value=None,
-                                #             placeholder="Select a variable",
-                                #         ),
-                                # ]),
-                                # html.Div(
-                                #     id='y_variable_div',
-                                #     className='graph_options',
-                                #     children=[
-                                #         html.Label(
-                                #             "Y variable:",
-                                #             className='graph_options_label',
-                                #         ),
-                                #         dcc.Dropdown(
-                                #             id='y_variable_dropdown',
-                                #             multi=False,
-                                #             value=None,
-                                #             placeholder="Select a variable",
-                                #         ),
-                                # ]),
-                                # html.Div(
-                                #     id='facet_variable_div',
-                                #     className='graph_options',
-                                #     style={'display': 'none'},
-                                #     children=[
-                                #         html.Label(
-                                #             "Facet variable:",
-                                #             className='graph_options_label',
-                                #         ),
-                                #         dcc.Dropdown(
-                                #             id='facet_variable_dropdown',
-                                #             multi=False,
-                                #             value=None,
-                                #             placeholder="Select a variable",
-                                #         ),
-                                # ]),
                             ]),
                         ]),
                     ]),
@@ -228,20 +182,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     name="filter_variables",
                                     multi=True,
                                 ),
-                                # html.Div(
-                                #     id='filter_variables_div',
-                                #     style={'margin': '15px 0 10px 0'},
-                                #     className='graph_options',
-                                #     children=[
-                                #         html.Label(
-                                #             "Variables:",
-                                #             className='graph_options_label',
-                                #         ),
-                                #         dcc.Dropdown(
-                                #             id='filter_variables_dropdown',
-                                #             multi=True,
-                                #         ),
-                                # ]),
                                 html.Div(
                                     id='dynamic-filter-controls',
                                     style={'margin': '15px 0 10px 0'},
