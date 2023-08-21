@@ -17,7 +17,45 @@ external_stylesheets = [
 ]
 app = Dash(__name__, title="Data Explorer", external_stylesheets=external_stylesheets)
 
-app.layout = dbc.Container([
+
+def create_dropdown_control(
+        label: str,
+        name: str,
+        multi: bool = False,
+        options: list[dict] | None = None,
+        value: str | None = None,
+        placeholder: str | None = None,
+        ) -> html.Div:
+    """Create a dropdown control."""
+    if options is None:
+        options = []
+    return create_control(
+        label=label,
+        name=name,
+        component=dcc.Dropdown(
+            id=f'{name}_dropdown',
+            multi=multi,
+            options=options,
+            value=value,
+            placeholder=placeholder,
+        ),
+    )
+
+def create_control(label: str, name: str, component: html.Div) -> html.Div:
+    """Create a generic control with a given component (e.g. dropdown)."""
+    return html.Div(
+        id=f'{name}_div',
+        className='graph_options',
+        children=[
+            html.Label(
+                f"{label}:",
+                className='graph_options_label',
+            ),
+            component,
+    ])
+
+
+app.layout = dbc.Container(className="app-container", fluid=True, style={"max-width": "99%"}, children=[  # noqa
     dcc.Store(id='data_store'),
     dcc.Store(id='numeric_summary'),
     dcc.Store(id='non_numeric_summary'),
@@ -101,52 +139,67 @@ app.layout = dbc.Container([
                         ),
                         dbc.Collapse(id="collapse-variables", is_open=True, children=[
                             dbc.CardBody([
-                                html.Div(
-                                    id='x_variables_div',
-                                    className='graph_options',
-                                    children=[
-                                        html.Label(
-                                            "X variable:",
-                                            className='graph_options_label',
-                                        ),
-                                        dcc.Dropdown(
-                                            id='x_variable_dropdown',
-                                            multi=False,
-                                            value=None,
-                                            placeholder="Select a variable",
-                                        ),
-                                ]),
-                                html.Div(
-                                    id='y_variable_div',
-                                    className='graph_options',
-                                    children=[
-                                        html.Label(
-                                            "Y variable:",
-                                            className='graph_options_label',
-                                        ),
-                                        dcc.Dropdown(
-                                            id='y_variable_dropdown',
-                                            multi=False,
-                                            value=None,
-                                            placeholder="Select a variable",
-                                        ),
-                                ]),
-                                html.Div(
-                                    id='facet_variable_div',
-                                    className='graph_options',
-                                    style={'display': 'none'},
-                                    children=[
-                                        html.Label(
-                                            "Facet variable:",
-                                            className='graph_options_label',
-                                        ),
-                                        dcc.Dropdown(
-                                            id='facet_variable_dropdown',
-                                            multi=False,
-                                            value=None,
-                                            placeholder="Select a variable",
-                                        ),
-                                ]),
+                                create_dropdown_control(
+                                    label="X variable",
+                                    name="x_variable",
+                                    placeholder="Select a variable",
+                                ),
+                                create_dropdown_control(
+                                    label="Y variable",
+                                    name="y_variable",
+                                    placeholder="Select a variable",
+                                ),
+                                create_dropdown_control(
+                                    label="Facet variable",
+                                    name="facet_variable",
+                                    placeholder="Select a variable",
+                                ),
+                                # html.Div(
+                                #     id='x_variable_div',
+                                #     className='graph_options',
+                                #     children=[
+                                #         html.Label(
+                                #             "X variable:",
+                                #             className='graph_options_label',
+                                #         ),
+                                #         dcc.Dropdown(
+                                #             id='x_variable_dropdown',
+                                #             multi=False,
+                                #             value=None,
+                                #             placeholder="Select a variable",
+                                #         ),
+                                # ]),
+                                # html.Div(
+                                #     id='y_variable_div',
+                                #     className='graph_options',
+                                #     children=[
+                                #         html.Label(
+                                #             "Y variable:",
+                                #             className='graph_options_label',
+                                #         ),
+                                #         dcc.Dropdown(
+                                #             id='y_variable_dropdown',
+                                #             multi=False,
+                                #             value=None,
+                                #             placeholder="Select a variable",
+                                #         ),
+                                # ]),
+                                # html.Div(
+                                #     id='facet_variable_div',
+                                #     className='graph_options',
+                                #     style={'display': 'none'},
+                                #     children=[
+                                #         html.Label(
+                                #             "Facet variable:",
+                                #             className='graph_options_label',
+                                #         ),
+                                #         dcc.Dropdown(
+                                #             id='facet_variable_dropdown',
+                                #             multi=False,
+                                #             value=None,
+                                #             placeholder="Select a variable",
+                                #         ),
+                                # ]),
                             ]),
                         ]),
                     ]),
@@ -163,26 +216,37 @@ app.layout = dbc.Container([
                                 dbc.Button(
                                     "Apply",
                                     id="filter-apply-button",
-                                    style={'margin': '0 20px 0 0'},
+                                    style={'margin': '0 20px 20px 0'},
                                 ),
                                 dbc.Button(
                                     "Clear",
                                     id="filter-clear-button",
+                                    style={'margin': '0 20px 20px 0'},
                                 ),
+                                create_dropdown_control(
+                                    label="Variables",
+                                    name="filter_variables",
+                                    multi=True,
+                                ),
+                                # html.Div(
+                                #     id='filter_variables_div',
+                                #     style={'margin': '15px 0 10px 0'},
+                                #     className='graph_options',
+                                #     children=[
+                                #         html.Label(
+                                #             "Variables:",
+                                #             className='graph_options_label',
+                                #         ),
+                                #         dcc.Dropdown(
+                                #             id='filter_variables_dropdown',
+                                #             multi=True,
+                                #         ),
+                                # ]),
                                 html.Div(
-                                    id='filter_variable_div',
+                                    id='dynamic-filter-controls',
                                     style={'margin': '15px 0 10px 0'},
                                     className='graph_options',
-                                    children=[
-                                        html.Label(
-                                            "Variables:",
-                                            className='graph_options_label',
-                                        ),
-                                        dcc.Dropdown(
-                                            id='filter-variable-dropdown',
-                                            multi=True
-                                        ),
-                                ]),
+                                ),
                             ]),
                         ]),
                     ]),
@@ -346,12 +410,43 @@ app.layout = dbc.Container([
             ),
         ]),
     ]),
-], className="app-container", fluid=True, style={"max-width": "99%"})
+])
 
 
 def columns_to_options(columns: list[str]) -> list[dict]:
     """Convert a list of columns to a list of options for a dropdown."""
     return [{'label': col, 'value': col} for col in columns]
+
+
+@app.callback(
+    Output('dynamic-filter-controls', 'children'),
+    Input('filter-apply-button', 'n_clicks'),
+    State('filter_variables_dropdown', 'value'),
+    State('non_numeric_columns', 'data'),
+    State('numeric_columns', 'data'),
+    State('data_store', 'data'),
+    prevent_initial_call=True,
+)
+def update_filter_controls(
+        filter_apply_button: int,
+        selected_columns: list[str],
+        non_numeric_columns: list[str],
+        numeric_columns: list[str],
+        data: dict) -> list[html.Div]:
+    """Triggered when the user selects columns from the filter dropdown."""
+    print("update_filter_controls", flush=True)
+    print("selected_columns", selected_columns, flush=True)
+    components = []
+    if selected_columns and data:
+        data = pd.DataFrame(data)
+        for column in selected_columns:
+            print(f"Creating controls for `{column}`", flush=True)
+            if column in non_numeric_columns:
+                print('create dropdown', flush=True)
+            if column in numeric_columns:
+                print('create slider', flush=True)
+    return components
+
 
 
 @app.callback(
@@ -435,7 +530,7 @@ def numeric_summary_table(numeric_summary: dict) -> dict:
 @app.callback(
     Output('x_variable_dropdown', 'options'),
     Output('y_variable_dropdown', 'options'),
-    Output('filter-variable-dropdown', 'options'),
+    Output('filter_variables_dropdown', 'options'),
     Output('table_visualize', 'data'),
     Output('table_uploaded_data', 'data'),
     Output('numeric_summary', 'data'),
@@ -462,7 +557,7 @@ def load_data(  # noqa
     print("load_data()", flush=True)
     x_variable_dropdown = []
     y_variable_dropdown = []
-    filter_variable_dropdown = []
+    filter_variables_dropdown = []
     table_visualize = None
     table_uploaded_data = None
     numeric_summary = None
@@ -523,7 +618,6 @@ def load_data(  # noqa
         string_columns = hp.get_string_columns(data)
 
         numeric_summary = hp.numeric_summary(data, return_style=False)
-        print(numeric_summary, flush=True)
         if numeric_summary is not None and len(numeric_summary) > 0:
             numeric_summary = numeric_summary.\
                 reset_index().\
@@ -533,7 +627,6 @@ def load_data(  # noqa
             numeric_summary = None
 
         non_numeric_summary = hp.non_numeric_summary(data, return_style=False)
-        print(non_numeric_summary, flush=True)
         if non_numeric_summary is not None and len(non_numeric_summary) > 0:
             non_numeric_summary = non_numeric_summary.\
                 reset_index().\
@@ -547,7 +640,7 @@ def load_data(  # noqa
 
         x_variable_dropdown = options
         y_variable_dropdown = options
-        filter_variable_dropdown = options
+        filter_variables_dropdown = options
         table_visualize = data
         table_uploaded_data = data
         data_store = data
@@ -555,7 +648,7 @@ def load_data(  # noqa
     return (
         x_variable_dropdown,
         y_variable_dropdown,
-        filter_variable_dropdown,
+        filter_variables_dropdown,
         table_visualize,
         table_uploaded_data,
         numeric_summary,
