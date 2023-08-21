@@ -1,5 +1,21 @@
 # project-template
 
+- Filtering needs to handle missing values
+    - missing values shouldn't make it crash
+    - should be able to filter on missing values
+    - if filtering on numeric/date/etc, filtering values are automatically removed
+    - where do i display what is currently being filtered?
+
+
+
+
+
+
+
+
+# TODO Update
+
+
 This repo contains a minimal project template.
 
 The structure and documents were heavily influenced from:
