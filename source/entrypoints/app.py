@@ -178,11 +178,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     id="filter-apply-button",
                                     style={'margin': '0 20px 20px 0'},
                                 ),
-                                dbc.Button(
-                                    "Clear",
-                                    id="filter-clear-button",
-                                    style={'margin': '0 20px 20px 0'},
-                                ),
                                 create_dropdown_control(
                                     label="Variables",
                                     id="filter_variables",
