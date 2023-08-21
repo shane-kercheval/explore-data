@@ -26,9 +26,9 @@ app.layout = dbc.Container([
     dcc.Store(id='date_columns'),
     dcc.Store(id='categorical_columns'),
     dcc.Store(id='string_columns'),
-    dcc.Loading(type="default", children=[
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
+            dcc.Loading(type="default", children=[
             html.Br(),
             dbc.Row([
                 dbc.Col(width=3, children=[
@@ -84,6 +84,7 @@ app.layout = dbc.Container([
                         'fontWeight': 'bold',
                     },
                 ),
+            ]),
             ]),
         ]),
         dbc.Tab(label="Visualize", children=[
@@ -342,7 +343,6 @@ app.layout = dbc.Container([
                 ],
             ),
         ]),
-    ]),
     ]),
 ], className="app-container", fluid=True, style={"max-width": "99%"})
 
