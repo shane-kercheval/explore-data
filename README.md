@@ -1,5 +1,6 @@
 # project-template
 
+- shit; adding new filters removes existing filters
 - Filtering needs to handle missing values
     - missing values shouldn't make it crash
     - should be able to filter on missing values
