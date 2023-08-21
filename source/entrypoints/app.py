@@ -13,7 +13,7 @@ GOLDEN_RATIO = 1.618
 
 external_stylesheets = [
     dbc.themes.BOOTSTRAP,
-    'https://codepen.io/chriddyp/pen/bWLwgP.css',
+    # 'https://codepen.io/chriddyp/pen/bWLwgP.css',
 ]
 app = Dash(__name__, title="Data Explorer", external_stylesheets=external_stylesheets)
 
@@ -89,96 +89,158 @@ app.layout = dbc.Container([
         dbc.Tab(label="Visualize", children=[
             dbc.Row([
                 dbc.Col(width=3, children=[
-                    html.Br(),
-                    html.Div(className="options-panel", children=[
-                        html.Div(
-                            id='x_variable_div',
-                            className='graph_variable_options',
-                            children=[
-                                html.Label(
-                                    "X variable:",
-                                    className='graph_options_label',
-                                ),
-                                dcc.Dropdown(
-                                    id='x_variable_dropdown',
-                                    multi=False,
-                                    value=None,
-                                    placeholder="Select a variable",
-                                ),
-                                html.Br(),
+                    dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
+                        dbc.CardHeader(
+                            dbc.Button(
+                                "Variables",
+                                id="panel-variables-toggle",
+                                className="panel_toggle_button",
+                            ),
+                        ),
+                        dbc.Collapse(id="collapse-variables", is_open=True, children=[
+                            dbc.CardBody([
+                                html.Div(
+                                    id='x_variables_div',
+                                    className='graph_options',
+                                    children=[
+                                        html.Label(
+                                            "X variable:",
+                                            className='graph_options_label',
+                                        ),
+                                        dcc.Dropdown(
+                                            id='x_variable_dropdown',
+                                            multi=False,
+                                            value=None,
+                                            placeholder="Select a variable",
+                                        ),
+                                ]),
+                                html.Div(
+                                    id='y_variable_div',
+                                    className='graph_options',
+                                    children=[
+                                        html.Label(
+                                            "Y variable:",
+                                            className='graph_options_label',
+                                        ),
+                                        dcc.Dropdown(
+                                            id='y_variable_dropdown',
+                                            multi=False,
+                                            value=None,
+                                            placeholder="Select a variable",
+                                        ),
+                                ]),
+                                html.Div(
+                                    id='facet_variable_div',
+                                    className='graph_options',
+                                    style={'display': 'none'},
+                                    children=[
+                                        html.Label(
+                                            "Facet variable:",
+                                            className='graph_options_label',
+                                        ),
+                                        dcc.Dropdown(
+                                            id='facet_variable_dropdown',
+                                            multi=False,
+                                            value=None,
+                                            placeholder="Select a variable",
+                                        ),
+                                ]),
+                            ]),
                         ]),
-                        html.Div(
-                            id='y_variable_div',
-                            className='graph_variable_options',
-                            children=[
-                                html.Label(
-                                    "Y variable:",
-                                    className='graph_options_label',
+                    ]),
+                    dbc.Card([
+                        dbc.CardHeader(
+                            dbc.Button(
+                                "Filter",
+                                id="panel-filter-toggle",
+                                className="panel_toggle_button",
+                            ),
+                        ),
+                        dbc.Collapse(id="collapse-filter", is_open=False, children=[
+                            dbc.CardBody([
+                                dbc.Button(
+                                    "Apply",
+                                    id="filter-apply-button",
+                                    style={'margin': '0 20px 0 0'},
                                 ),
-                                dcc.Dropdown(
-                                    id='y_variable_dropdown',
-                                    multi=False,
-                                    value=None,
-                                    placeholder="Select a variable",
+                                dbc.Button(
+                                    "Clear",
+                                    id="filter-clear-button",
                                 ),
-                                html.Br(),
+                                html.Div(
+                                    id='filter_variable_div',
+                                    style={'margin': '15px 0 10px 0'},
+                                    className='graph_options',
+                                    children=[
+                                        html.Label(
+                                            "Variables:",
+                                            className='graph_options_label',
+                                        ),
+                                        dcc.Dropdown(
+                                            id='filter-variable-dropdown',
+                                        ),
+                                ]),
+                            ]),
                         ]),
-                        html.Div(
-                            id='facet_variable_div',
-                            className='graph_variable_options',
-                            style={'display': 'none'},
-                            children=[
-                                html.Label(
-                                    "Facet variable:",
-                                    className='graph_options_label',
-                                ),
-                                dcc.Dropdown(
-                                    id='facet_variable_dropdown',
-                                    multi=False,
-                                    value=None,
-                                    placeholder="Select a variable",
-                                ),
-                                html.Br(),
+                    ]),
+                    dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
+                        dbc.CardHeader(
+                            dbc.Button(
+                                "Graph Options",
+                                id="panel-graph-options-toggle",
+                                className="panel_toggle_button",
+                            ),
+                        ),
+                        dbc.Collapse(id="collapse-graph-options", is_open=True, children=[
+                            dbc.CardBody([
+                                html.Div(
+                                    id='n_bins_div',
+                                    className='graph_options',
+                                    # style={'display': 'none'},
+                                    children=[
+                                        html.Label(
+                                            "# of Bins:",
+                                            className='graph_options_label',
+                                        ),
+                                        dcc.Slider(
+                                            10, 100, 20,
+                                            value=40,
+                                            id='n_bins',
+                                        ),
+                                        html.Br(),
+                                ]),
+                            ]),
                         ]),
-                        html.Div(
-                            id='n_bins_div',
-                            className='graph_variable_options',
-                            # style={'display': 'none'},
-                            children=[
-                                html.Label(
-                                    "# of Bins:",
-                                    className='graph_options_label',
-                                ),
-                                dcc.Slider(
-                                    10, 100, 20,
-                                    value=40,
-                                    id='n_bins',
-                                ),
-                                html.Br(),
-                        ]),
-                        # html.Label("# of Bins:"),
-                        # dcc.Slider(
-                        #     10, 100, 20,
-                        #     value=40,
-                        #     id='n_bins',
-                        # ),
-                        html.Div(
-                            id='title_div',
-                            className='graph_variable_options',
-                            # style={'display': 'none'},
-                            children=[
-                                html.Label(
-                                    "Title:",
-                                    className='graph_options_label',
-                                ),
-                                dcc.Input(
-                                    id='title_textbox',
-                                    # multi=False,
-                                    value=None,
-                                    placeholder="Title",
-                                    style={'width': '100%'},
-                                ),
-                                html.Br(),
+                    ]),
+                    dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
+                        dbc.CardHeader(
+                            dbc.Button(
+                                "Other Options",
+                                id="panel-other-options-toggle",
+                                className="panel_toggle_button",
+                            ),
+                        ),
+                        dbc.Collapse(id="collapse-other-options", is_open=True, children=[
+                            dbc.CardBody([
+                                html.Div(
+                                    id='title_div',
+                                    className='graph_options',
+                                    # style={'display': 'none'},
+                                    children=[
+                                        html.Label(
+                                            "Title:",
+                                            className='graph_options_label',
+                                        ),
+                                        dcc.Input(
+                                            id='title_textbox',
+                                            # multi=False,
+                                            value=None,
+                                            placeholder="Title",
+                                            style={'width': '100%'},
+                                        ),
+                                        html.Br(),
+                                ]),
+                            ]),
                         ]),
                     ]),
                 ]),
@@ -284,6 +346,34 @@ app.layout = dbc.Container([
     ]),
 ], className="app-container", fluid=True, style={"max-width": "99%"})
 
+
+@app.callback(
+    Output("collapse-variables", "is_open"),
+    Input("panel-variables-toggle", "n_clicks"),
+    State("collapse-variables", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_variables_panel(n: int, is_open: bool) -> bool:
+    """Toggle the variables panel."""
+    if n:
+        return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("collapse-filter", "is_open"),
+    Input("panel-filter-toggle", "n_clicks"),
+    State("collapse-filter", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_filter_panel(n: int, is_open: bool) -> bool:
+    """Toggle the filter panel."""
+    if n:
+        return not is_open
+    return is_open
+
+
+
 @app.callback(
     Output('non_numeric_summary_table', 'data'),
     Input('non_numeric_summary', 'data'),
@@ -292,9 +382,7 @@ app.layout = dbc.Container([
 def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
     """Triggered when the user clicks on the Load button."""
     if non_numeric_summary:
-        non_numeric_summary = pd.DataFrame(non_numeric_summary).\
-            reset_index().\
-            rename(columns={'index': 'Column Name'})
+        non_numeric_summary = pd.DataFrame(non_numeric_summary)
         return non_numeric_summary.to_dict('records')
     return []
 
@@ -306,9 +394,7 @@ def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
 def numeric_summary_table(numeric_summary: dict) -> dict:
     """Triggered when the user clicks on the Load button."""
     if numeric_summary:
-        numeric_summary = pd.DataFrame(numeric_summary).\
-            reset_index().\
-            rename(columns={'index': 'Column Name'})
+        numeric_summary = pd.DataFrame(numeric_summary)
         return numeric_summary.to_dict('records')
     return []
 
@@ -390,12 +476,19 @@ def load_data(  # noqa
 
     numeric_summary = hp.numeric_summary(data, return_style=False)
     if numeric_summary is not None and len(numeric_summary) > 0:
-        numeric_summary = numeric_summary.to_dict('records')
+        numeric_summary = numeric_summary.\
+            reset_index().\
+            rename(columns={'index': 'Column Name'}).\
+            to_dict('records')
     else:
         numeric_summary = None
+
     non_numeric_summary = hp.non_numeric_summary(data, return_style=False)
     if non_numeric_summary is not None and len(non_numeric_summary) > 0:
-        non_numeric_summary = non_numeric_summary.to_dict('records')
+        non_numeric_summary = non_numeric_summary.\
+            reset_index().\
+            rename(columns={'index': 'Column Name'}).\
+            to_dict('records')
     else:
         non_numeric_summary = None
 

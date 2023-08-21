@@ -1,3 +1,54 @@
+div.graph_options {
+    margin: 0 0 10px 0;
+    border: none;
+    /* background-color: #f7f7f7;
+    border-radius: 0 0 8px 8px; */
+}
+
 label.graph_options_label {
     font-weight: bold;
+}
+
+/* Reset some of the browser default styles for better consistency */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Styling the card header */
+.card-header {
+    padding: 8px 16px;
+    border: none;
+    background-color: #f7f7f7;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-radius: 8px 8px 0 0;
+}
+
+/* Styling the button to look more like a link */
+.panel_toggle_button.btn {
+    font-size: 16px;
+    padding: 6px 8px;
+    background: none;
+    border: none;
+    color: #1d1e20;
+    text-decoration: none; /* No underline by default */
+    cursor: pointer;
+    transition: color 0.3s ease, text-decoration 0.3s ease;
+}
+
+.panel_toggle_button.btn:hover {
+    color: #0056b3;
+    text-decoration: underline; /* Underline appears on hover */
+}
+
+.panel_toggle_button.btn:focus {
+    outline: none;
+}
+
+.panel_toggle_button.btn:active {
+    background: none; /* Ensures the background remains unchanged on active state */
+    box-shadow: none; /* Remove any potential shadow on active state */
 }
