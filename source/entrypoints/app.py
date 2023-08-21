@@ -150,7 +150,7 @@ app.layout = dbc.Container([
                             ]),
                         ]),
                     ]),
-                    dbc.Card([
+                    dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
                         dbc.CardHeader(
                             dbc.Button(
                                 "Filter",
@@ -349,6 +349,11 @@ app.layout = dbc.Container([
 ], className="app-container", fluid=True, style={"max-width": "99%"})
 
 
+def columns_to_options(columns: list[str]) -> list[dict]:
+    """Convert a list of columns to a list of options for a dropdown."""
+    return [{'label': col, 'value': col} for col in columns]
+
+
 @app.callback(
     Output("collapse-variables", "is_open"),
     Input("panel-variables-toggle", "n_clicks"),
@@ -413,6 +418,7 @@ def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
         return non_numeric_summary.to_dict('records')
     return []
 
+
 @app.callback(
     Output('numeric_summary_table', 'data'),
     Input('numeric_summary', 'data'),
@@ -424,6 +430,7 @@ def numeric_summary_table(numeric_summary: dict) -> dict:
         numeric_summary = pd.DataFrame(numeric_summary)
         return numeric_summary.to_dict('records')
     return []
+
 
 @app.callback(
     Output('x_variable_dropdown', 'options'),
@@ -562,10 +569,6 @@ def load_data(  # noqa
         string_columns,
     )
 
-
-def columns_to_options(columns: list[str]) -> list[dict]:
-    """Convert a list of columns to a list of options for a dropdown."""
-    return [{'label': col, 'value': col} for col in columns]
 
 @app.callback(
     Output('primary-graph', 'figure'),
