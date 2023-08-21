@@ -21,6 +21,7 @@ app.layout = dbc.Container([
     dcc.Store(id='data_store'),
     dcc.Store(id='numeric_summary'),
     dcc.Store(id='non_numeric_summary'),
+    dcc.Store(id='all_columns'),
     dcc.Store(id='numeric_columns'),
     dcc.Store(id='non_numeric_columns'),
     dcc.Store(id='date_columns'),
@@ -179,6 +180,7 @@ app.layout = dbc.Container([
                                         ),
                                         dcc.Dropdown(
                                             id='filter-variable-dropdown',
+                                            multi=True
                                         ),
                                 ]),
                             ]),
@@ -426,11 +428,13 @@ def numeric_summary_table(numeric_summary: dict) -> dict:
 @app.callback(
     Output('x_variable_dropdown', 'options'),
     Output('y_variable_dropdown', 'options'),
+    Output('filter-variable-dropdown', 'options'),
     Output('table_visualize', 'data'),
     Output('table_uploaded_data', 'data'),
     Output('numeric_summary', 'data'),
     Output('non_numeric_summary', 'data'),
     Output('data_store', 'data'),
+    Output('all_columns', 'data'),
     Output('numeric_columns', 'data'),
     Output('non_numeric_columns', 'data'),
     Output('date_columns', 'data'),
@@ -452,7 +456,7 @@ def load_data(  # noqa
     if not callback_context.triggered:
         print("not triggered")
         print(f"callback_context.triggered: `{callback_context.triggered}`", flush=True)
-        return [], [], None, None, None, None, None, None, None, None, None, None
+        return [], [], [], None, None, None, None, None, None, None, None, None, None, None
 
     triggered = callback_context.triggered[0]['prop_id']
     print(f"triggered: {triggered}", flush=True)
@@ -493,6 +497,7 @@ def load_data(  # noqa
     else:
         raise ValueError(f"Unknown trigger: {triggered}")
 
+    all_columns = data.columns.tolist()
     numeric_columns = hp.get_numeric_columns(data)
     non_numeric_columns = hp.get_non_numeric_columns(data)
     date_columns = hp.get_date_columns(data)
@@ -517,13 +522,15 @@ def load_data(  # noqa
     else:
         non_numeric_summary = None
 
-    options = [{'label': col, 'value': col} for col in data.columns]
+    options = columns_to_options(all_columns)
     data = data.to_dict('records')
     return (
         options,
         options,
+        options,
         data,
         data,
+        all_columns,
         numeric_summary,
         non_numeric_summary,
         data,
@@ -534,6 +541,10 @@ def load_data(  # noqa
         string_columns,
     )
 
+
+def columns_to_options(columns: list[str]) -> list[dict]:
+    """Convert a list of columns to a list of options for a dropdown."""
+    return [{'label': col, 'value': col} for col in columns]
 
 @app.callback(
     Output('primary-graph', 'figure'),
