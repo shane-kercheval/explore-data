@@ -14,7 +14,6 @@ GOLDEN_RATIO = 1.618
 external_stylesheets = [
     dbc.themes.BOOTSTRAP,
     'https://codepen.io/chriddyp/pen/bWLwgP.css',
-    # 'custom.css',
 ]
 app = Dash(__name__, title="Data Explorer", external_stylesheets=external_stylesheets)
 
@@ -92,32 +91,45 @@ app.layout = dbc.Container([
                 dbc.Col(width=3, children=[
                     html.Br(),
                     html.Div(className="options-panel", children=[
-                        html.Label("Select x variable:"),
-                        dcc.Dropdown(
-                            id='x_variable_dropdown',
-                            multi=False,
-                            value=None,
-                            placeholder="Select a variable",
-                        ),
-                        html.Br(),
-                        html.Label("Select y variable:"),
-                        dcc.Dropdown(
-                            id='y_variable_dropdown',
-                            multi=False,
-                            value=None,
-                            placeholder="Select a variable",
-                        ),
-                        html.Br(),
-
-
-
+                        html.Div(
+                            id='x_variable_div',
+                            className='graph_variable_options',
+                            children=[
+                                html.Label(
+                                    "X variable:",
+                                    className='graph_options_label',
+                                ),
+                                dcc.Dropdown(
+                                    id='x_variable_dropdown',
+                                    multi=False,
+                                    value=None,
+                                    placeholder="Select a variable",
+                                ),
+                                html.Br(),
+                        ]),
+                        html.Div(
+                            id='y_variable_div',
+                            className='graph_variable_options',
+                            children=[
+                                html.Label(
+                                    "Y variable:",
+                                    className='graph_options_label',
+                                ),
+                                dcc.Dropdown(
+                                    id='y_variable_dropdown',
+                                    multi=False,
+                                    value=None,
+                                    placeholder="Select a variable",
+                                ),
+                                html.Br(),
+                        ]),
                         html.Div(
                             id='facet_variable_div',
                             className='graph_variable_options',
                             style={'display': 'none'},
                             children=[
                                 html.Label(
-                                    "Select facet variable:",
+                                    "Facet variable:",
                                     className='graph_options_label',
                                 ),
                                 dcc.Dropdown(
@@ -443,13 +455,17 @@ def update_graph(
     Output('facet_variable_div', 'style'),
     Output('facet_variable_dropdown', 'options'),
     Input('x_variable_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
     State('non_numeric_columns', 'data'),
     prevent_initial_call=True,
 )
-def facet_variable_div(x_variable_dropdown: str, non_numeric_columns: dict) -> dict:
+def facet_variable_div(
+        x_variable_dropdown: str,
+        y_variable_dropdown: str,
+        non_numeric_columns: dict) -> dict:
     """Triggered when the user selects columns from the dropdown."""
     print("facet_variable_div", flush=True)
-    if x_variable_dropdown:
+    if x_variable_dropdown or y_variable_dropdown:
         print("returning display: block", flush=True)
         options = [{'label': col, 'value': col} for col in non_numeric_columns]
         return {'display': 'block'}, options
