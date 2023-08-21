@@ -18,33 +18,10 @@ external_stylesheets = [
 app = Dash(__name__, title="Data Explorer", external_stylesheets=external_stylesheets)
 
 
-def create_dropdown_control(
-        label: str,
-        name: str,
-        multi: bool = False,
-        options: list[dict] | None = None,
-        value: str | None = None,
-        placeholder: str | None = None,
-        ) -> html.Div:
-    """Create a dropdown control."""
-    if options is None:
-        options = []
-    return create_control(
-        label=label,
-        name=name,
-        component=dcc.Dropdown(
-            id=f'{name}_dropdown',
-            multi=multi,
-            options=options,
-            value=value,
-            placeholder=placeholder,
-        ),
-    )
-
-def create_control(label: str, name: str, component: html.Div) -> html.Div:
+def create_control(label: str, id: str, component: html.Div) -> html.Div:  # noqa: A002
     """Create a generic control with a given component (e.g. dropdown)."""
     return html.Div(
-        id=f'{name}_div',
+        id=f'{id}_div',
         className='graph_options',
         children=[
             html.Label(
@@ -53,6 +30,35 @@ def create_control(label: str, name: str, component: html.Div) -> html.Div:
             ),
             component,
     ])
+
+def create_dropdown_control(
+        label: str,
+        id: str,  # noqa: A002
+        multi: bool = False,
+        options: list[dict] | None = None,
+        value: str | None = None,
+        placeholder: str | None = None,
+        component_id: dict | None = None,
+        ) -> html.Div:
+    """Create a dropdown control."""
+    if options is None:
+        options = []
+    if component_id is None:
+        component_id = f'{id}_dropdown'
+    else:
+        assert isinstance(component_id, dict)
+
+    return create_control(
+        label=label,
+        id=id,
+        component=dcc.Dropdown(
+            id=component_id,
+            multi=multi,
+            options=options,
+            value=value,
+            placeholder=placeholder,
+        ),
+    )
 
 
 app.layout = dbc.Container(className="app-container", fluid=True, style={"max-width": "99%"}, children=[  # noqa
@@ -141,17 +147,17 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             dbc.CardBody([
                                 create_dropdown_control(
                                     label="X variable",
-                                    name="x_variable",
+                                    id="x_variable",
                                     placeholder="Select a variable",
                                 ),
                                 create_dropdown_control(
                                     label="Y variable",
-                                    name="y_variable",
+                                    id="y_variable",
                                     placeholder="Select a variable",
                                 ),
                                 create_dropdown_control(
                                     label="Facet variable",
-                                    name="facet_variable",
+                                    id="facet_variable",
                                     placeholder="Select a variable",
                                 ),
                             ]),
@@ -179,7 +185,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 ),
                                 create_dropdown_control(
                                     label="Variables",
-                                    name="filter_variables",
+                                    id="filter_variables",
                                     multi=True,
                                 ),
                                 html.Div(
@@ -353,22 +359,20 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
 ])
 
 
-def columns_to_options(columns: list[str]) -> list[dict]:
+def values_to_dropdown_options(values: list[str]) -> list[dict]:
     """Convert a list of columns to a list of options for a dropdown."""
-    return [{'label': col, 'value': col} for col in columns]
+    return [{'label': value, 'value': value} for value in values]
 
 
 @app.callback(
     Output('dynamic-filter-controls', 'children'),
-    Input('filter-apply-button', 'n_clicks'),
-    State('filter_variables_dropdown', 'value'),
+    Input('filter_variables_dropdown', 'value'),
     State('non_numeric_columns', 'data'),
     State('numeric_columns', 'data'),
     State('data_store', 'data'),
     prevent_initial_call=True,
 )
 def update_filter_controls(
-        filter_apply_button: int,
         selected_columns: list[str],
         non_numeric_columns: list[str],
         numeric_columns: list[str],
@@ -383,6 +387,13 @@ def update_filter_controls(
             print(f"Creating controls for `{column}`", flush=True)
             if column in non_numeric_columns:
                 print('create dropdown', flush=True)
+                components.append(create_dropdown_control(
+                    label=column,
+                    id=f"filter_control_{column}",
+                    multi=True,
+                    options=values_to_dropdown_options(data[column].unique()),
+                    component_id={"type": "filter-control-dropdown", "index": column},
+                ))
             if column in numeric_columns:
                 print('create slider', flush=True)
     return components
@@ -575,7 +586,7 @@ def load_data(  # noqa
         else:
             non_numeric_summary = None
 
-        options = columns_to_options(all_columns)
+        options = values_to_dropdown_options(all_columns)
         data = data.to_dict('records')
 
         x_variable_dropdown = options
