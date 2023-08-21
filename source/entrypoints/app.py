@@ -2,6 +2,7 @@
 import base64
 import io
 from dash import Dash, html, dash_table, dcc, Output, Input, State, callback_context
+from dash.dependencies import ALL
 import plotly.express as px
 import pandas as pd
 import numpy as np
@@ -107,7 +108,8 @@ def create_slider_control(
 
 
 app.layout = dbc.Container(className="app-container", fluid=True, style={"max-width": "99%"}, children=[  # noqa
-    dcc.Store(id='data_store'),
+    dcc.Store(id='original_data_store'),
+    dcc.Store(id='filtered_data_store'),
     dcc.Store(id='numeric_summary'),
     dcc.Store(id='non_numeric_summary'),
     dcc.Store(id='all_columns'),
@@ -254,22 +256,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     step=20,
                                     value=40,
                                 ),
-                                # html.Div(
-                                #     id='n_bins_div',
-                                #     className='graph_options',
-                                #     # style={'display': 'none'},
-                                #     children=[
-                                #         html.Label(
-                                #             "# of Bins:",
-                                #             className='graph_options_label',
-                                #         ),
-                                #         dcc.Slider(
-                                #             10, 100, 20,
-                                #             value=40,
-                                #             id='n_bins',
-                                #         ),
-                                #         html.Br(),
-                                # ]),
                             ]),
                         ]),
                     ]),
@@ -417,7 +403,7 @@ def values_to_dropdown_options(values: list[str]) -> list[dict]:
     Input('filter_variables_dropdown', 'value'),
     State('non_numeric_columns', 'data'),
     State('numeric_columns', 'data'),
-    State('data_store', 'data'),
+    State('original_data_store', 'data'),
     prevent_initial_call=True,
 )
 def update_filter_controls(
@@ -454,6 +440,53 @@ def update_filter_controls(
                 ))
     return components
 
+
+@app.callback(
+    Output('filtered_data_store', 'data'),
+    Input('filter-apply-button', 'n_clicks'),
+    State('filter_variables_dropdown', 'value'),
+    State('original_data_store', 'data'),
+    State({'type': 'filter-control-dropdown', 'index': ALL}, 'value'),
+    State({'type': 'filter-control-dropdown', 'index': ALL}, 'id'),
+    State({'type': 'filter-control-slider', 'index': ALL}, 'value'),
+    State({'type': 'filter-control-slider', 'index': ALL}, 'id'),
+    prevent_initial_call=True,
+)
+def filter_data(
+        n_clicks: int,
+        selected_columns: list[str],
+        original_data: dict,
+        dropdown_values: list[list],
+        dropdown_ids: list[dict],
+        slider_values: list[list],
+        slider_ids: list[dict],
+        ) -> dict:
+    print("filtered_data", flush=True)
+    print(f"selected_columns: {selected_columns}", flush=True)
+    print(f"dropdown_values: {dropdown_values}", flush=True)
+    print(f"dropdown_ids: {dropdown_ids}", flush=True)
+    print(f"slider_values: {slider_values}", flush=True)
+    print(f"slider_ids: {slider_ids}", flush=True)
+
+    filtered_data = pd.DataFrame(original_data).copy()
+    for column in selected_columns:
+        print(f"column: {column}", flush=True)
+        if column in [item['index'] for item in dropdown_ids]:
+            for value, id in zip(dropdown_values, dropdown_ids):  # noqa
+                print(f"value: {value}", flush=True)
+                print(f"id: {id}", flush=True)
+                if id['index'] == column and value:
+                    print(f"filtering on {column} with {value}", flush=True)
+                    filtered_data = filtered_data[filtered_data[column].isin(value)]
+        if column in [item['index'] for item in slider_ids]:
+            for value, id in zip(slider_values, slider_ids):  # noqa
+                print(f"value: {value}", flush=True)
+                print(f"id: {id}", flush=True)
+                if id['index'] == column and value:
+                    print(f"filtering on {column} with {value}", flush=True)
+                    filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]
+
+    return filtered_data.to_dict('records')
 
 
 @app.callback(
@@ -542,7 +575,8 @@ def numeric_summary_table(numeric_summary: dict) -> dict:
     Output('table_uploaded_data', 'data'),
     Output('numeric_summary', 'data'),
     Output('non_numeric_summary', 'data'),
-    Output('data_store', 'data'),
+    Output('original_data_store', 'data'),
+    Output('filtered_data_store', 'data', allow_duplicate=True),
     Output('all_columns', 'data'),
     Output('numeric_columns', 'data'),
     Output('non_numeric_columns', 'data'),
@@ -569,7 +603,8 @@ def load_data(  # noqa
     table_uploaded_data = None
     numeric_summary = None
     non_numeric_summary = None
-    data_store = None
+    original_data_store = None
+    filtered_data_store = None
     all_columns = None
     numeric_columns = None
     non_numeric_columns = None
@@ -650,7 +685,8 @@ def load_data(  # noqa
         filter_variables_dropdown = options
         table_visualize = data
         table_uploaded_data = data
-        data_store = data
+        original_data_store = data
+        filtered_data_store = data.copy()
 
     return (
         x_variable_dropdown,
@@ -660,7 +696,8 @@ def load_data(  # noqa
         table_uploaded_data,
         numeric_summary,
         non_numeric_summary,
-        data_store,
+        original_data_store,
+        filtered_data_store,
         all_columns,
         numeric_columns,
         non_numeric_columns,
@@ -677,7 +714,7 @@ def load_data(  # noqa
     Input('facet_variable_dropdown', 'value'),
     Input('n_bins_slider', 'value'),
     Input('title_textbox', 'value'),
-    State('data_store', 'data'),
+    Input('filtered_data_store', 'data'),
     prevent_initial_call=True,
 )
 def update_graph(
@@ -696,7 +733,7 @@ def update_graph(
     print("n_bins", n_bins, flush=True)
     print("type(n_bins)", type(n_bins), flush=True)
     fig = {}
-    if x_variable and data:
+    if (x_variable or y_variable) and data:
         fig = px.histogram(
             data,
             x=x_variable,
