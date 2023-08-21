@@ -453,87 +453,108 @@ def load_data(  # noqa
         load_from_url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
     print("load_data()", flush=True)
-    if not callback_context.triggered:
-        print("not triggered")
-        print(f"callback_context.triggered: `{callback_context.triggered}`", flush=True)
-        return [], [], [], None, None, None, None, None, None, None, None, None, None, None
+    x_variable_dropdown = []
+    y_variable_dropdown = []
+    filter_variable_dropdown = []
+    table_visualize = None
+    table_uploaded_data = None
+    numeric_summary = None
+    non_numeric_summary = None
+    data_store = None
+    all_columns = None
+    numeric_columns = None
+    non_numeric_columns = None
+    date_columns = None
+    categorical_columns = None
+    string_columns = None
 
-    triggered = callback_context.triggered[0]['prop_id']
-    print(f"triggered: {triggered}", flush=True)
-    # ctx_msg = json.dumps({
-    #     'states': callback_context.states,
-    #     'triggered': callback_context.triggered,
-    #     'triggered2': callback_context.triggered[0]['prop_id'],
-    #     'inputs': callback_context.inputs,
-    # }, indent=2)
-    # print(ctx_msg, flush=True)
+    if callback_context.triggered:
+        triggered = callback_context.triggered[0]['prop_id']
+        print(f"triggered: {triggered}", flush=True)
+        # ctx_msg = json.dumps({
+        #     'states': callback_context.states,
+        #     'triggered': callback_context.triggered,
+        #     'triggered2': callback_context.triggered[0]['prop_id'],
+        #     'inputs': callback_context.inputs,
+        # }, indent=2)
+        # print(ctx_msg, flush=True)
 
-    if triggered == 'upload-data.contents':
-        print(f"load_from_url_button: {load_from_url_button}", flush=True)
-        print(f"upload_data_filename: {upload_data_filename}", flush=True)
-        _, content_string = upload_data_contents.split(',')
-        decoded = base64.b64decode(content_string)
-        try:
-            if '.pkl' in upload_data_filename:
-                print("loading from .pkl", flush=True)
-                data = pd.read_pickle(io.BytesIO( base64.b64decode(content_string)))
-            if '.csv' in upload_data_filename:
-                print("loading from .csv", flush=True)
-                # Assume that the user uploaded a CSV file
-                data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
-            elif 'xls' in upload_data_filename:
-                print("loading from .xls", flush=True)
-                # Assume that the user uploaded an excel file
-                data = pd.read_excel(io.BytesIO(decoded))
-        except Exception as e:
-            print(e)
-            # print(e.with_traceback())
-            return html.Div([
-                'There was an error processing this file.',
-            ])
-    elif triggered == 'load_from_url_button.n_clicks' and load_from_url:
-        print("Loading from CSV URL", flush=True)
-        data = pd.read_csv(load_from_url)
-    else:
-        raise ValueError(f"Unknown trigger: {triggered}")
+        if triggered == 'upload-data.contents':
+            print(f"load_from_url_button: {load_from_url_button}", flush=True)
+            print(f"upload_data_filename: {upload_data_filename}", flush=True)
+            _, content_string = upload_data_contents.split(',')
+            decoded = base64.b64decode(content_string)
+            try:
+                if '.pkl' in upload_data_filename:
+                    print("loading from .pkl", flush=True)
+                    data = pd.read_pickle(io.BytesIO( base64.b64decode(content_string)))
+                if '.csv' in upload_data_filename:
+                    print("loading from .csv", flush=True)
+                    # Assume that the user uploaded a CSV file
+                    data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+                elif 'xls' in upload_data_filename:
+                    print("loading from .xls", flush=True)
+                    # Assume that the user uploaded an excel file
+                    data = pd.read_excel(io.BytesIO(decoded))
+            except Exception as e:
+                print(e)
+                # print(e.with_traceback())
+                return html.Div([
+                    'There was an error processing this file.',
+                ])
+        elif triggered == 'load_from_url_button.n_clicks' and load_from_url:
+            print("Loading from CSV URL", flush=True)
+            data = pd.read_csv(load_from_url)
+        else:
+            raise ValueError(f"Unknown trigger: {triggered}")
 
-    all_columns = data.columns.tolist()
-    numeric_columns = hp.get_numeric_columns(data)
-    non_numeric_columns = hp.get_non_numeric_columns(data)
-    date_columns = hp.get_date_columns(data)
-    categorical_columns = hp.get_categorical_columns(data)
-    string_columns = hp.get_string_columns(data)
+        all_columns = data.columns.tolist()
+        numeric_columns = hp.get_numeric_columns(data)
+        non_numeric_columns = hp.get_non_numeric_columns(data)
+        date_columns = hp.get_date_columns(data)
+        categorical_columns = hp.get_categorical_columns(data)
+        string_columns = hp.get_string_columns(data)
 
-    numeric_summary = hp.numeric_summary(data, return_style=False)
-    if numeric_summary is not None and len(numeric_summary) > 0:
-        numeric_summary = numeric_summary.\
-            reset_index().\
-            rename(columns={'index': 'Column Name'}).\
-            to_dict('records')
-    else:
-        numeric_summary = None
+        numeric_summary = hp.numeric_summary(data, return_style=False)
+        print(numeric_summary, flush=True)
+        if numeric_summary is not None and len(numeric_summary) > 0:
+            numeric_summary = numeric_summary.\
+                reset_index().\
+                rename(columns={'index': 'Column Name'}).\
+                to_dict('records')
+        else:
+            numeric_summary = None
 
-    non_numeric_summary = hp.non_numeric_summary(data, return_style=False)
-    if non_numeric_summary is not None and len(non_numeric_summary) > 0:
-        non_numeric_summary = non_numeric_summary.\
-            reset_index().\
-            rename(columns={'index': 'Column Name'}).\
-            to_dict('records')
-    else:
-        non_numeric_summary = None
+        non_numeric_summary = hp.non_numeric_summary(data, return_style=False)
+        print(non_numeric_summary, flush=True)
+        if non_numeric_summary is not None and len(non_numeric_summary) > 0:
+            non_numeric_summary = non_numeric_summary.\
+                reset_index().\
+                rename(columns={'index': 'Column Name'}).\
+                to_dict('records')
+        else:
+            non_numeric_summary = None
 
-    options = columns_to_options(all_columns)
-    data = data.to_dict('records')
+        options = columns_to_options(all_columns)
+        data = data.to_dict('records')
+
+        x_variable_dropdown = options
+        y_variable_dropdown = options
+        filter_variable_dropdown = options
+        table_visualize = data
+        table_uploaded_data = data
+        data_store = data
+
     return (
-        options,
-        options,
-        options,
-        data,
-        data,
-        all_columns,
+        x_variable_dropdown,
+        y_variable_dropdown,
+        filter_variable_dropdown,
+        table_visualize,
+        table_uploaded_data,
         numeric_summary,
         non_numeric_summary,
-        data,
+        data_store,
+        all_columns,
         numeric_columns,
         non_numeric_columns,
         date_columns,
