@@ -7,7 +7,8 @@ import plotly.express as px
 import pandas as pd
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
-from source.library.dash_helpers import create_dropdown_control, create_slider_control
+from source.library.dash_helpers import create_dropdown_control, create_slider_control, \
+    values_to_dropdown_options
 
 
 GOLDEN_RATIO = 1.618
@@ -307,181 +308,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
 ])
 
 
-def values_to_dropdown_options(values: list[str]) -> list[dict]:
-    """Convert a list of columns to a list of options for a dropdown."""
-    return [{'label': value, 'value': value} for value in values]
-
-
-@app.callback(
-    Output('dynamic-filter-controls', 'children'),
-    Input('filter_variables_dropdown', 'value'),
-    State('non_numeric_columns', 'data'),
-    State('numeric_columns', 'data'),
-    State('original_data_store', 'data'),
-    prevent_initial_call=True,
-)
-def update_filter_controls(
-        selected_columns: list[str],
-        non_numeric_columns: list[str],
-        numeric_columns: list[str],
-        data: dict) -> list[html.Div]:
-    """Triggered when the user selects columns from the filter dropdown."""
-    print("update_filter_controls", flush=True)
-    print("selected_columns", selected_columns, flush=True)
-    components = []
-    if selected_columns and data:
-        data = pd.DataFrame(data)
-        for column in selected_columns:
-            print(f"Creating controls for `{column}`", flush=True)
-            if column in non_numeric_columns:
-                print('create dropdown', flush=True)
-                components.append(create_dropdown_control(
-                    label=column,
-                    id=f"filter_control_{column}",
-                    multi=True,
-                    options=values_to_dropdown_options(data[column].unique()),
-                    component_id={"type": "filter-control-dropdown", "index": column},
-                ))
-            if column in numeric_columns:
-                print('create slider', flush=True)
-                components.append(create_slider_control(
-                    label=column,
-                    id=f"filter_control_{column}",
-                    min=data[column].min(),
-                    max=data[column].max(),
-                    value=[data[column].min(), data[column].max()],
-                    component_id={"type": "filter-control-slider", "index": column},
-                ))
-    return components
-
-
-@app.callback(
-    Output('filtered_data_store', 'data'),
-    Input('filter-apply-button', 'n_clicks'),
-    State('filter_variables_dropdown', 'value'),
-    State('original_data_store', 'data'),
-    State({'type': 'filter-control-dropdown', 'index': ALL}, 'value'),
-    State({'type': 'filter-control-dropdown', 'index': ALL}, 'id'),
-    State({'type': 'filter-control-slider', 'index': ALL}, 'value'),
-    State({'type': 'filter-control-slider', 'index': ALL}, 'id'),
-    prevent_initial_call=True,
-)
-def filter_data(
-        n_clicks: int,  # noqa
-        selected_columns: list[str],
-        original_data: dict,
-        dropdown_values: list[list],
-        dropdown_ids: list[dict],
-        slider_values: list[list],
-        slider_ids: list[dict],
-        ) -> dict:
-    """Filter the data based on the user's selections."""
-    print("filtered_data", flush=True)
-    print(f"selected_columns: {selected_columns}", flush=True)
-    print(f"dropdown_values: {dropdown_values}", flush=True)
-    print(f"dropdown_ids: {dropdown_ids}", flush=True)
-    print(f"slider_values: {slider_values}", flush=True)
-    print(f"slider_ids: {slider_ids}", flush=True)
-
-    filtered_data = pd.DataFrame(original_data).copy()
-    for column in selected_columns:
-        print(f"column: {column}", flush=True)
-        if column in [item['index'] for item in dropdown_ids]:
-            for value, id in zip(dropdown_values, dropdown_ids):  # noqa
-                print(f"value: {value}", flush=True)
-                print(f"id: {id}", flush=True)
-                if id['index'] == column and value:
-                    print(f"filtering on {column} with {value}", flush=True)
-                    filtered_data = filtered_data[filtered_data[column].isin(value)]
-        if column in [item['index'] for item in slider_ids]:
-            for value, id in zip(slider_values, slider_ids):  # noqa
-                print(f"value: {value}", flush=True)
-                print(f"id: {id}", flush=True)
-                if id['index'] == column and value:
-                    print(f"filtering on {column} with {value}", flush=True)
-                    filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]  # noqa
-
-    return filtered_data.to_dict('records')
-
-
-@app.callback(
-    Output("collapse-variables", "is_open"),
-    Input("panel-variables-toggle", "n_clicks"),
-    State("collapse-variables", "is_open"),
-    prevent_initial_call=True,
-)
-def toggle_variables_panel(n: int, is_open: bool) -> bool:
-    """Toggle the variables panel."""
-    if n:
-        return not is_open
-    return is_open
-
-
-@app.callback(
-    Output("collapse-filter", "is_open"),
-    Input("panel-filter-toggle", "n_clicks"),
-    State("collapse-filter", "is_open"),
-    prevent_initial_call=True,
-)
-def toggle_filter_panel(n: int, is_open: bool) -> bool:
-    """Toggle the filter panel."""
-    if n:
-        return not is_open
-    return is_open
-
-
-@app.callback(
-    Output("collapse-graph-options", "is_open"),
-    Input("panel-graph-options-toggle", "n_clicks"),
-    State("collapse-graph-options", "is_open"),
-    prevent_initial_call=True,
-)
-def toggle_graph_options_panel(n: int, is_open: bool) -> bool:
-    """Toggle the graph-options panel."""
-    if n:
-        return not is_open
-    return is_open
-
-
-@app.callback(
-    Output("collapse-other-options", "is_open"),
-    Input("panel-other-options-toggle", "n_clicks"),
-    State("collapse-other-options", "is_open"),
-    prevent_initial_call=True,
-)
-def toggle_other_options_panel(n: int, is_open: bool) -> bool:
-    """Toggle the other-options panel."""
-    if n:
-        return not is_open
-    return is_open
-
-
-@app.callback(
-    Output('non_numeric_summary_table', 'data'),
-    Input('non_numeric_summary', 'data'),
-    prevent_initial_call=True,
-)
-def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
-    """Triggered when the user clicks on the Load button."""
-    if non_numeric_summary:
-        non_numeric_summary = pd.DataFrame(non_numeric_summary)
-        return non_numeric_summary.to_dict('records')
-    return []
-
-
-@app.callback(
-    Output('numeric_summary_table', 'data'),
-    Input('numeric_summary', 'data'),
-    prevent_initial_call=True,
-)
-def numeric_summary_table(numeric_summary: dict) -> dict:
-    """Triggered when the user clicks on the Load button."""
-    if numeric_summary:
-        numeric_summary = pd.DataFrame(numeric_summary)
-        return numeric_summary.to_dict('records')
-    return []
-
-
 @app.callback(
     Output('x_variable_dropdown', 'options'),
     Output('y_variable_dropdown', 'options'),
@@ -619,6 +445,81 @@ def load_data(  # noqa
 
 
 @app.callback(
+    Output('filtered_data_store', 'data'),
+    Input('filter-apply-button', 'n_clicks'),
+    State('filter_variables_dropdown', 'value'),
+    State('original_data_store', 'data'),
+    State({'type': 'filter-control-dropdown', 'index': ALL}, 'value'),
+    State({'type': 'filter-control-dropdown', 'index': ALL}, 'id'),
+    State({'type': 'filter-control-slider', 'index': ALL}, 'value'),
+    State({'type': 'filter-control-slider', 'index': ALL}, 'id'),
+    prevent_initial_call=True,
+)
+def filter_data(
+        n_clicks: int,  # noqa
+        selected_columns: list[str],
+        original_data: dict,
+        dropdown_values: list[list],
+        dropdown_ids: list[dict],
+        slider_values: list[list],
+        slider_ids: list[dict],
+        ) -> dict:
+    """Filter the data based on the user's selections."""
+    print("filtered_data", flush=True)
+    print(f"selected_columns: {selected_columns}", flush=True)
+    print(f"dropdown_values: {dropdown_values}", flush=True)
+    print(f"dropdown_ids: {dropdown_ids}", flush=True)
+    print(f"slider_values: {slider_values}", flush=True)
+    print(f"slider_ids: {slider_ids}", flush=True)
+
+    filtered_data = pd.DataFrame(original_data).copy()
+    for column in selected_columns:
+        print(f"column: {column}", flush=True)
+        if column in [item['index'] for item in dropdown_ids]:
+            for value, id in zip(dropdown_values, dropdown_ids):  # noqa
+                print(f"value: {value}", flush=True)
+                print(f"id: {id}", flush=True)
+                if id['index'] == column and value:
+                    print(f"filtering on {column} with {value}", flush=True)
+                    filtered_data = filtered_data[filtered_data[column].isin(value)]
+        if column in [item['index'] for item in slider_ids]:
+            for value, id in zip(slider_values, slider_ids):  # noqa
+                print(f"value: {value}", flush=True)
+                print(f"id: {id}", flush=True)
+                if id['index'] == column and value:
+                    print(f"filtering on {column} with {value}", flush=True)
+                    filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]  # noqa
+
+    return filtered_data.to_dict('records')
+
+
+@app.callback(
+    Output('non_numeric_summary_table', 'data'),
+    Input('non_numeric_summary', 'data'),
+    prevent_initial_call=True,
+)
+def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
+    """Triggered when the user clicks on the Load button."""
+    if non_numeric_summary:
+        non_numeric_summary = pd.DataFrame(non_numeric_summary)
+        return non_numeric_summary.to_dict('records')
+    return []
+
+
+@app.callback(
+    Output('numeric_summary_table', 'data'),
+    Input('numeric_summary', 'data'),
+    prevent_initial_call=True,
+)
+def numeric_summary_table(numeric_summary: dict) -> dict:
+    """Triggered when the user clicks on the Load button."""
+    if numeric_summary:
+        numeric_summary = pd.DataFrame(numeric_summary)
+        return numeric_summary.to_dict('records')
+    return []
+
+
+@app.callback(
     Output('primary-graph', 'figure'),
     Output('table_visualize', 'data'),
     Input('x_variable_dropdown', 'value'),
@@ -676,6 +577,101 @@ def facet_variable_div(
         return {'display': 'block'}, options
     print('returning display: none', flush=True)
     return  {'display': 'none'}, []
+
+
+@app.callback(
+    Output("collapse-variables", "is_open"),
+    Input("panel-variables-toggle", "n_clicks"),
+    State("collapse-variables", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_variables_panel(n: int, is_open: bool) -> bool:
+    """Toggle the variables panel."""
+    if n:
+        return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("collapse-filter", "is_open"),
+    Input("panel-filter-toggle", "n_clicks"),
+    State("collapse-filter", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_filter_panel(n: int, is_open: bool) -> bool:
+    """Toggle the filter panel."""
+    if n:
+        return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("collapse-graph-options", "is_open"),
+    Input("panel-graph-options-toggle", "n_clicks"),
+    State("collapse-graph-options", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_graph_options_panel(n: int, is_open: bool) -> bool:
+    """Toggle the graph-options panel."""
+    if n:
+        return not is_open
+    return is_open
+
+
+@app.callback(
+    Output("collapse-other-options", "is_open"),
+    Input("panel-other-options-toggle", "n_clicks"),
+    State("collapse-other-options", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_other_options_panel(n: int, is_open: bool) -> bool:
+    """Toggle the other-options panel."""
+    if n:
+        return not is_open
+    return is_open
+
+
+@app.callback(
+    Output('dynamic-filter-controls', 'children'),
+    Input('filter_variables_dropdown', 'value'),
+    State('non_numeric_columns', 'data'),
+    State('numeric_columns', 'data'),
+    State('original_data_store', 'data'),
+    prevent_initial_call=True,
+)
+def update_filter_controls(
+        selected_columns: list[str],
+        non_numeric_columns: list[str],
+        numeric_columns: list[str],
+        data: dict) -> list[html.Div]:
+    """Triggered when the user selects columns from the filter dropdown."""
+    print("update_filter_controls", flush=True)
+    print("selected_columns", selected_columns, flush=True)
+    components = []
+    if selected_columns and data:
+        data = pd.DataFrame(data)
+        for column in selected_columns:
+            print(f"Creating controls for `{column}`", flush=True)
+            if column in non_numeric_columns:
+                print('create dropdown', flush=True)
+                components.append(create_dropdown_control(
+                    label=column,
+                    id=f"filter_control_{column}",
+                    multi=True,
+                    options=values_to_dropdown_options(data[column].unique()),
+                    component_id={"type": "filter-control-dropdown", "index": column},
+                ))
+            if column in numeric_columns:
+                print('create slider', flush=True)
+                components.append(create_slider_control(
+                    label=column,
+                    id=f"filter_control_{column}",
+                    min=data[column].min(),
+                    max=data[column].max(),
+                    value=[data[column].min(), data[column].max()],
+                    component_id={"type": "filter-control-slider", "index": column},
+                ))
+    return components
 
 
 if __name__ == '__main__':

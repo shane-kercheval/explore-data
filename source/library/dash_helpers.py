@@ -2,6 +2,11 @@
 from dash import html, dcc
 
 
+def values_to_dropdown_options(values: list[str]) -> list[dict]:
+    """Convert a list of columns to a list of options for a dropdown."""
+    return [{'label': value, 'value': value} for value in values]
+
+
 def create_control(
         label: str,
         id: str,  # noqa: A002
