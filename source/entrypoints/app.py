@@ -25,7 +25,7 @@ app = Dash(
 app.layout = dbc.Container(className="app-container", fluid=True, style={"max-width": "99%"}, children=[  # noqa
     dcc.Store(id='original_data'),
     dcc.Store(id='filtered_data'),
-    dcc.Store(id='filter_variables_cache'),
+    dcc.Store(id='filter_columns_cache'),
     dcc.Store(id='numeric_summary'),
     dcc.Store(id='non_numeric_summary'),
     dcc.Store(id='all_columns'),
@@ -143,7 +143,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 ),
                                 create_dropdown_control(
                                     label="Variables",
-                                    id="filter_variables",
+                                    id="filter_columns",
                                     multi=True,
                                 ),
                                 html.Div(
@@ -312,7 +312,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
 @app.callback(
     Output('x_variable_dropdown', 'options'),
     Output('y_variable_dropdown', 'options'),
-    Output('filter_variables_dropdown', 'options'),
+    Output('filter_columns_dropdown', 'options'),
     Output('table_uploaded_data', 'data'),
     Output('numeric_summary', 'data'),
     Output('non_numeric_summary', 'data'),
@@ -339,7 +339,7 @@ def load_data(  # noqa
     log_function('load_data')
     x_variable_dropdown = []
     y_variable_dropdown = []
-    filter_variables_dropdown = []
+    filter_columns_dropdown = []
     table_uploaded_data = None
     numeric_summary = None
     non_numeric_summary = None
@@ -421,7 +421,7 @@ def load_data(  # noqa
 
         x_variable_dropdown = options
         y_variable_dropdown = options
-        filter_variables_dropdown = options
+        filter_columns_dropdown = options
         table_uploaded_data = data
         original_data = data
         filtered_data = data.copy()
@@ -429,7 +429,7 @@ def load_data(  # noqa
     return (
         x_variable_dropdown,
         y_variable_dropdown,
-        filter_variables_dropdown,
+        filter_columns_dropdown,
         table_uploaded_data,
         numeric_summary,
         non_numeric_summary,
@@ -447,48 +447,51 @@ def load_data(  # noqa
 @app.callback(
     Output('filtered_data', 'data'),
     Input('filter-apply-button', 'n_clicks'),
-    State('filter_variables_dropdown', 'value'),
+    State('filter_columns_dropdown', 'value'),
+    State('filter_columns_cache', 'data'),
     State('original_data', 'data'),
-    State({'type': 'filter-control-dropdown', 'index': ALL}, 'value'),
-    State({'type': 'filter-control-dropdown', 'index': ALL}, 'id'),
-    State({'type': 'filter-control-slider', 'index': ALL}, 'value'),
-    State({'type': 'filter-control-slider', 'index': ALL}, 'id'),
     prevent_initial_call=True,
 )
 def filter_data(
         n_clicks: int,  # noqa
-        selected_columns: list[str],
+        selected_filter_columns: list[str],
+        filter_columns_cache: list[str],
         original_data: dict,
-        dropdown_values: list[list],
-        dropdown_ids: list[dict],
-        slider_values: list[list],
-        slider_ids: list[dict],
         ) -> dict:
     """Filter the data based on the user's selections."""
     log_function('filtered_data')
-    log_variable('selected_columns', selected_columns)
-    log_variable('dropdown_values', dropdown_values)
-    log_variable('dropdown_ids', dropdown_ids)
-    log_variable('slider_values', slider_values)
-    log_variable('slider_ids', slider_ids)
+    log_variable('selected_filter_columns', selected_filter_columns)
 
     filtered_data = pd.DataFrame(original_data).copy()
-    for column in selected_columns:
+    for column in selected_filter_columns:
         log(f"Filtering on `{column}`")
-        if column in [item['index'] for item in dropdown_ids]:
-            for value, id in zip(dropdown_values, dropdown_ids):  # noqa
-                log_variable('value', value)
-                log_variable('id', id)
-                if id['index'] == column and value:
-                    log(f"filtering on {column} with {value}")
-                    filtered_data = filtered_data[filtered_data[column].isin(value)]
-        if column in [item['index'] for item in slider_ids]:
-            for value, id in zip(slider_values, slider_ids):  # noqa
-                print(f"value: {value}", flush=True)
-                print(f"id: {id}", flush=True)
-                if id['index'] == column and value:
-                    log(f"filtering on {column} with {value}")
-                    filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]  # noqa
+        assert column in filter_columns_cache
+        value = filter_columns_cache[column]
+        log(f"filtering on {column} with {value}")
+        if filtered_data[column].dtype == 'object':
+            assert isinstance(value, list)
+            filtered_data = filtered_data[filtered_data[column].isin(value)]
+
+        elif filtered_data[column].dtype == 'int64':
+            assert isinstance(value, list)
+            filtered_data = filtered_data[filtered_data[column].between(value)]
+
+
+        # log(f"Filtering on `{column}`")
+        # if column in [item['index'] for item in dropdown_ids]:
+        #     for value, id in zip(dropdown_values, dropdown_ids):  # noqa
+        #         log_variable('value', value)
+        #         log_variable('id', id)
+        #         if id['index'] == column and value:
+        #             log(f"filtering on {column} with {value}")
+        #             filtered_data = filtered_data[filtered_data[column].isin(value)]
+        # if column in [item['index'] for item in slider_ids]:
+        #     for value, id in zip(slider_values, slider_ids):  # noqa
+        #         print(f"value: {value}", flush=True)
+        #         print(f"id: {id}", flush=True)
+        #         if id['index'] == column and value:
+        #             log(f"filtering on {column} with {value}")
+        #             filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]  # noqa
 
     return filtered_data.to_dict('records')
 
@@ -639,9 +642,8 @@ def toggle_other_options_panel(n: int, is_open: bool) -> bool:
 
 @app.callback(
     Output('dynamic-filter-controls', 'children'),
-    # Output('filter_variables_cache', 'data'),  # used to cache columns and values being filtered
-    Input('filter_variables_dropdown', 'value'),
-    State('filter_variables_cache', 'data'),
+    Input('filter_columns_dropdown', 'value'),
+    State('filter_columns_cache', 'data'),
     State('non_numeric_columns', 'data'),
     State('numeric_columns', 'data'),
     State('original_data', 'data'),
@@ -649,8 +651,8 @@ def toggle_other_options_panel(n: int, is_open: bool) -> bool:
     prevent_initial_call=True,
 )
 def update_filter_controls(
-        selected_columns: list[str],
-        filter_variables_cache: dict,
+        selected_filter_columns: list[str],
+        filter_columns_cache: dict,
         non_numeric_columns: list[str],
         numeric_columns: list[str],
         data: dict) -> list[html.Div]:
@@ -659,23 +661,23 @@ def update_filter_controls(
 
     If the user selects a column and adds a value, and then selects another column, the value from
     the original column will be removed. This is because all of the controls are recreated. So we
-    need to cache the values of the controls in the filter_variables_cache.
+    need to cache the values of the controls in the filter_columns_cache.
     """
     log_function('update_filter_controls')
-    log_variable('selected_columns', selected_columns)
-    log_variable('filter_variables_cache', filter_variables_cache)
+    log_variable('selected_filter_columns', selected_filter_columns)
+    log_variable('filter_columns_cache', filter_columns_cache)
     log_variable('non_numeric_columns', non_numeric_columns)
     log_variable('numeric_columns', numeric_columns)
 
     components = []
-    if selected_columns and data:
+    if selected_filter_columns and data:
         data = pd.DataFrame(data)
-        for column in selected_columns:
+        for column in selected_filter_columns:
             log(f"Creating controls for `{column}`")
             value = []
-            if filter_variables_cache and column in filter_variables_cache:
-                value = filter_variables_cache[column]
-                log(f"found `{column}` in filter_variables_cache with value `{value}`")
+            if filter_columns_cache and column in filter_columns_cache:
+                value = filter_columns_cache[column]
+                log(f"found `{column}` in filter_columns_cache with value `{value}`")
             if column in non_numeric_columns:
                 log("create dropdown")
                 components.append(create_dropdown_control(
@@ -702,47 +704,49 @@ def update_filter_controls(
 
 
 @app.callback(
-    Output('filter_variables_cache', 'data'),
+    Output('filter_columns_cache', 'data'),
     Input({'type': 'filter-control-dropdown', 'index': ALL}, 'value'),
     Input({'type': 'filter-control-dropdown', 'index': ALL}, 'id'),
     Input({'type': 'filter-control-slider', 'index': ALL}, 'value'),
     Input({'type': 'filter-control-slider', 'index': ALL}, 'id'),
-    State('filter_variables_dropdown', 'value'),
-    State('filter_variables_cache', 'data'),
+    State('filter_columns_dropdown', 'value'),
+    State('filter_columns_cache', 'data'),
     prevent_initial_call=True,
 )
-def cache_filter_variables(
+def cache_filter_columns(
         dropdown_values: list[list],
         dropdown_ids: list[dict],
         slider_values: list[list],
         slider_ids: list[dict],
-        selected_columns: list[str],
-        filter_variables_cache: dict,
+        selected_filter_columns: list[str],
+        filter_columns_cache: dict,
         ) -> dict:
     """
     Cache the values from the drop and slider controls. This is used to recreate the controls when
     the user selects a new variable to filter on, which triggers the recreation of all controls.
     This is also used to filter the data.
     """
-    log_function('cache_filter_variables')
-    log_variable('selected_columns', selected_columns)
-    log_variable('filter_variables_cache', filter_variables_cache)
+    log_function('cache_filter_columns')
+    log_variable('selected_filter_columns', selected_filter_columns)
+    log_variable('filter_columns_cache', filter_columns_cache)
     log_variable('dropdown_values', dropdown_values)
     log_variable('dropdown_ids', dropdown_ids)
     log_variable('slider_values', slider_values)
     log_variable('slider_ids', slider_ids)
 
     # cache the values from the dropdown and slider controls
-    if filter_variables_cache is None:
-        filter_variables_cache = {}
-    else:
-        filter_variables_cache = filter_variables_cache.copy()
-        for column in filter_variables_cache:
-            if column not in selected_columns:
-                log(f"removing {column} from filter_variables_cache")
-                # filter_variables_cache.pop(column)
+    if filter_columns_cache is None:
+        filter_columns_cache = {}
+    # NOTE: I can't seem to remove values from the cache. I get an error complaining that the value
+    # has been modified
+    # else:
+    #     filter_columns_cache = filter_columns_cache.copy()
+    #     for column in filter_columns_cache:
+    #         if column not in selected_filter_columns:
+    #             log(f"removing {column} from filter_columns_cache")
+    #             filter_columns_cache.pop(column)
 
-    for column in selected_columns:
+    for column in selected_filter_columns:
         log(f"caching column: `{column}`")
         if column in [item['index'] for item in dropdown_ids]:
             for value, id in zip(dropdown_values, dropdown_ids):  # noqa
@@ -750,17 +754,17 @@ def cache_filter_variables(
                 # log(f"id: {id}")
                 if id['index'] == column:
                     log(f"caching `{column}` with `{value}`")
-                    filter_variables_cache[column] = value
+                    filter_columns_cache[column] = value
         if column in [item['index'] for item in slider_ids]:
             for value, id in zip(slider_values, slider_ids):  # noqa
                 # log(f"value: {value}")
                 # log(f"id: {id}")
                 if id['index'] == column:
                     log(f"caching `{column}` with `{value}`")
-                    filter_variables_cache[column] = value
+                    filter_columns_cache[column] = value
 
-    log(f"filter_variables_cache: {filter_variables_cache}")
-    return filter_variables_cache
+    log(f"filter_columns_cache: {filter_columns_cache}")
+    return filter_columns_cache
 
 
 if __name__ == '__main__':
