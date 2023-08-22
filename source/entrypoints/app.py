@@ -556,6 +556,7 @@ def update_graph(
             data,
             x=x_variable,
             y=y_variable,
+            facet_col=facet_variable,
             title=title_textbox,
             nbins=n_bins,
         )
