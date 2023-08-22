@@ -1,5 +1,6 @@
 """Helper functions for creating dash components."""
 from dash import html, dcc
+import dash_daq as daq
 
 
 def log(value: str) -> None:
@@ -98,12 +99,62 @@ def create_slider_control(
         id=id,
         hidden=hidden,
         component=slider_type(
+            id=component_id,
             min=min,
             max=max,
             step=step,
             # marks={i: str(i) for i in np.arange(min, max + step, step)},
             value=value,
-            id=component_id,
         ),
     )
 
+
+def create_min_max_control(
+        label: str,
+        id: str,  # noqa: A002
+        value: tuple[int] | tuple[float],
+        hidden: bool = False,
+        component_id: dict | None = None,
+        ) -> html.Div:
+    """Create a min/max control."""
+    if component_id is None:
+        component_id_min = f'{id}_min_max__min'
+        component_id_max = f'{id}_min_max__max'
+    else:
+        assert isinstance(component_id, dict)
+        assert 'type' in component_id
+        component_id_min = component_id.copy()
+        component_id_min['type'] = component_id['type'] + "__min"
+        component_id_max = component_id.copy()
+        component_id_max['type'] = component_id['type'] + "__max"
+        log_variable('component_id_min', component_id_min)
+        log_variable('component_id_max', component_id_max)
+
+    style = {'display': 'none'} if hidden else {}
+    return html.Div(
+        id=f'{id}_div',
+        className='graph_options',
+        style=style,
+        children=[
+            html.Label(
+                f"{label}:",
+                className='graph_options_label',
+            ),
+            html.Div(className='min_max_div', children=[
+                html.Label("Min:"),
+                daq.NumericInput(
+                    id=component_id_min,
+                    min=value[0],
+                    max=value[1],
+                    value=value[0],
+                ),
+                html.Label("Max:"),
+                daq.NumericInput(
+                    id=component_id_max,
+                    min=value[0],
+                    max=value[1],
+                    value=value[1],
+                ),
+            ]),
+        ],
+    )

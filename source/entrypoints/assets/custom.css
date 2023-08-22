@@ -52,3 +52,9 @@ label.graph_options_label {
     background: none; /* Ensures the background remains unchanged on active state */
     box-shadow: none; /* Remove any potential shadow on active state */
 }
+
+.min_max_div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}

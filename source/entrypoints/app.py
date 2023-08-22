@@ -7,8 +7,8 @@ import plotly.express as px
 import pandas as pd
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
-from source.library.dash_helpers import create_dropdown_control, create_slider_control, log, \
-    log_function, log_variable, values_to_dropdown_options
+from source.library.dash_helpers import log, log_function, log_variable, create_dropdown_control, \
+    create_slider_control, create_min_max_control, values_to_dropdown_options
 
 
 GOLDEN_RATIO = 1.618
@@ -473,8 +473,8 @@ def filter_data(
             filtered_data = filtered_data[filtered_data[column].isin(value)]
 
         elif filtered_data[column].dtype == 'int64':
-            assert isinstance(value, list)
-            filtered_data = filtered_data[filtered_data[column].between(value)]
+            assert isinstance(value, list)  # TODO it seems to switch from a list to a tuple
+            filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]
 
 
         # log(f"Filtering on `{column}`")
@@ -689,15 +689,21 @@ def update_filter_controls(
                     component_id={"type": "filter-control-dropdown", "index": column},
                 ))
             if column in numeric_columns:
-                log("create slider")
-                components.append(create_slider_control(
+                log("create min/max control")
+                components.append(create_min_max_control(
                     label=column,
                     id=f"filter_control_{column}",
-                    min=data[column].min(),
-                    max=data[column].max(),
-                    value=value or [data[column].min(), data[column].max()],
-                    component_id={"type": "filter-control-slider", "index": column},
+                    value=value or (data[column].min(), data[column].max()),
+                    component_id={"type": "filter-control-min-max", "index": column},
                 ))
+                # components.append(create_slider_control(
+                #     label=column,
+                #     id=f"filter_control_{column}",
+                #     min=data[column].min(),
+                #     max=data[column].max(),
+                #     value=value or [data[column].min(), data[column].max()],
+                #     component_id={"type": "filter-control-min-max", "index": column},
+                # ))
 
     log_variable('# of components', len(components))
     return components
@@ -707,8 +713,10 @@ def update_filter_controls(
     Output('filter_columns_cache', 'data'),
     Input({'type': 'filter-control-dropdown', 'index': ALL}, 'value'),
     Input({'type': 'filter-control-dropdown', 'index': ALL}, 'id'),
-    Input({'type': 'filter-control-slider', 'index': ALL}, 'value'),
-    Input({'type': 'filter-control-slider', 'index': ALL}, 'id'),
+    Input({'type': 'filter-control-min-max__min', 'index': ALL}, 'value'),
+    Input({'type': 'filter-control-min-max__min', 'index': ALL}, 'id'),
+    Input({'type': 'filter-control-min-max__max', 'index': ALL}, 'value'),
+    Input({'type': 'filter-control-min-max__max', 'index': ALL}, 'id'),
     State('filter_columns_dropdown', 'value'),
     State('filter_columns_cache', 'data'),
     prevent_initial_call=True,
@@ -716,8 +724,10 @@ def update_filter_controls(
 def cache_filter_columns(
         dropdown_values: list[list],
         dropdown_ids: list[dict],
-        slider_values: list[list],
-        slider_ids: list[dict],
+        minmax_min_values: list[list],
+        minmax_min_ids: list[dict],
+        minmax_max_values: list[list],
+        minmax_max_ids: list[dict],
         selected_filter_columns: list[str],
         filter_columns_cache: dict,
         ) -> dict:
@@ -731,8 +741,10 @@ def cache_filter_columns(
     log_variable('filter_columns_cache', filter_columns_cache)
     log_variable('dropdown_values', dropdown_values)
     log_variable('dropdown_ids', dropdown_ids)
-    log_variable('slider_values', slider_values)
-    log_variable('slider_ids', slider_ids)
+    log_variable('minmax_min_values', minmax_min_values)
+    log_variable('minmax_min_ids', minmax_min_ids)
+    log_variable('minmax_max_values', minmax_max_values)
+    log_variable('minmax_max_ids', minmax_max_ids)
 
     # cache the values from the dropdown and slider controls
     if filter_columns_cache is None:
@@ -755,13 +767,14 @@ def cache_filter_columns(
                 if id['index'] == column:
                     log(f"caching `{column}` with `{value}`")
                     filter_columns_cache[column] = value
-        if column in [item['index'] for item in slider_ids]:
-            for value, id in zip(slider_values, slider_ids):  # noqa
+        if column in [item['index'] for item in minmax_min_ids]:
+            for min_value, id, max_value, _ in zip(minmax_min_values, minmax_min_ids, minmax_max_values, minmax_max_ids):  # noqa
                 # log(f"value: {value}")
                 # log(f"id: {id}")
                 if id['index'] == column:
-                    log(f"caching `{column}` with `{value}`")
-                    filter_columns_cache[column] = value
+                    values = (min_value, max_value)
+                    log(f"caching `{column}` with `{values}`")
+                    filter_columns_cache[column] = values
 
     log(f"filter_columns_cache: {filter_columns_cache}")
     return filter_columns_cache
