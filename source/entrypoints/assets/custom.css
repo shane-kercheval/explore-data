@@ -58,3 +58,7 @@ label.graph_options_label {
     align-items: center;
     gap: 8px;
 }
+
+.min_max_div input {
+    width: 100% !important;
+}
