@@ -7,8 +7,8 @@ import plotly.express as px
 import pandas as pd
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
-from source.library.dash_helpers import create_dropdown_control, create_slider_control, \
-    values_to_dropdown_options
+from source.library.dash_helpers import create_dropdown_control, create_slider_control, log, \
+    log_func, log_var, values_to_dropdown_options
 
 
 GOLDEN_RATIO = 1.618
@@ -336,7 +336,7 @@ def load_data(  # noqa
         upload_data_filename: str,
         load_from_url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
-    print("FUNCTION: load_data", flush=True)
+    log_func('load_data')
     x_variable_dropdown = []
     y_variable_dropdown = []
     filter_variables_dropdown = []
@@ -354,40 +354,39 @@ def load_data(  # noqa
 
     if callback_context.triggered:
         triggered = callback_context.triggered[0]['prop_id']
-        print(f"triggered: {triggered}", flush=True)
+        log_var('triggered', triggered)
         # ctx_msg = json.dumps({
         #     'states': callback_context.states,
         #     'triggered': callback_context.triggered,
         #     'triggered2': callback_context.triggered[0]['prop_id'],
         #     'inputs': callback_context.inputs,
         # }, indent=2)
-        # print(ctx_msg, flush=True)
+        # log_var('ctx_msg', ctx_msg)
 
         if triggered == 'upload-data.contents':
-            print(f"load_from_url_button: {load_from_url_button}", flush=True)
-            print(f"upload_data_filename: {upload_data_filename}", flush=True)
+            log_var('load_from_url_button', load_from_url_button)
+            log_var('upload_data_filename', upload_data_filename)
             _, content_string = upload_data_contents.split(',')
             decoded = base64.b64decode(content_string)
             try:
                 if '.pkl' in upload_data_filename:
-                    print("loading from .pkl", flush=True)
+                    log("loading from .pkl")
                     data = pd.read_pickle(io.BytesIO( base64.b64decode(content_string)))
                 if '.csv' in upload_data_filename:
-                    print("loading from .csv", flush=True)
+                    log("loading from .csv")
                     # Assume that the user uploaded a CSV file
                     data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
                 elif 'xls' in upload_data_filename:
-                    print("loading from .xls", flush=True)
+                    log("loading from .xls")
                     # Assume that the user uploaded an excel file
                     data = pd.read_excel(io.BytesIO(decoded))
             except Exception as e:
-                print(e)
-                # print(e.with_traceback())
+                log(e)
                 return html.Div([
                     'There was an error processing this file.',
                 ])
         elif triggered == 'load_from_url_button.n_clicks' and load_from_url:
-            print("Loading from CSV URL", flush=True)
+            log("Loading from CSV URL")
             data = pd.read_csv(load_from_url)
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
@@ -466,29 +465,29 @@ def filter_data(
         slider_ids: list[dict],
         ) -> dict:
     """Filter the data based on the user's selections."""
-    print("FUNCTION: filtered_data", flush=True)
-    print(f"selected_columns: {selected_columns}", flush=True)
-    print(f"dropdown_values: {dropdown_values}", flush=True)
-    print(f"dropdown_ids: {dropdown_ids}", flush=True)
-    print(f"slider_values: {slider_values}", flush=True)
-    print(f"slider_ids: {slider_ids}", flush=True)
+    log_func('filtered_data')
+    log_var('selected_columns', selected_columns)
+    log_var('dropdown_values', dropdown_values)
+    log_var('dropdown_ids', dropdown_ids)
+    log_var('slider_values', slider_values)
+    log_var('slider_ids', slider_ids)
 
     filtered_data = pd.DataFrame(original_data).copy()
     for column in selected_columns:
-        print(f"column: {column}", flush=True)
+        log(f"Filtering on `{column}`")
         if column in [item['index'] for item in dropdown_ids]:
             for value, id in zip(dropdown_values, dropdown_ids):  # noqa
-                print(f"value: {value}", flush=True)
-                print(f"id: {id}", flush=True)
+                log_var('value', value)
+                log_var('id', id)
                 if id['index'] == column and value:
-                    print(f"filtering on {column} with {value}", flush=True)
+                    log(f"filtering on {column} with {value}")
                     filtered_data = filtered_data[filtered_data[column].isin(value)]
         if column in [item['index'] for item in slider_ids]:
             for value, id in zip(slider_values, slider_ids):  # noqa
                 print(f"value: {value}", flush=True)
                 print(f"id: {id}", flush=True)
                 if id['index'] == column and value:
-                    print(f"filtering on {column} with {value}", flush=True)
+                    log(f"filtering on {column} with {value}")
                     filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]  # noqa
 
     return filtered_data.to_dict('records')
@@ -501,7 +500,7 @@ def filter_data(
 )
 def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
     """Triggered when the user clicks on the Load button."""
-    print("FUNCTION: non_numeric_summary_table", flush=True)
+    log_func('non_numeric_summary_table')
     if non_numeric_summary:
         non_numeric_summary = pd.DataFrame(non_numeric_summary)
         return non_numeric_summary.to_dict('records')
@@ -515,7 +514,7 @@ def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
 )
 def numeric_summary_table(numeric_summary: dict) -> dict:
     """Triggered when the user clicks on the Load button."""
-    print("FUNCTION: numeric_summary_table", flush=True)
+    log_func('numeric_summary_table')
     if numeric_summary:
         numeric_summary = pd.DataFrame(numeric_summary)
         return numeric_summary.to_dict('records')
@@ -542,12 +541,12 @@ def update_graph(
             data: dict,
         ) -> dict:
     """Triggered when the user selects columns from the dropdown."""
-    print("FUNCTION: update_graph", flush=True)
-    print("x_variable", x_variable, flush=True)
-    print("y_variable", y_variable, flush=True)
-    print("facet_variable", facet_variable, flush=True)
-    print("n_bins", n_bins, flush=True)
-    print("type(n_bins)", type(n_bins), flush=True)
+    log_func('update_graph')
+    log_var('x_variable', x_variable)
+    log_var('y_variable', y_variable)
+    log_var('facet_variable', facet_variable)
+    log_var('n_bins', n_bins)
+    log_var('type(n_bins)', type(n_bins))
     fig = {}
     if (x_variable or y_variable) and data:
         fig = px.histogram(
@@ -573,12 +572,12 @@ def facet_variable_div(
         y_variable_dropdown: str,
         non_numeric_columns: dict) -> dict:
     """Triggered when the user selects columns from the dropdown."""
-    print("FUNCTION: facet_variable_div", flush=True)
+    log_func('facet_variable_div')
     if x_variable_dropdown or y_variable_dropdown:
-        print("returning display: block", flush=True)
+        log("returning display: block")
         options = [{'label': col, 'value': col} for col in non_numeric_columns]
         return {'display': 'block'}, options
-    print('returning display: none', flush=True)
+    log("returning display: none")
     return  {'display': 'none'}, []
 
 
@@ -590,7 +589,7 @@ def facet_variable_div(
 )
 def toggle_variables_panel(n: int, is_open: bool) -> bool:
     """Toggle the variables panel."""
-    print("FUNCTION: toggle_variables_panel", flush=True)
+    log_func('toggle_variables_panel')
     if n:
         return not is_open
     return is_open
@@ -604,7 +603,7 @@ def toggle_variables_panel(n: int, is_open: bool) -> bool:
 )
 def toggle_filter_panel(n: int, is_open: bool) -> bool:
     """Toggle the filter panel."""
-    print("FUNCTION: toggle_filter_panel", flush=True)
+    log_func('toggle_filter_panel')
     if n:
         return not is_open
     return is_open
@@ -618,7 +617,7 @@ def toggle_filter_panel(n: int, is_open: bool) -> bool:
 )
 def toggle_graph_options_panel(n: int, is_open: bool) -> bool:
     """Toggle the graph-options panel."""
-    print("FUNCTION: toggle_graph_options_panel", flush=True)
+    log_func('toggle_graph_options_panel')
     if n:
         return not is_open
     return is_open
@@ -632,7 +631,7 @@ def toggle_graph_options_panel(n: int, is_open: bool) -> bool:
 )
 def toggle_other_options_panel(n: int, is_open: bool) -> bool:
     """Toggle the other-options panel."""
-    print("FUNCTION: toggle_other_options_panel", flush=True)
+    log_func('toggle_other_options_panel')
     if n:
         return not is_open
     return is_open
@@ -662,23 +661,23 @@ def update_filter_controls(
     the original column will be removed. This is because all of the controls are recreated. So we
     need to cache the values of the controls in the filter_variables_cache.
     """
-    print("\nFUNCTION: update_filter_controls", flush=True)
-    print("selected_columns:", selected_columns, flush=True)
-    print(f"filter_variables_cache: {filter_variables_cache}", flush=True)
-    print(f"non_numeric_columns: {non_numeric_columns}", flush=True)
-    print(f"numeric_columns: {numeric_columns}", flush=True)
+    log_func('update_filter_controls')
+    log_var('selected_columns', selected_columns)
+    log_var('filter_variables_cache', filter_variables_cache)
+    log_var('non_numeric_columns', non_numeric_columns)
+    log_var('numeric_columns', numeric_columns)
 
     components = []
     if selected_columns and data:
         data = pd.DataFrame(data)
         for column in selected_columns:
-            print(f"Creating controls for `{column}`", flush=True)
+            log(f"Creating controls for `{column}`")
             value = []
             if filter_variables_cache and column in filter_variables_cache:
                 value = filter_variables_cache[column]
-                print(f"found `{column}` in filter_variables_cache with value `value`", flush=True)
+                log(f"found `{column}` in filter_variables_cache with value `{value}`")
             if column in non_numeric_columns:
-                print('create dropdown', flush=True)
+                log("create dropdown")
                 components.append(create_dropdown_control(
                     label=column,
                     id=f"filter_control_{column}",
@@ -688,7 +687,7 @@ def update_filter_controls(
                     component_id={"type": "filter-control-dropdown", "index": column},
                 ))
             if column in numeric_columns:
-                print('create slider', flush=True)
+                log("create slider")
                 components.append(create_slider_control(
                     label=column,
                     id=f"filter_control_{column}",
@@ -698,9 +697,8 @@ def update_filter_controls(
                     component_id={"type": "filter-control-slider", "index": column},
                 ))
 
-    # print(f"filter_variables_cache: {filter_variables_cache}", flush=True)
-    print(f"# of components: {len(components)}", flush=True)
-    return components#, filter_variables_cache
+    log_var('# of components', len(components))
+    return components
 
 
 @app.callback(
@@ -726,13 +724,13 @@ def cache_filter_variables(
     the user selects a new variable to filter on, which triggers the recreation of all controls.
     This is also used to filter the data.
     """
-    print("FUNCTION: cache_filter_variables", flush=True)
-    print(f"selected_columns: {selected_columns}", flush=True)
-    print(f"filter_variables_cache: {filter_variables_cache}", flush=True)
-    print(f"dropdown_values: {dropdown_values}", flush=True)
-    print(f"dropdown_ids: {dropdown_ids}", flush=True)
-    print(f"slider_values: {slider_values}", flush=True)
-    print(f"slider_ids: {slider_ids}", flush=True)
+    log_func('cache_filter_variables')
+    log_var('selected_columns', selected_columns)
+    log_var('filter_variables_cache', filter_variables_cache)
+    log_var('dropdown_values', dropdown_values)
+    log_var('dropdown_ids', dropdown_ids)
+    log_var('slider_values', slider_values)
+    log_var('slider_ids', slider_ids)
 
     # cache the values from the dropdown and slider controls
     if filter_variables_cache is None:
@@ -741,27 +739,27 @@ def cache_filter_variables(
         filter_variables_cache = filter_variables_cache.copy()
         for column in filter_variables_cache:
             if column not in selected_columns:
-                print(f"removing {column} from filter_variables_cache", flush=True)
+                log(f"removing {column} from filter_variables_cache")
                 # filter_variables_cache.pop(column)
 
     for column in selected_columns:
-        print(f"caching column: `{column}`", flush=True)
+        log(f"caching column: `{column}`")
         if column in [item['index'] for item in dropdown_ids]:
             for value, id in zip(dropdown_values, dropdown_ids):  # noqa
-                # print(f"value: {value}", flush=True)
-                # print(f"id: {id}", flush=True)
+                # log(f"value: {value}")
+                # log(f"id: {id}")
                 if id['index'] == column:
-                    print(f"caching `{column}` with `{value}`", flush=True)
+                    log(f"caching `{column}` with `{value}`")
                     filter_variables_cache[column] = value
         if column in [item['index'] for item in slider_ids]:
             for value, id in zip(slider_values, slider_ids):  # noqa
-                # print(f"value: {value}", flush=True)
-                # print(f"id: {id}", flush=True)
+                # log(f"value: {value}")
+                # log(f"id: {id}")
                 if id['index'] == column:
-                    print(f"caching `{column}` with `{value}`", flush=True)
+                    log(f"caching `{column}` with `{value}`")
                     filter_variables_cache[column] = value
 
-    print(f"filter_variables_cache: {filter_variables_cache}", flush=True)
+    log(f"filter_variables_cache: {filter_variables_cache}")
     return filter_variables_cache
 
 

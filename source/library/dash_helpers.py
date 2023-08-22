@@ -2,6 +2,18 @@
 from dash import html, dcc
 
 
+def log(value: str) -> None:
+    """Log value."""
+    print(value, flush=True)
+
+def log_func(func: str) -> None:
+    """Log function calls."""
+    log(f"\nFUNCTION: `{func}`")
+
+def log_var(var: str, value: str) -> None:
+    """Log variable value."""
+    log(f"VARIABLE: `{var}` = `{value}`")
+
 def values_to_dropdown_options(values: list[str]) -> list[dict]:
     """Convert a list of columns to a list of options for a dropdown."""
     return [{'label': value, 'value': value} for value in values]
