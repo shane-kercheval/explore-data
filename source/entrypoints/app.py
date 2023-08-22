@@ -5,108 +5,22 @@ from dash import Dash, html, dash_table, dcc, Output, Input, State, callback_con
 from dash.dependencies import ALL
 import plotly.express as px
 import pandas as pd
-import numpy as np
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
+from source.library.dash_helpers import create_dropdown_control, create_slider_control
 
 
 GOLDEN_RATIO = 1.618
 
 
-external_stylesheets = [
-    dbc.themes.BOOTSTRAP,
-    # 'https://codepen.io/chriddyp/pen/bWLwgP.css',
-]
-app = Dash(__name__, title="Data Explorer", external_stylesheets=external_stylesheets)
-
-
-def create_control(
-        label: str,
-        id: str,  # noqa: A002
-        component: html.Div,
-        hidden: bool = False) -> html.Div:
-    """Create a generic control with a given component (e.g. dropdown)."""
-    style = {'display': 'none'} if hidden else {}
-    return html.Div(
-        id=f'{id}_div',
-        className='graph_options',
-        style=style,
-        children=[
-            html.Label(
-                f"{label}:",
-                className='graph_options_label',
-            ),
-            component,
-    ])
-
-def create_dropdown_control(
-        label: str,
-        id: str,  # noqa: A002
-        hidden: bool = False,
-        multi: bool = False,
-        options: list[dict] | None = None,
-        value: str | None = None,
-        placeholder: str | None = None,
-        component_id: dict | None = None,
-        ) -> html.Div:
-    """Create a dropdown control."""
-    if options is None:
-        options = []
-    if component_id is None:
-        component_id = f'{id}_dropdown'
-    else:
-        assert isinstance(component_id, dict)
-
-    return create_control(
-        label=label,
-        id=id,
-        hidden=hidden,
-        component=dcc.Dropdown(
-            id=component_id,
-            multi=multi,
-            options=options,
-            value=value,
-            placeholder=placeholder,
-        ),
-    )
-
-def create_slider_control(
-        label: str,
-        id: str,  # noqa: A002
-        min: int | float,  # noqa: A002
-        max: int | float,  # noqa: A002
-        value: int | float | list[int] | list[float],
-        step: int | float | None = None,
-        hidden: bool = False,
-        component_id: dict | None = None,
-        ) -> html.Div:
-    """Create a dropdown control."""
-    if component_id is None:
-        component_id = f'{id}_slider'
-    else:
-        assert isinstance(component_id, dict)
-
-    if step is None:
-        # step should create 5 steps
-        step = (max - min) / 5
-
-    slider_type = dcc.RangeSlider if isinstance(value, list) else dcc.Slider
-
-    return create_control(
-        label=label,
-        id=id,
-        hidden=hidden,
-        component=slider_type(
-            min=min,
-            max=max,
-            step=step,
-            # marks={i: str(i) for i in np.arange(min, max + step, step)},
-            value=value,
-            id=component_id,
-        ),
-    )
-
-
+app = Dash(
+    __name__,
+    title="Data Explorer",
+    external_stylesheets=[
+        dbc.themes.BOOTSTRAP,
+        # 'https://codepen.io/chriddyp/pen/bWLwgP.css',
+    ],
+)
 app.layout = dbc.Container(className="app-container", fluid=True, style={"max-width": "99%"}, children=[  # noqa
     dcc.Store(id='original_data_store'),
     dcc.Store(id='filtered_data_store'),
@@ -453,7 +367,7 @@ def update_filter_controls(
     prevent_initial_call=True,
 )
 def filter_data(
-        n_clicks: int,
+        n_clicks: int,  # noqa
         selected_columns: list[str],
         original_data: dict,
         dropdown_values: list[list],
@@ -461,6 +375,7 @@ def filter_data(
         slider_values: list[list],
         slider_ids: list[dict],
         ) -> dict:
+    """Filter the data based on the user's selections."""
     print("filtered_data", flush=True)
     print(f"selected_columns: {selected_columns}", flush=True)
     print(f"dropdown_values: {dropdown_values}", flush=True)
@@ -484,7 +399,7 @@ def filter_data(
                 print(f"id: {id}", flush=True)
                 if id['index'] == column and value:
                     print(f"filtering on {column} with {value}", flush=True)
-                    filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]
+                    filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]  # noqa
 
     return filtered_data.to_dict('records')
 
