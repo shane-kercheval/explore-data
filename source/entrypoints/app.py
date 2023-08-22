@@ -8,7 +8,7 @@ import pandas as pd
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
 from source.library.dash_helpers import create_dropdown_control, create_slider_control, log, \
-    log_func, log_var, values_to_dropdown_options
+    log_function, log_variable, values_to_dropdown_options
 
 
 GOLDEN_RATIO = 1.618
@@ -336,7 +336,7 @@ def load_data(  # noqa
         upload_data_filename: str,
         load_from_url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
-    log_func('load_data')
+    log_function('load_data')
     x_variable_dropdown = []
     y_variable_dropdown = []
     filter_variables_dropdown = []
@@ -354,7 +354,7 @@ def load_data(  # noqa
 
     if callback_context.triggered:
         triggered = callback_context.triggered[0]['prop_id']
-        log_var('triggered', triggered)
+        log_variable('triggered', triggered)
         # ctx_msg = json.dumps({
         #     'states': callback_context.states,
         #     'triggered': callback_context.triggered,
@@ -364,8 +364,8 @@ def load_data(  # noqa
         # log_var('ctx_msg', ctx_msg)
 
         if triggered == 'upload-data.contents':
-            log_var('load_from_url_button', load_from_url_button)
-            log_var('upload_data_filename', upload_data_filename)
+            log_variable('load_from_url_button', load_from_url_button)
+            log_variable('upload_data_filename', upload_data_filename)
             _, content_string = upload_data_contents.split(',')
             decoded = base64.b64decode(content_string)
             try:
@@ -465,20 +465,20 @@ def filter_data(
         slider_ids: list[dict],
         ) -> dict:
     """Filter the data based on the user's selections."""
-    log_func('filtered_data')
-    log_var('selected_columns', selected_columns)
-    log_var('dropdown_values', dropdown_values)
-    log_var('dropdown_ids', dropdown_ids)
-    log_var('slider_values', slider_values)
-    log_var('slider_ids', slider_ids)
+    log_function('filtered_data')
+    log_variable('selected_columns', selected_columns)
+    log_variable('dropdown_values', dropdown_values)
+    log_variable('dropdown_ids', dropdown_ids)
+    log_variable('slider_values', slider_values)
+    log_variable('slider_ids', slider_ids)
 
     filtered_data = pd.DataFrame(original_data).copy()
     for column in selected_columns:
         log(f"Filtering on `{column}`")
         if column in [item['index'] for item in dropdown_ids]:
             for value, id in zip(dropdown_values, dropdown_ids):  # noqa
-                log_var('value', value)
-                log_var('id', id)
+                log_variable('value', value)
+                log_variable('id', id)
                 if id['index'] == column and value:
                     log(f"filtering on {column} with {value}")
                     filtered_data = filtered_data[filtered_data[column].isin(value)]
@@ -500,7 +500,7 @@ def filter_data(
 )
 def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
     """Triggered when the user clicks on the Load button."""
-    log_func('non_numeric_summary_table')
+    log_function('non_numeric_summary_table')
     if non_numeric_summary:
         non_numeric_summary = pd.DataFrame(non_numeric_summary)
         return non_numeric_summary.to_dict('records')
@@ -514,7 +514,7 @@ def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
 )
 def numeric_summary_table(numeric_summary: dict) -> dict:
     """Triggered when the user clicks on the Load button."""
-    log_func('numeric_summary_table')
+    log_function('numeric_summary_table')
     if numeric_summary:
         numeric_summary = pd.DataFrame(numeric_summary)
         return numeric_summary.to_dict('records')
@@ -541,12 +541,12 @@ def update_graph(
             data: dict,
         ) -> dict:
     """Triggered when the user selects columns from the dropdown."""
-    log_func('update_graph')
-    log_var('x_variable', x_variable)
-    log_var('y_variable', y_variable)
-    log_var('facet_variable', facet_variable)
-    log_var('n_bins', n_bins)
-    log_var('type(n_bins)', type(n_bins))
+    log_function('update_graph')
+    log_variable('x_variable', x_variable)
+    log_variable('y_variable', y_variable)
+    log_variable('facet_variable', facet_variable)
+    log_variable('n_bins', n_bins)
+    log_variable('type(n_bins)', type(n_bins))
     fig = {}
     if (x_variable or y_variable) and data:
         fig = px.histogram(
@@ -572,7 +572,7 @@ def facet_variable_div(
         y_variable_dropdown: str,
         non_numeric_columns: dict) -> dict:
     """Triggered when the user selects columns from the dropdown."""
-    log_func('facet_variable_div')
+    log_function('facet_variable_div')
     if x_variable_dropdown or y_variable_dropdown:
         log("returning display: block")
         options = [{'label': col, 'value': col} for col in non_numeric_columns]
@@ -589,7 +589,7 @@ def facet_variable_div(
 )
 def toggle_variables_panel(n: int, is_open: bool) -> bool:
     """Toggle the variables panel."""
-    log_func('toggle_variables_panel')
+    log_function('toggle_variables_panel')
     if n:
         return not is_open
     return is_open
@@ -603,7 +603,7 @@ def toggle_variables_panel(n: int, is_open: bool) -> bool:
 )
 def toggle_filter_panel(n: int, is_open: bool) -> bool:
     """Toggle the filter panel."""
-    log_func('toggle_filter_panel')
+    log_function('toggle_filter_panel')
     if n:
         return not is_open
     return is_open
@@ -617,7 +617,7 @@ def toggle_filter_panel(n: int, is_open: bool) -> bool:
 )
 def toggle_graph_options_panel(n: int, is_open: bool) -> bool:
     """Toggle the graph-options panel."""
-    log_func('toggle_graph_options_panel')
+    log_function('toggle_graph_options_panel')
     if n:
         return not is_open
     return is_open
@@ -631,7 +631,7 @@ def toggle_graph_options_panel(n: int, is_open: bool) -> bool:
 )
 def toggle_other_options_panel(n: int, is_open: bool) -> bool:
     """Toggle the other-options panel."""
-    log_func('toggle_other_options_panel')
+    log_function('toggle_other_options_panel')
     if n:
         return not is_open
     return is_open
@@ -661,11 +661,11 @@ def update_filter_controls(
     the original column will be removed. This is because all of the controls are recreated. So we
     need to cache the values of the controls in the filter_variables_cache.
     """
-    log_func('update_filter_controls')
-    log_var('selected_columns', selected_columns)
-    log_var('filter_variables_cache', filter_variables_cache)
-    log_var('non_numeric_columns', non_numeric_columns)
-    log_var('numeric_columns', numeric_columns)
+    log_function('update_filter_controls')
+    log_variable('selected_columns', selected_columns)
+    log_variable('filter_variables_cache', filter_variables_cache)
+    log_variable('non_numeric_columns', non_numeric_columns)
+    log_variable('numeric_columns', numeric_columns)
 
     components = []
     if selected_columns and data:
@@ -697,7 +697,7 @@ def update_filter_controls(
                     component_id={"type": "filter-control-slider", "index": column},
                 ))
 
-    log_var('# of components', len(components))
+    log_variable('# of components', len(components))
     return components
 
 
@@ -724,13 +724,13 @@ def cache_filter_variables(
     the user selects a new variable to filter on, which triggers the recreation of all controls.
     This is also used to filter the data.
     """
-    log_func('cache_filter_variables')
-    log_var('selected_columns', selected_columns)
-    log_var('filter_variables_cache', filter_variables_cache)
-    log_var('dropdown_values', dropdown_values)
-    log_var('dropdown_ids', dropdown_ids)
-    log_var('slider_values', slider_values)
-    log_var('slider_ids', slider_ids)
+    log_function('cache_filter_variables')
+    log_variable('selected_columns', selected_columns)
+    log_variable('filter_variables_cache', filter_variables_cache)
+    log_variable('dropdown_values', dropdown_values)
+    log_variable('dropdown_ids', dropdown_ids)
+    log_variable('slider_values', slider_values)
+    log_variable('slider_ids', slider_ids)
 
     # cache the values from the dropdown and slider controls
     if filter_variables_cache is None:

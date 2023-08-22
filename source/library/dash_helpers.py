@@ -6,11 +6,11 @@ def log(value: str) -> None:
     """Log value."""
     print(value, flush=True)
 
-def log_func(func: str) -> None:
+def log_function(name: str) -> None:
     """Log function calls."""
-    log(f"\nFUNCTION: `{func}`")
+    log(f"\nFUNCTION: `{name}`")
 
-def log_var(var: str, value: str) -> None:
+def log_variable(var: str, value: str) -> None:
     """Log variable value."""
     log(f"VARIABLE: `{var}` = `{value}`")
 
