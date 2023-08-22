@@ -571,7 +571,6 @@ def numeric_summary_table(numeric_summary: dict) -> dict:
     Output('x_variable_dropdown', 'options'),
     Output('y_variable_dropdown', 'options'),
     Output('filter_variables_dropdown', 'options'),
-    Output('table_visualize', 'data'),
     Output('table_uploaded_data', 'data'),
     Output('numeric_summary', 'data'),
     Output('non_numeric_summary', 'data'),
@@ -599,7 +598,6 @@ def load_data(  # noqa
     x_variable_dropdown = []
     y_variable_dropdown = []
     filter_variables_dropdown = []
-    table_visualize = None
     table_uploaded_data = None
     numeric_summary = None
     non_numeric_summary = None
@@ -683,7 +681,6 @@ def load_data(  # noqa
         x_variable_dropdown = options
         y_variable_dropdown = options
         filter_variables_dropdown = options
-        table_visualize = data
         table_uploaded_data = data
         original_data_store = data
         filtered_data_store = data.copy()
@@ -692,7 +689,6 @@ def load_data(  # noqa
         x_variable_dropdown,
         y_variable_dropdown,
         filter_variables_dropdown,
-        table_visualize,
         table_uploaded_data,
         numeric_summary,
         non_numeric_summary,
@@ -709,6 +705,7 @@ def load_data(  # noqa
 
 @app.callback(
     Output('primary-graph', 'figure'),
+    Output('table_visualize', 'data'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
     Input('facet_variable_dropdown', 'value'),
@@ -741,7 +738,7 @@ def update_graph(
             title=title_textbox,
             nbins=n_bins,
         )
-    return fig
+    return fig, data
 
 
 @app.callback(
