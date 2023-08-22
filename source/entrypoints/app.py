@@ -23,8 +23,9 @@ app = Dash(
     ],
 )
 app.layout = dbc.Container(className="app-container", fluid=True, style={"max-width": "99%"}, children=[  # noqa
-    dcc.Store(id='original_data_store'),
-    dcc.Store(id='filtered_data_store'),
+    dcc.Store(id='original_data'),
+    dcc.Store(id='filtered_data'),
+    dcc.Store(id='filter_variables_cache'),
     dcc.Store(id='numeric_summary'),
     dcc.Store(id='non_numeric_summary'),
     dcc.Store(id='all_columns'),
@@ -315,8 +316,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('table_uploaded_data', 'data'),
     Output('numeric_summary', 'data'),
     Output('non_numeric_summary', 'data'),
-    Output('original_data_store', 'data'),
-    Output('filtered_data_store', 'data', allow_duplicate=True),
+    Output('original_data', 'data'),
+    Output('filtered_data', 'data', allow_duplicate=True),
     Output('all_columns', 'data'),
     Output('numeric_columns', 'data'),
     Output('non_numeric_columns', 'data'),
@@ -335,15 +336,15 @@ def load_data(  # noqa
         upload_data_filename: str,
         load_from_url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
-    print("load_data()", flush=True)
+    print("FUNCTION: load_data", flush=True)
     x_variable_dropdown = []
     y_variable_dropdown = []
     filter_variables_dropdown = []
     table_uploaded_data = None
     numeric_summary = None
     non_numeric_summary = None
-    original_data_store = None
-    filtered_data_store = None
+    original_data = None
+    filtered_data = None
     all_columns = None
     numeric_columns = None
     non_numeric_columns = None
@@ -423,8 +424,8 @@ def load_data(  # noqa
         y_variable_dropdown = options
         filter_variables_dropdown = options
         table_uploaded_data = data
-        original_data_store = data
-        filtered_data_store = data.copy()
+        original_data = data
+        filtered_data = data.copy()
 
     return (
         x_variable_dropdown,
@@ -433,8 +434,8 @@ def load_data(  # noqa
         table_uploaded_data,
         numeric_summary,
         non_numeric_summary,
-        original_data_store,
-        filtered_data_store,
+        original_data,
+        filtered_data,
         all_columns,
         numeric_columns,
         non_numeric_columns,
@@ -445,10 +446,10 @@ def load_data(  # noqa
 
 
 @app.callback(
-    Output('filtered_data_store', 'data'),
+    Output('filtered_data', 'data'),
     Input('filter-apply-button', 'n_clicks'),
     State('filter_variables_dropdown', 'value'),
-    State('original_data_store', 'data'),
+    State('original_data', 'data'),
     State({'type': 'filter-control-dropdown', 'index': ALL}, 'value'),
     State({'type': 'filter-control-dropdown', 'index': ALL}, 'id'),
     State({'type': 'filter-control-slider', 'index': ALL}, 'value'),
@@ -465,7 +466,7 @@ def filter_data(
         slider_ids: list[dict],
         ) -> dict:
     """Filter the data based on the user's selections."""
-    print("filtered_data", flush=True)
+    print("FUNCTION: filtered_data", flush=True)
     print(f"selected_columns: {selected_columns}", flush=True)
     print(f"dropdown_values: {dropdown_values}", flush=True)
     print(f"dropdown_ids: {dropdown_ids}", flush=True)
@@ -500,6 +501,7 @@ def filter_data(
 )
 def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
     """Triggered when the user clicks on the Load button."""
+    print("FUNCTION: non_numeric_summary_table", flush=True)
     if non_numeric_summary:
         non_numeric_summary = pd.DataFrame(non_numeric_summary)
         return non_numeric_summary.to_dict('records')
@@ -513,6 +515,7 @@ def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
 )
 def numeric_summary_table(numeric_summary: dict) -> dict:
     """Triggered when the user clicks on the Load button."""
+    print("FUNCTION: numeric_summary_table", flush=True)
     if numeric_summary:
         numeric_summary = pd.DataFrame(numeric_summary)
         return numeric_summary.to_dict('records')
@@ -527,7 +530,7 @@ def numeric_summary_table(numeric_summary: dict) -> dict:
     Input('facet_variable_dropdown', 'value'),
     Input('n_bins_slider', 'value'),
     Input('title_textbox', 'value'),
-    Input('filtered_data_store', 'data'),
+    Input('filtered_data', 'data'),
     prevent_initial_call=True,
 )
 def update_graph(
@@ -539,7 +542,7 @@ def update_graph(
             data: dict,
         ) -> dict:
     """Triggered when the user selects columns from the dropdown."""
-    print("update_graph", flush=True)
+    print("FUNCTION: update_graph", flush=True)
     print("x_variable", x_variable, flush=True)
     print("y_variable", y_variable, flush=True)
     print("facet_variable", facet_variable, flush=True)
@@ -570,7 +573,7 @@ def facet_variable_div(
         y_variable_dropdown: str,
         non_numeric_columns: dict) -> dict:
     """Triggered when the user selects columns from the dropdown."""
-    print("facet_variable_div", flush=True)
+    print("FUNCTION: facet_variable_div", flush=True)
     if x_variable_dropdown or y_variable_dropdown:
         print("returning display: block", flush=True)
         options = [{'label': col, 'value': col} for col in non_numeric_columns]
@@ -587,6 +590,7 @@ def facet_variable_div(
 )
 def toggle_variables_panel(n: int, is_open: bool) -> bool:
     """Toggle the variables panel."""
+    print("FUNCTION: toggle_variables_panel", flush=True)
     if n:
         return not is_open
     return is_open
@@ -600,6 +604,7 @@ def toggle_variables_panel(n: int, is_open: bool) -> bool:
 )
 def toggle_filter_panel(n: int, is_open: bool) -> bool:
     """Toggle the filter panel."""
+    print("FUNCTION: toggle_filter_panel", flush=True)
     if n:
         return not is_open
     return is_open
@@ -613,6 +618,7 @@ def toggle_filter_panel(n: int, is_open: bool) -> bool:
 )
 def toggle_graph_options_panel(n: int, is_open: bool) -> bool:
     """Toggle the graph-options panel."""
+    print("FUNCTION: toggle_graph_options_panel", flush=True)
     if n:
         return not is_open
     return is_open
@@ -626,6 +632,7 @@ def toggle_graph_options_panel(n: int, is_open: bool) -> bool:
 )
 def toggle_other_options_panel(n: int, is_open: bool) -> bool:
     """Toggle the other-options panel."""
+    print("FUNCTION: toggle_other_options_panel", flush=True)
     if n:
         return not is_open
     return is_open
@@ -633,30 +640,49 @@ def toggle_other_options_panel(n: int, is_open: bool) -> bool:
 
 @app.callback(
     Output('dynamic-filter-controls', 'children'),
+    # Output('filter_variables_cache', 'data'),  # used to cache columns and values being filtered
     Input('filter_variables_dropdown', 'value'),
+    State('filter_variables_cache', 'data'),
     State('non_numeric_columns', 'data'),
     State('numeric_columns', 'data'),
-    State('original_data_store', 'data'),
+    State('original_data', 'data'),
+
     prevent_initial_call=True,
 )
 def update_filter_controls(
         selected_columns: list[str],
+        filter_variables_cache: dict,
         non_numeric_columns: list[str],
         numeric_columns: list[str],
         data: dict) -> list[html.Div]:
-    """Triggered when the user selects columns from the filter dropdown."""
-    print("update_filter_controls", flush=True)
-    print("selected_columns", selected_columns, flush=True)
+    """
+    Triggered when the user selects columns from the filter dropdown.
+
+    If the user selects a column and adds a value, and then selects another column, the value from
+    the original column will be removed. This is because all of the controls are recreated. So we
+    need to cache the values of the controls in the filter_variables_cache.
+    """
+    print("\nFUNCTION: update_filter_controls", flush=True)
+    print("selected_columns:", selected_columns, flush=True)
+    print(f"filter_variables_cache: {filter_variables_cache}", flush=True)
+    print(f"non_numeric_columns: {non_numeric_columns}", flush=True)
+    print(f"numeric_columns: {numeric_columns}", flush=True)
+
     components = []
     if selected_columns and data:
         data = pd.DataFrame(data)
         for column in selected_columns:
             print(f"Creating controls for `{column}`", flush=True)
+            value = []
+            if filter_variables_cache and column in filter_variables_cache:
+                value = filter_variables_cache[column]
+                print(f"found `{column}` in filter_variables_cache with value `value`", flush=True)
             if column in non_numeric_columns:
                 print('create dropdown', flush=True)
                 components.append(create_dropdown_control(
                     label=column,
                     id=f"filter_control_{column}",
+                    value=value,
                     multi=True,
                     options=values_to_dropdown_options(data[column].unique()),
                     component_id={"type": "filter-control-dropdown", "index": column},
@@ -668,10 +694,75 @@ def update_filter_controls(
                     id=f"filter_control_{column}",
                     min=data[column].min(),
                     max=data[column].max(),
-                    value=[data[column].min(), data[column].max()],
+                    value=value or [data[column].min(), data[column].max()],
                     component_id={"type": "filter-control-slider", "index": column},
                 ))
-    return components
+
+    # print(f"filter_variables_cache: {filter_variables_cache}", flush=True)
+    print(f"# of components: {len(components)}", flush=True)
+    return components#, filter_variables_cache
+
+
+@app.callback(
+    Output('filter_variables_cache', 'data'),
+    Input({'type': 'filter-control-dropdown', 'index': ALL}, 'value'),
+    Input({'type': 'filter-control-dropdown', 'index': ALL}, 'id'),
+    Input({'type': 'filter-control-slider', 'index': ALL}, 'value'),
+    Input({'type': 'filter-control-slider', 'index': ALL}, 'id'),
+    State('filter_variables_dropdown', 'value'),
+    State('filter_variables_cache', 'data'),
+    prevent_initial_call=True,
+)
+def cache_filter_variables(
+        dropdown_values: list[list],
+        dropdown_ids: list[dict],
+        slider_values: list[list],
+        slider_ids: list[dict],
+        selected_columns: list[str],
+        filter_variables_cache: dict,
+        ) -> dict:
+    """
+    Cache the values from the drop and slider controls. This is used to recreate the controls when
+    the user selects a new variable to filter on, which triggers the recreation of all controls.
+    This is also used to filter the data.
+    """
+    print("FUNCTION: cache_filter_variables", flush=True)
+    print(f"selected_columns: {selected_columns}", flush=True)
+    print(f"filter_variables_cache: {filter_variables_cache}", flush=True)
+    print(f"dropdown_values: {dropdown_values}", flush=True)
+    print(f"dropdown_ids: {dropdown_ids}", flush=True)
+    print(f"slider_values: {slider_values}", flush=True)
+    print(f"slider_ids: {slider_ids}", flush=True)
+
+    # cache the values from the dropdown and slider controls
+    if filter_variables_cache is None:
+        filter_variables_cache = {}
+    else:
+        filter_variables_cache = filter_variables_cache.copy()
+        for column in filter_variables_cache:
+            if column not in selected_columns:
+                print(f"removing {column} from filter_variables_cache", flush=True)
+                # filter_variables_cache.pop(column)
+
+    for column in selected_columns:
+        print(f"caching column: `{column}`", flush=True)
+        if column in [item['index'] for item in dropdown_ids]:
+            for value, id in zip(dropdown_values, dropdown_ids):  # noqa
+                # print(f"value: {value}", flush=True)
+                # print(f"id: {id}", flush=True)
+                if id['index'] == column:
+                    print(f"caching `{column}` with `{value}`", flush=True)
+                    filter_variables_cache[column] = value
+        if column in [item['index'] for item in slider_ids]:
+            for value, id in zip(slider_values, slider_ids):  # noqa
+                # print(f"value: {value}", flush=True)
+                # print(f"id: {id}", flush=True)
+                if id['index'] == column:
+                    print(f"caching `{column}` with `{value}`", flush=True)
+                    filter_variables_cache[column] = value
+
+    print(f"filter_variables_cache: {filter_variables_cache}", flush=True)
+    return filter_variables_cache
 
 
 if __name__ == '__main__':
