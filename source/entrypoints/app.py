@@ -123,6 +123,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     label="Facet variable",
                                     id="facet_variable",
                                     placeholder="Select a variable",
+                                    hidden=True,
                                 ),
                             ]),
                         ]),
