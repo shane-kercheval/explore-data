@@ -515,16 +515,18 @@ def filter_data(
             start_date = convert_to_date(value[0])
             end_date = convert_to_date(value[1])
             filtered_data = filtered_data[(series >= start_date) & (series <= end_date)]
-        elif filtered_data[column].dtype == 'object':
+        elif series.dtype == 'object':
             assert isinstance(value, list)
-            filtered_data = filtered_data[filtered_data[column].isin(value)]
-        elif filtered_data[column].dtype == 'bool':
-            assert isinstance(value, list)
-            log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])
-            filtered_data = filtered_data[filtered_data[column].isin([x.lower() == 'true' for x in value])]
-        elif filtered_data[column].dtype == 'int64':
+            filtered_data = filtered_data[series.isin(value)]
+        elif series.dtype == 'bool':
+            assert isinstance(value, str)
+            filtered_data = filtered_data[series == (value.lower() == 'true')]
+            # assert isinstance(value, list)
+            # log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])
+            # filtered_data = filtered_data[series.isin([x.lower() == 'true' for x in value])]
+        elif series.dtype == 'int64':
             assert isinstance(value, list)  # TODO it seems to switch from a list to a tuple
-            filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]
+            filtered_data = filtered_data[series.between(value[0], value[1])]
         else:
             raise ValueError(f"Unknown dtype for column `{column}`: {filtered_data[column].dtype}")
 
@@ -750,6 +752,16 @@ def update_filter_controls(
                     min_value=value[0] if value else series.min(),
                     max_value=value[1] if value else series.max(),
                     component_id={"type": "filter-control-date-range", "index": column},
+                ))
+            elif pd.api.types.is_bool_dtype(series):
+                log("Creating dropdown control")
+                components.append(create_dropdown_control(
+                    label=column,
+                    id=f"filter_control_{column}",
+                    value=value or 'True',
+                    multi=False,
+                    options=['True', 'False'],
+                    component_id={"type": "filter-control-dropdown", "index": column},
                 ))
             elif column in non_numeric_columns:
                 log("Creating dropdown control")
