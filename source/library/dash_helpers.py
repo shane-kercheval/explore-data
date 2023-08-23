@@ -7,13 +7,16 @@ def log(value: str) -> None:
     """Log value."""
     print(value, flush=True)
 
+
 def log_function(name: str) -> None:
     """Log function calls."""
     log(f"\nFUNCTION: `{name}`")
 
+
 def log_variable(var: str, value: str) -> None:
     """Log variable value."""
     log(f"VARIABLE: `{var}` = `{value}`")
+
 
 def values_to_dropdown_options(values: list[str]) -> list[dict]:
     """Convert a list of columns to a list of options for a dropdown."""
