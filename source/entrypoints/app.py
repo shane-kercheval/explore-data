@@ -208,20 +208,22 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                     ]),
                 ]),
                 dbc.Col(width=9, children=[
-                    dcc.Graph(
-                        id='primary-graph',
-                        config={'staticPlot': False, 'displayModeBar': True},
-                        # 3/12 because the sidebar is 3/12 of the width
-                        style={'width': '100%', 'height': f'{(1-(3/12)) / GOLDEN_RATIO * 100: .1f}vw'},  # noqa
-                    ),
-                    html.Hr(),
-                    dash_table.DataTable(
-                        id='table_visualize',
-                        page_size=20,
-                        style_header={
-                            'fontWeight': 'bold',
-                        },
-                    ),
+                    dcc.Loading(type="default", children=[
+                        dcc.Graph(
+                            id='primary-graph',
+                            config={'staticPlot': False, 'displayModeBar': True},
+                            # 3/12 because the sidebar is 3/12 of the width
+                            style={'width': '100%', 'height': f'{(1-(3/12)) / GOLDEN_RATIO * 100: .1f}vw'},  # noqa
+                        ),
+                        html.Hr(),
+                        dash_table.DataTable(
+                            id='table_visualize',
+                            page_size=20,
+                            style_header={
+                                'fontWeight': 'bold',
+                            },
+                        ),
+                    ]),
                 ]),
             ]),
         ]),
