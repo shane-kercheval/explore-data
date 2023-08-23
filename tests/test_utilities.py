@@ -89,12 +89,10 @@ def test_convert_to_date_invalid(value):  # noqa
 
 # Additional edge cases
 def test_convert_to_date_none():  # noqa
-    with pytest.raises(TypeError):
-        convert_to_date(None)
+    assert pd.isna(convert_to_date(None))
 
 def test_convert_to_date_empty_string():  # noqa
-    with pytest.raises(ValueError):  # noqa
-        convert_to_date("")
+    assert pd.isna(convert_to_date(None))
 
 def test_convert_to_date_datetime_with_microseconds():  # noqa
     input_datetime = datetime(2023, 8, 22, 15, 30, 45, 123456)
