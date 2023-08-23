@@ -1,12 +1,13 @@
-div.graph_options {
+div.graph_panel_section {
     margin: 0 0 10px 0;
     border: none;
     /* background-color: #f7f7f7;
     border-radius: 0 0 8px 8px; */
 }
 
-label.graph_options_label {
+label.graph_panel_section_label {
     font-weight: bold;
+    margin: 0 0 6px 0;
 }
 
 /* Reset some of the browser default styles for better consistency */

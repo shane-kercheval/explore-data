@@ -6,6 +6,8 @@ import dash_daq as daq
 from source.library.utilities import convert_to_date
 
 
+CLASS__GRAPH_PANEL_SECTION = 'graph_panel_section'
+
 def log(value: str) -> None:
     """Log value."""
     print(value, flush=True)
@@ -35,12 +37,12 @@ def create_control(
     style = {'display': 'none'} if hidden else {}
     return html.Div(
         id=f'{id}_div',
-        className='graph_options',
+        className=CLASS__GRAPH_PANEL_SECTION,
         style=style,
         children=[
             html.Label(
                 f"{label}:",
-                className='graph_options_label',
+                className=CLASS__GRAPH_PANEL_SECTION + '_label',
             ),
             component,
     ])
@@ -140,12 +142,12 @@ def create_min_max_control(
     style = {'display': 'none'} if hidden else {}
     return html.Div(
         id=f'{id}_div',
-        className='graph_options',
+        className=CLASS__GRAPH_PANEL_SECTION,
         style=style,
         children=[
             html.Label(
                 f"{label}:",
-                className='graph_options_label',
+                className=CLASS__GRAPH_PANEL_SECTION + '_label',
             ),
             html.Div(className='min_max_div', children=[
                 html.Label("Min:"),
@@ -194,5 +196,6 @@ def create_date_range_control(
             max_date_allowed=max_value,
             start_date=min_value,
             end_date=max_value,
+            style={'width': '100%'},
         ),
     )

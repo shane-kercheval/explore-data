@@ -16,8 +16,9 @@ from source.library.dash_helpers import (
     create_slider_control,
     create_min_max_control,
     create_date_range_control,
+    CLASS__GRAPH_PANEL_SECTION,
 )
-from source.library.utilities import convert_columns_to_datetime
+from source.library.utilities import convert_to_datetime
 
 GOLDEN_RATIO = 1.618
 
@@ -117,12 +118,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         ),
                         dbc.Collapse(id="collapse-variables", is_open=True, children=[
                             dbc.CardBody([
-                                create_date_range_control(
-                                    label="Date Range",
-                                    id="date_range",
-                                    min_value='',
-                                    max_value='',
-                                ),
                                 create_dropdown_control(
                                     label="X variable",
                                     id="x_variable",
@@ -165,7 +160,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 html.Div(
                                     id='dynamic-filter-controls',
                                     style={'margin': '15px 0 10px 0'},
-                                    className='graph_options',
+                                    className=CLASS__GRAPH_PANEL_SECTION,
                                 ),
                             ]),
                         ]),
@@ -203,12 +198,12 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             dbc.CardBody([
                                 html.Div(
                                     id='title_div',
-                                    className='graph_options',
+                                    className=CLASS__GRAPH_PANEL_SECTION,
                                     # style={'display': 'none'},
                                     children=[
                                         html.Label(
                                             "Title:",
-                                            className='graph_options_label',
+                                            className=CLASS__GRAPH_PANEL_SECTION + '_label',
                                         ),
                                         dcc.Input(
                                             id='title_textbox',
@@ -419,8 +414,10 @@ def load_data(  # noqa
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
 
-        data, converted_columns = convert_columns_to_datetime(data)
-        log_variable('converted_columns', converted_columns)
+        # i can't do this here because the dataframe gets converted to a dict and loses the
+        # converted datetime dtypes
+        # data, converted_columns = convert_columns_to_datetime(data)
+        # log_variable('converted_columns', converted_columns)
         all_columns = data.columns.tolist()
         numeric_columns = hp.get_numeric_columns(data)
         non_numeric_columns = hp.get_non_numeric_columns(data)
@@ -713,30 +710,47 @@ def update_filter_controls(
     if selected_filter_columns and data:
         data = pd.DataFrame(data)
         for column in selected_filter_columns:
+            data_series, _ = convert_to_datetime(data[column])
+
             log(f"Creating controls for `{column}`")
             value = []
             if filter_columns_cache and column in filter_columns_cache:
                 value = filter_columns_cache[column]
                 log(f"found `{column}` in filter_columns_cache with value `{value}`")
-            if column in non_numeric_columns:
-                log("create dropdown")
+
+            # check if column is datetime
+            # if data[column].dtype == 'datetime64[ns]':
+            log_variable('data[day].dtype', data_series.dtype)
+            if pd.api.types.is_datetime64_any_dtype(data_series):
+                log("Creating date range control")
+                components.append(create_date_range_control(
+                    label=column,
+                    id=f"filter_control_{column}",
+                    min_value=value[0] if value else data_series.min(),
+                    max_value=value[1] if value else data_series.max(),
+                    component_id={"type": "filter-control-date-range", "index": column},
+                ))
+            elif column in non_numeric_columns:
+                log("Creating dropdown control")
                 components.append(create_dropdown_control(
                     label=column,
                     id=f"filter_control_{column}",
                     value=value,
                     multi=True,
-                    options=values_to_dropdown_options(data[column].unique()),
+                    options=values_to_dropdown_options(data_series.unique()),
                     component_id={"type": "filter-control-dropdown", "index": column},
                 ))
-            if column in numeric_columns:
-                log("create min/max control")
+            elif column in numeric_columns:
+                log("Creating min/max control")
                 components.append(create_min_max_control(
                     label=column,
                     id=f"filter_control_{column}",
-                    min_value=value[0] if value else data[column].min(),
-                    max_value=value[1] if value else data[column].max(),
+                    min_value=value[0] if value else data_series.min(),
+                    max_value=value[1] if value else data_series.max(),
                     component_id={"type": "filter-control-min-max", "index": column},
                 ))
+            else:
+                raise ValueError(f"Unknown column type: {column}")
                 # components.append(create_slider_control(
                 #     label=column,
                 #     id=f"filter_control_{column}",
