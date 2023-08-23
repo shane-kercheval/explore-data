@@ -1,7 +1,8 @@
 """Test utilities.py."""
-
+import pytest
 import pandas as pd
-from source.library.utilities import convert_columns_to_datetime
+from datetime import date, datetime
+from source.library.utilities import convert_columns_to_datetime, convert_to_date
 
 
 def test_convert_columns_to_datetime(data):  # noqa
@@ -34,11 +35,11 @@ def test_convert_columns_to_datetime(data):  # noqa
 
     # Check that data meant to be converted has expected values
     assert data_converted['date_string'].equals(pd.to_datetime(data['date_string']))
-    assert data_converted['date_string_with_missing'].equals(pd.to_datetime(data['date_string_with_missing']))
+    assert data_converted['date_string_with_missing'].equals(pd.to_datetime(data['date_string_with_missing']))  # noqa
     assert data_converted['datetime_string'].equals(pd.to_datetime(data['datetime_string']))
-    assert data_converted['datetime_string_with_missing'].equals(pd.to_datetime(data['datetime_string_with_missing']))
+    assert data_converted['datetime_string_with_missing'].equals(pd.to_datetime(data['datetime_string_with_missing']))  # noqa
     assert data_converted['datetimes'].equals(data['datetimes'])  # already datetime64
-    assert data_converted['datetimes_with_missing'].equals(pd.to_datetime(data['datetimes_with_missing']))
+    assert data_converted['datetimes_with_missing'].equals(pd.to_datetime(data['datetimes_with_missing']))  # noqa
     assert data_converted['dates'].equals(pd.to_datetime(data['dates']))
     assert data_converted['dates_with_missing'].equals(pd.to_datetime(data['dates_with_missing']))
 
@@ -60,3 +61,42 @@ def test_convert_columns_to_datetime(data):  # noqa
     assert data_converted['floats_with_missing'].equals(data['floats_with_missing'])
     assert data_converted['booleans'].equals(data['booleans'])
     assert data_converted['booleans_with_missing'].equals(data['booleans_with_missing'])
+
+
+
+# Test cases
+test_data = [
+    ("2023-08-22", date(2023, 8, 22)),
+    ("2023-08-22 15:30:45", date(2023, 8, 22)),
+    (date(2023, 8, 22), date(2023, 8, 22)),
+    (datetime(2023, 8, 22, 15, 30, 45), date(2023, 8, 22)),
+]
+
+invalid_data = [
+    "invalid-date-format",
+    "2023-13-01",
+    "2023-08-22 25:00:00",
+]
+
+@pytest.mark.parametrize("value, expected", test_data)  # noqa
+def test_convert_to_date_valid(value, expected):  # noqa
+    assert convert_to_date(value) == expected
+
+@pytest.mark.parametrize("value", invalid_data)
+def test_convert_to_date_invalid(value):  # noqa
+    with pytest.raises(ValueError):  # noqa
+        convert_to_date(value)
+
+# Additional edge cases
+def test_convert_to_date_none():  # noqa
+    with pytest.raises(TypeError):
+        convert_to_date(None)
+
+def test_convert_to_date_empty_string():  # noqa
+    with pytest.raises(ValueError):  # noqa
+        convert_to_date("")
+
+def test_convert_to_date_datetime_with_microseconds():  # noqa
+    input_datetime = datetime(2023, 8, 22, 15, 30, 45, 123456)
+    expected_date = date(2023, 8, 22)
+    assert convert_to_date(input_datetime) == expected_date

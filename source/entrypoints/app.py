@@ -117,7 +117,12 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         ),
                         dbc.Collapse(id="collapse-variables", is_open=True, children=[
                             dbc.CardBody([
-                                # create_date_range_control()
+                                create_date_range_control(
+                                    label="Date Range",
+                                    id="date_range",
+                                    min_value='',
+                                    max_value='',
+                                ),
                                 create_dropdown_control(
                                     label="X variable",
                                     id="x_variable",
@@ -507,14 +512,14 @@ def filter_data(
 
         # log(f"Filtering on `{column}`")
         # if column in [item['index'] for item in dropdown_ids]:
-        #     for value, id in zip(dropdown_values, dropdown_ids):  # noqa
+        #     for value, id in zip(dropdown_values, dropdown_ids):
         #         log_variable('value', value)
         #         log_variable('id', id)
         #         if id['index'] == column and value:
         #             log(f"filtering on {column} with {value}")
         #             filtered_data = filtered_data[filtered_data[column].isin(value)]
         # if column in [item['index'] for item in slider_ids]:
-        #     for value, id in zip(slider_values, slider_ids):  # noqa
+        #     for value, id in zip(slider_values, slider_ids):
         #         print(f"value: {value}", flush=True)
         #         print(f"id: {id}", flush=True)
         #         if id['index'] == column and value:
@@ -728,7 +733,6 @@ def update_filter_controls(
                 components.append(create_min_max_control(
                     label=column,
                     id=f"filter_control_{column}",
-                    # value=value or (data[column].min(), data[column].max()),
                     min_value=value[0] if value else data[column].min(),
                     max_value=value[1] if value else data[column].max(),
                     component_id={"type": "filter-control-min-max", "index": column},

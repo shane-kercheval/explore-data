@@ -1,7 +1,9 @@
 """Helper functions for creating dash components."""
-from datetime import date
+from datetime import date, datetime
 from dash import html, dcc
 import dash_daq as daq
+
+from source.library.utilities import convert_to_date
 
 
 def log(value: str) -> None:
@@ -162,4 +164,35 @@ def create_min_max_control(
                 ),
             ]),
         ],
+    )
+
+
+def create_date_range_control(
+        label: str,
+        id: str,  # noqa: A002
+        min_value: str | date | datetime,
+        max_value: str | date | datetime,
+        hidden: bool = False,
+        component_id: dict | None = None,
+        ) -> html.Div:
+    """Create a dropdown control."""
+    if component_id is None:
+        component_id = f'{id}_dropdown'
+    else:
+        assert isinstance(component_id, dict)
+
+    min_value = convert_to_date(min_value)
+    max_value = convert_to_date(max_value)
+
+    return create_control(
+        label=label,
+        id=id,
+        hidden=hidden,
+        component=dcc.DatePickerRange(
+            id=component_id,
+            min_date_allowed=min_value,
+            max_date_allowed=max_value,
+            start_date=min_value,
+            end_date=max_value,
+        ),
     )

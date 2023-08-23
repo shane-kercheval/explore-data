@@ -1,4 +1,5 @@
 """Misc utilities."""
+from datetime import datetime, date
 import pandas as pd
 
 
@@ -23,3 +24,26 @@ def convert_columns_to_datetime(df: pd.DataFrame) -> pd.DataFrame:
         except Exception:
             pass
     return df, converted_columns
+
+
+def convert_to_date(value: str | datetime | date) -> date:
+    """Convert a string or datetime to a date."""
+    if isinstance(value, datetime):
+        return value.date()
+
+    if isinstance(value, date):
+        return value
+
+    try:
+        parsed_date = datetime.strptime(value, "%Y-%m-%d")
+        return parsed_date.date()
+    except ValueError:
+        pass
+
+    try:
+        parsed_datetime = datetime.strptime(value, "%Y-%m-%d %H:%M:%S")
+        return parsed_datetime.date()
+    except ValueError:
+        pass
+
+    raise ValueError("Invalid input format. Expected 'yyyy-mm-dd' or 'yyyy-mm-dd hh:mm:ss'.")

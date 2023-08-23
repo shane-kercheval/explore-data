@@ -22,6 +22,6 @@ def data() -> pd.DataFrame:
         'booleans_with_missing': [np.nan, True, False],
         'datetimes': [datetime(2023, 8, 1), datetime(2023, 8, 15), datetime(2023, 9, 1)],
         'datetimes_with_missing': [datetime(2023, 8, 1), pd.NaT, datetime(2023, 9, 1)],
-        'dates': [datetime(2023, 8, 1).date(), datetime(2023, 8, 15).date(), datetime(2023, 9, 1).date()],
+        'dates': [datetime(2023, 8, 1).date(), datetime(2023, 8, 15).date(), datetime(2023, 9, 1).date()],  # noqa
         'dates_with_missing': [pd.NaT, datetime(2023, 8, 15).date(), datetime(2023, 9, 1).date()],
     })
