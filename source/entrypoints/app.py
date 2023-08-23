@@ -9,6 +9,7 @@ import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
 from source.library.dash_helpers import (
     log,
+    log_error,
     log_function,
     log_variable,
     values_to_dropdown_options,
@@ -18,7 +19,7 @@ from source.library.dash_helpers import (
     create_date_range_control,
     CLASS__GRAPH_PANEL_SECTION,
 )
-from source.library.utilities import convert_to_datetime
+from source.library.utilities import convert_to_date, convert_to_datetime
 
 GOLDEN_RATIO = 1.618
 
@@ -490,6 +491,8 @@ def filter_data(
         original_data: dict,
         ) -> dict:
     """Filter the data based on the user's selections."""
+
+    # TODO: refactor and unit-test
     log_function('filtered_data')
     log_variable('selected_filter_columns', selected_filter_columns)
 
@@ -499,13 +502,31 @@ def filter_data(
         assert column in filter_columns_cache
         value = filter_columns_cache[column]
         log(f"filtering on {column} with {value}")
-        if filtered_data[column].dtype == 'object':
+
+        # TODO: why don't I refactor this so that I store the type of the column in the cache?
+        # e.g. {'column': 'date', 'value': ['2020-01-01', '2020-01-31'], type: 'date'}
+        # that way I can just do a switch statement on the type
+        # convert to datetime if possible
+        series, _ = convert_to_datetime(filtered_data[column])
+        log_variable('series.dtype', series.dtype)
+        if pd.api.types.is_datetime64_any_dtype(series):
+            series = series.dt.date
+            assert isinstance(value, list)
+            start_date = convert_to_date(value[0])
+            end_date = convert_to_date(value[1])
+            filtered_data = filtered_data[(series >= start_date) & (series <= end_date)]
+        elif filtered_data[column].dtype == 'object':
             assert isinstance(value, list)
             filtered_data = filtered_data[filtered_data[column].isin(value)]
-
+        elif filtered_data[column].dtype == 'bool':
+            assert isinstance(value, list)
+            log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])
+            filtered_data = filtered_data[filtered_data[column].isin([x.lower() == 'true' for x in value])]
         elif filtered_data[column].dtype == 'int64':
             assert isinstance(value, list)  # TODO it seems to switch from a list to a tuple
             filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]
+        else:
+            raise ValueError(f"Unknown dtype for column `{column}`: {filtered_data[column].dtype}")
 
         # log(f"Filtering on `{column}`")
         # if column in [item['index'] for item in dropdown_ids]:
@@ -710,7 +731,7 @@ def update_filter_controls(
     if selected_filter_columns and data:
         data = pd.DataFrame(data)
         for column in selected_filter_columns:
-            data_series, _ = convert_to_datetime(data[column])
+            series, _ = convert_to_datetime(data[column])
 
             log(f"Creating controls for `{column}`")
             value = []
@@ -720,24 +741,25 @@ def update_filter_controls(
 
             # check if column is datetime
             # if data[column].dtype == 'datetime64[ns]':
-            log_variable('data[day].dtype', data_series.dtype)
-            if pd.api.types.is_datetime64_any_dtype(data_series):
+            log_variable('series.dtype', series.dtype)
+            if pd.api.types.is_datetime64_any_dtype(series):
                 log("Creating date range control")
                 components.append(create_date_range_control(
                     label=column,
                     id=f"filter_control_{column}",
-                    min_value=value[0] if value else data_series.min(),
-                    max_value=value[1] if value else data_series.max(),
+                    min_value=value[0] if value else series.min(),
+                    max_value=value[1] if value else series.max(),
                     component_id={"type": "filter-control-date-range", "index": column},
                 ))
             elif column in non_numeric_columns:
                 log("Creating dropdown control")
+                log_variable('series.unique()', series.unique())
                 components.append(create_dropdown_control(
                     label=column,
                     id=f"filter_control_{column}",
                     value=value,
                     multi=True,
-                    options=values_to_dropdown_options(data_series.unique()),
+                    options=values_to_dropdown_options(series.unique()),
                     component_id={"type": "filter-control-dropdown", "index": column},
                 ))
             elif column in numeric_columns:
@@ -745,20 +767,13 @@ def update_filter_controls(
                 components.append(create_min_max_control(
                     label=column,
                     id=f"filter_control_{column}",
-                    min_value=value[0] if value else data_series.min(),
-                    max_value=value[1] if value else data_series.max(),
+                    min_value=value[0] if value else series.min(),
+                    max_value=value[1] if value else series.max(),
                     component_id={"type": "filter-control-min-max", "index": column},
                 ))
             else:
+                log_error(f"Unknown column type: {column}")
                 raise ValueError(f"Unknown column type: {column}")
-                # components.append(create_slider_control(
-                #     label=column,
-                #     id=f"filter_control_{column}",
-                #     min=data[column].min(),
-                #     max=data[column].max(),
-                #     value=value or [data[column].min(), data[column].max()],
-                #     component_id={"type": "filter-control-min-max", "index": column},
-                # ))
 
     log_variable('# of components', len(components))
     return components
@@ -766,23 +781,29 @@ def update_filter_controls(
 
 @app.callback(
     Output('filter_columns_cache', 'data'),
-    Input({'type': 'filter-control-dropdown', 'index': ALL}, 'value'),
+    Input({'type': 'filter-control-date-range', 'index': ALL}, 'id'),
+    Input({'type': 'filter-control-date-range', 'index': ALL}, 'start_date'),
+    Input({'type': 'filter-control-date-range', 'index': ALL}, 'end_date'),
     Input({'type': 'filter-control-dropdown', 'index': ALL}, 'id'),
-    Input({'type': 'filter-control-min-max__min', 'index': ALL}, 'value'),
+    Input({'type': 'filter-control-dropdown', 'index': ALL}, 'value'),
     Input({'type': 'filter-control-min-max__min', 'index': ALL}, 'id'),
-    Input({'type': 'filter-control-min-max__max', 'index': ALL}, 'value'),
+    Input({'type': 'filter-control-min-max__min', 'index': ALL}, 'value'),
     Input({'type': 'filter-control-min-max__max', 'index': ALL}, 'id'),
+    Input({'type': 'filter-control-min-max__max', 'index': ALL}, 'value'),
     State('filter_columns_dropdown', 'value'),
     State('filter_columns_cache', 'data'),
     prevent_initial_call=True,
 )
 def cache_filter_columns(
-        dropdown_values: list[list],
+        date_range_ids: list[dict],
+        date_range_start_date: list[list],
+        date_range_end_date: list[list],
         dropdown_ids: list[dict],
-        minmax_min_values: list[list],
+        dropdown_values: list[list],
         minmax_min_ids: list[dict],
-        minmax_max_values: list[list],
+        minmax_min_values: list[list],
         minmax_max_ids: list[dict],
+        minmax_max_values: list[list],
         selected_filter_columns: list[str],
         filter_columns_cache: dict,
         ) -> dict:
@@ -794,6 +815,9 @@ def cache_filter_columns(
     log_function('cache_filter_columns')
     log_variable('selected_filter_columns', selected_filter_columns)
     log_variable('filter_columns_cache', filter_columns_cache)
+    log_variable('date_range_start_date', date_range_start_date)
+    log_variable('date_range_end_date', date_range_end_date)
+    log_variable('date_range_ids', date_range_ids)
     log_variable('dropdown_values', dropdown_values)
     log_variable('dropdown_ids', dropdown_ids)
     log_variable('minmax_min_values', minmax_min_values)
@@ -815,21 +839,32 @@ def cache_filter_columns(
 
     for column in selected_filter_columns:
         log(f"caching column: `{column}`")
-        if column in [item['index'] for item in dropdown_ids]:
-            for value, id in zip(dropdown_values, dropdown_ids):  # noqa
-                # log(f"value: {value}")
-                # log(f"id: {id}")
+        if column in [item['index'] for item in date_range_ids]:
+            log(f"found `{column}` in date_range_ids")
+            for id, start_date, end_date in zip(date_range_ids, date_range_start_date, date_range_end_date):  # noqa
+                if id['index'] == column:
+                    values = (start_date, end_date)
+                    log(f"caching `{column}` with `{values}`")
+                    filter_columns_cache[column] = values
+                    break
+        elif column in [item['index'] for item in dropdown_ids]:
+            log(f"found `{column}` in dropdown_ids")
+            for id, value in zip(dropdown_ids, dropdown_values):  # noqa
                 if id['index'] == column:
                     log(f"caching `{column}` with `{value}`")
                     filter_columns_cache[column] = value
-        if column in [item['index'] for item in minmax_min_ids]:
-            for min_value, id, max_value, _ in zip(minmax_min_values, minmax_min_ids, minmax_max_values, minmax_max_ids):  # noqa
-                # log(f"value: {value}")
-                # log(f"id: {id}")
+                    break
+        elif column in [item['index'] for item in minmax_min_ids]:
+            log(f"found `{column}` in minmax_min_ids")
+            for id, min_value, max_value in zip(minmax_min_ids, minmax_min_values, minmax_max_values):  # noqa
                 if id['index'] == column:
                     values = (min_value, max_value)
                     log(f"caching `{column}` with `{values}`")
                     filter_columns_cache[column] = values
+                    break
+        else:
+            log_error(f"Unknown column type: {column}")
+            raise ValueError(f"Unknown column type: {column}")
 
     log(f"filter_columns_cache: {filter_columns_cache}")
     return filter_columns_cache

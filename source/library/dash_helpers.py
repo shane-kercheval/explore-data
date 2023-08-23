@@ -23,9 +23,15 @@ def log_variable(var: str, value: str) -> None:
     log(f"VARIABLE: `{var}` = `{value}`")
 
 
+def log_error(message: str) -> None:
+    """Log variable value."""
+    log(f">>>>>>>>>ERROR: `{message}`")
+
+
 def values_to_dropdown_options(values: list[str]) -> list[dict]:
     """Convert a list of columns to a list of options for a dropdown."""
-    return [{'label': value, 'value': value} for value in values]
+    # needs to be converted to str for dcc.Dropdown other wise it will fail
+    return [{'label': str(value), 'value': str(value)} for value in values]
 
 
 def create_control(
