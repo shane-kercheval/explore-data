@@ -7,8 +7,16 @@ import plotly.express as px
 import pandas as pd
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
-from source.library.dash_helpers import log, log_function, log_variable, create_dropdown_control, \
-    create_slider_control, create_min_max_control, values_to_dropdown_options
+from source.library.dash_helpers import (
+    log,
+    log_function,
+    log_variable,
+    values_to_dropdown_options,
+    create_dropdown_control,
+    create_slider_control,
+    create_min_max_control,
+    create_date_range_control,
+)
 from source.library.utilities import convert_columns_to_datetime
 
 GOLDEN_RATIO = 1.618
@@ -109,6 +117,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         ),
                         dbc.Collapse(id="collapse-variables", is_open=True, children=[
                             dbc.CardBody([
+                                # create_date_range_control()
                                 create_dropdown_control(
                                     label="X variable",
                                     id="x_variable",
@@ -719,7 +728,9 @@ def update_filter_controls(
                 components.append(create_min_max_control(
                     label=column,
                     id=f"filter_control_{column}",
-                    value=value or (data[column].min(), data[column].max()),
+                    # value=value or (data[column].min(), data[column].max()),
+                    min_value=value[0] if value else data[column].min(),
+                    max_value=value[1] if value else data[column].max(),
                     component_id={"type": "filter-control-min-max", "index": column},
                 ))
                 # components.append(create_slider_control(

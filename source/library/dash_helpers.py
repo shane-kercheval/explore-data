@@ -1,4 +1,5 @@
 """Helper functions for creating dash components."""
+from datetime import date
 from dash import html, dcc
 import dash_daq as daq
 
@@ -115,7 +116,8 @@ def create_slider_control(
 def create_min_max_control(
         label: str,
         id: str,  # noqa: A002
-        value: tuple[int] | tuple[float],
+        min_value: int | float,
+        max_value: int | float,
         hidden: bool = False,
         component_id: dict | None = None,
         ) -> html.Div:
@@ -147,16 +149,16 @@ def create_min_max_control(
                 html.Label("Min:"),
                 daq.NumericInput(
                     id=component_id_min,
-                    min=value[0],
-                    max=value[1],
-                    value=value[0],
+                    min=min_value,
+                    max=max_value,
+                    value=min_value,
                 ),
                 html.Label("Max:"),
                 daq.NumericInput(
                     id=component_id_max,
-                    min=value[0],
-                    max=value[1],
-                    value=value[1],
+                    min=min_value,
+                    max=max_value,
+                    value=max_value,
                 ),
             ]),
         ],
