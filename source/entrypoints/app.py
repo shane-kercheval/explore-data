@@ -9,7 +9,7 @@ import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
 from source.library.dash_helpers import log, log_function, log_variable, create_dropdown_control, \
     create_slider_control, create_min_max_control, values_to_dropdown_options
-
+from source.library.utilities import convert_columns_to_datetime
 
 GOLDEN_RATIO = 1.618
 
@@ -313,6 +313,10 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('x_variable_dropdown', 'options'),
     Output('y_variable_dropdown', 'options'),
     Output('filter_columns_dropdown', 'options'),
+    Output('filter_columns_cache', 'data', allow_duplicate=True),
+    Output('dynamic-filter-controls', 'children', allow_duplicate=True),
+    Output('primary-graph', 'figure', allow_duplicate=True),
+    Output('table_visualize', 'data', allow_duplicate=True),
     Output('table_uploaded_data', 'data'),
     Output('numeric_summary', 'data'),
     Output('non_numeric_summary', 'data'),
@@ -340,6 +344,10 @@ def load_data(  # noqa
     x_variable_dropdown = []
     y_variable_dropdown = []
     filter_columns_dropdown = []
+    filter_columns_cache = None
+    dynamic_filter_controls = None
+    primary_graph = {}
+    table_visualize = None
     table_uploaded_data = None
     numeric_summary = None
     non_numeric_summary = None
@@ -391,6 +399,8 @@ def load_data(  # noqa
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
 
+        data, converted_columns = convert_columns_to_datetime(data)
+        log_variable('converted_columns', converted_columns)
         all_columns = data.columns.tolist()
         numeric_columns = hp.get_numeric_columns(data)
         non_numeric_columns = hp.get_non_numeric_columns(data)
@@ -430,6 +440,10 @@ def load_data(  # noqa
         x_variable_dropdown,
         y_variable_dropdown,
         filter_columns_dropdown,
+        filter_columns_cache,
+        dynamic_filter_controls,
+        primary_graph,
+        table_visualize,
         table_uploaded_data,
         numeric_summary,
         non_numeric_summary,
@@ -475,7 +489,6 @@ def filter_data(
         elif filtered_data[column].dtype == 'int64':
             assert isinstance(value, list)  # TODO it seems to switch from a list to a tuple
             filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]
-
 
         # log(f"Filtering on `{column}`")
         # if column in [item['index'] for item in dropdown_ids]:
@@ -551,7 +564,13 @@ def update_graph(
     log_variable('n_bins', n_bins)
     log_variable('type(n_bins)', type(n_bins))
     fig = {}
-    if (x_variable or y_variable) and data:
+    if (
+        (x_variable or y_variable)
+        and data
+        and (not x_variable or x_variable in data[0])
+        and (not y_variable or y_variable in data[0])
+        and (not facet_variable or facet_variable in data[0])
+        ):
         fig = px.histogram(
             data,
             x=x_variable,
