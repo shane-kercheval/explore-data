@@ -39,47 +39,48 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
             dcc.Loading(type="default", children=[
             html.Br(),
             dbc.Row([
-                dbc.Col(width=3, children=[
-                    html.H4("Load .csv or .pkl from file"),
-                    dcc.Upload(
-                        id='upload-data',
-                        children=html.Div([
-                            'Drag and Drop or ',
-                            html.A('Select Files', style={'color': 'blue'}),
-                        ]),
-                        style={
-                            'width': '100%',
-                            'height': '60px',
-                            'lineHeight': '60px',
-                            'borderWidth': '1px',
-                            'borderStyle': 'dashed',
-                            'borderRadius': '5px',
-                            'textAlign': 'center',
-                            'align-items': 'center',
-                            # 'margin': '0px',
-                        },
-                        multiple=False,
-                    ),
-                ]),
-                dbc.Col(width=1, children=[]),
-                dbc.Col(width=7, children=[
-                    html.H4("Load .csv from URL"),
-                    html.Button(
-                        'Load',
-                        id='load_from_url_button',
-                        n_clicks=0,
-                        style={'width': '20%', 'padding': '0px'},
-                    ),
-                    dcc.Input(
-                        id='load_from_url',
-                        type='text',
-                        placeholder='Enter CSV URL',
-                        # value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
-                        value='https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv',
-                        style={
-                            'width': '80%',
-                        },
-                    ),
+                dbc.Tabs([
+                    dbc.Tab(label="Load .csv from URL", children=[
+                        html.Br(),
+                        html.Button(
+                            'Load csv from URL',
+                            id='load_from_url_button',
+                            n_clicks=0,
+                            style={'width': '200px', 'margin': '0 8px 0 0'},
+                        ),
+                        dcc.Input(
+                            id='load_from_url',
+                            type='text',
+                            placeholder='Enter CSV URL',
+                            # value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
+                            value='https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv',
+                            style={
+                                'width': '600px',
+                            },
+                        ),
+                    ]),
+                    dbc.Tab(label="Load .csv or .pkl from file", children=[
+                        html.Br(),
+                        dcc.Upload(
+                            id='upload-data',
+                            children=html.Div([
+                                'Drag and Drop .csv or .pkl or ',
+                                html.A('Select Files', style={'color': 'blue'}),
+                            ]),
+                            style={
+                                'width': '100%',
+                                'height': '60px',
+                                'lineHeight': '60px',
+                                'borderWidth': '1px',
+                                'borderStyle': 'dashed',
+                                'borderRadius': '5px',
+                                'textAlign': 'center',
+                                'align-items': 'center',
+                                # 'margin': '0px',
+                            },
+                            multiple=False,
+                        ),
+                    ]),
                 ]),
             ]),
             html.Br(),
