@@ -836,25 +836,34 @@ def update_filter_controls(
                     max_value=value[1] if value else series.max(),
                     component_id={"type": "filter-control-date-range", "index": column},
                 ))
-            elif pd.api.types.is_bool_dtype(series):
+            elif hp.is_series_bool(series):
                 log("Creating dropdown control")
+                options = ['True', 'False']
+                multi = False
+                if series.isna().any():
+                    options.append('<Missing>')
+                    multi = True
                 components.append(create_dropdown_control(
                     label=column,
                     id=f"filter_control_{column}",
                     value=value or 'True',
-                    multi=False,
-                    options=['True', 'False'],
+                    multi=multi,
+                    options=options,
                     component_id={"type": "filter-control-dropdown", "index": column},
                 ))
             elif column in non_numeric_columns:
                 log("Creating dropdown control")
                 log_variable('series.unique()', series.unique())
+                options = sorted(series.dropna().unique().tolist())
+                if series.isna().any():
+                    options.append('<Missing>')
                 components.append(create_dropdown_control(
                     label=column,
                     id=f"filter_control_{column}",
                     value=value,
                     multi=True,
-                    options=values_to_dropdown_options(series.unique()),
+                    options=options,
+                    # options=values_to_dropdown_options(series.unique()),
                     component_id={"type": "filter-control-dropdown", "index": column},
                 ))
             elif column in numeric_columns:
