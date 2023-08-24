@@ -1,4 +1,6 @@
 """Dash app entry point."""
+import os
+from dotenv import load_dotenv
 import base64
 import io
 from dash import Dash, html, dash_table, dcc, Output, Input, State, callback_context
@@ -22,6 +24,11 @@ from source.library.dash_helpers import (
 )
 from source.library.utilities import convert_to_date, convert_to_datetime
 
+
+load_dotenv()
+HOST = os.getenv('HOST')
+DEBUG = os.getenv('DEBUG').lower() == 'true'
+PORT = os.getenv('PORT')
 GOLDEN_RATIO = 1.618
 
 
@@ -470,6 +477,7 @@ def load_data(  # noqa
         categorical_columns = hp.get_categorical_columns(data)
         string_columns = hp.get_string_columns(data)
 
+        log('creating numeric summary')
         numeric_summary = hp.numeric_summary(data, return_style=False)
         if numeric_summary is not None and len(numeric_summary) > 0:
             numeric_summary = numeric_summary.\
@@ -479,6 +487,7 @@ def load_data(  # noqa
         else:
             numeric_summary = None
 
+        log('creating non-numeric summary')
         non_numeric_summary = hp.non_numeric_summary(data, return_style=False)
         if non_numeric_summary is not None and len(non_numeric_summary) > 0:
             non_numeric_summary = non_numeric_summary.\
@@ -939,5 +948,5 @@ def cache_filter_columns(
 
 
 if __name__ == '__main__':
-    app.run_server(host='0.0.0.0', debug=True, port=8050)
+    app.run_server(host=HOST, debug=DEBUG, port=PORT)
 
