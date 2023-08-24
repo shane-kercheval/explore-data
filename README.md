@@ -8,6 +8,8 @@
     - where do i display what is currently being filtered?
 
 
+- test categorical in filtering and what we display
+- test boolean with na (shows up as object)
 
 # Running the project
 
