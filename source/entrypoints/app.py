@@ -552,6 +552,7 @@ def filter_data(
     if not selected_filter_columns:
         return original_data, "No filters applied."
 
+    markdown_text = "##### Filters applied:  \n"
     filtered_data = pd.DataFrame(original_data).copy()
     log(f"{len(filtered_data):,} rows before after filtering")
     for column in selected_filter_columns:
@@ -571,19 +572,25 @@ def filter_data(
             assert isinstance(value, list)
             start_date = convert_to_date(value[0])
             end_date = convert_to_date(value[1])
+            markdown_text += f"  - `{column}` between `{start_date}` and `{end_date}`  \n"
             filtered_data = filtered_data[(series >= start_date) & (series <= end_date)]
         elif series.dtype == 'object':
             assert isinstance(value, list)
+            markdown_text += f"  - `{column}` in `{value}`  \n"
             filtered_data = filtered_data[series.isin(value)]
         elif series.dtype == 'bool':
             assert isinstance(value, str)
+            markdown_text += f"  - `{column}` is `{value}`  \n"
             filtered_data = filtered_data[series == (value.lower() == 'true')]
             # assert isinstance(value, list)
             # log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])
             # filtered_data = filtered_data[series.isin([x.lower() == 'true' for x in value])]
         elif pd.api.types.is_numeric_dtype(series):
             assert isinstance(value, list)  # TODO it seems to switch from a list to a tuple
-            filtered_data = filtered_data[series.between(value[0], value[1])]
+            min_value = value[0]
+            max_value = value[1]
+            markdown_text += f"  - `{column}` between `{min_value}` and `{max_value}`  \n"
+            filtered_data = filtered_data[series.between(min_value, max_value)]
         else:
             raise ValueError(f"Unknown dtype for column `{column}`: {filtered_data[column].dtype}")
 
@@ -604,7 +611,7 @@ def filter_data(
         #             filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]  # noqa
 
     log(f"{len(filtered_data):,} rows remaining after filtering")
-    return filtered_data.to_dict('records'), "Filtered data"
+    return filtered_data.to_dict('records'), markdown_text
 
 
 @app.callback(
