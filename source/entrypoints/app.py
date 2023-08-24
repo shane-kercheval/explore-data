@@ -18,6 +18,7 @@ from source.library.dash_helpers import (
     create_min_max_control,
     create_date_range_control,
     CLASS__GRAPH_PANEL_SECTION,
+    create_random_dataframe,
 )
 from source.library.utilities import convert_to_date, convert_to_datetime
 
@@ -50,6 +51,28 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
             html.Br(),
             dbc.Row([
                 dbc.Tabs([
+                    dbc.Tab(label="Generate Random Dataframe", children=[
+                        html.Br(),
+                        html.Button(
+                            'Generate',
+                            id='load_random_data_button',
+                            n_clicks=0,
+                            style={'width': '200px', 'margin': '0 8px 0 0'},
+                        ),
+                        # dcc.NumberInput(
+                        #     id='n_rows',
+                        # ),
+                        # dcc.Input(
+                        #     id='load_from_url',
+                        #     type='text',
+                        #     placeholder='Enter CSV URL',
+                        #     # value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
+                        #     value='https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv',
+                        #     # style={
+                        #     #     'width': '600px',
+                        #     # },
+                        # ),
+                    ]),
                     dbc.Tab(label="Load .csv from URL", children=[
                         html.Br(),
                         html.Button(
@@ -170,12 +193,26 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         dbc.CardHeader(
                             dbc.Button(
                                 "Graph Options",
-                                id="panel-graph-options-toggle",
-                                className="panel_toggle_button",
+                                id='panel-graph-options-toggle',
+                                className='panel_toggle_button',
                             ),
                         ),
                         dbc.Collapse(id="collapse-graph-options", is_open=True, children=[
                             dbc.CardBody([
+                                create_dropdown_control(
+                                    label="Graph Type",
+                                    id='graph_type',
+                                    hidden=False,
+                                    multi=False,
+                                    options=[
+                                        {'label': 'Histogram', 'value': 'histogram'},
+                                        {'label': 'Box', 'value': 'box'},
+                                        {'label': 'Scatter', 'value': 'scatter'},
+                                        {'label': 'Line', 'value': 'line'},
+                                        {'label': 'Bar', 'value': 'bar'},
+                                    ],
+                                    value='histogram',
+                                ),
                                 create_slider_control(
                                     label="# of Bins",
                                     id="n_bins",
@@ -344,6 +381,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('date_columns', 'data'),
     Output('categorical_columns', 'data'),
     Output('string_columns', 'data'),
+    Input('load_random_data_button', 'n_clicks'),
     Input('load_from_url_button', 'n_clicks'),
     Input('upload-data', 'contents'),
     State('upload-data', 'filename'),
@@ -351,6 +389,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     prevent_initial_call=True,
 )
 def load_data(  # noqa
+        load_random_data_button: int,
         load_from_url_button: int,
         upload_data_contents: str,
         upload_data_filename: str,
@@ -388,6 +427,7 @@ def load_data(  # noqa
         # log_var('ctx_msg', ctx_msg)
 
         if triggered == 'upload-data.contents':
+            log_variable('load_random_data_button', load_random_data_button)
             log_variable('load_from_url_button', load_from_url_button)
             log_variable('upload_data_filename', upload_data_filename)
             _, content_string = upload_data_contents.split(',')
@@ -412,6 +452,10 @@ def load_data(  # noqa
         elif triggered == 'load_from_url_button.n_clicks' and load_from_url:
             log("Loading from CSV URL")
             data = pd.read_csv(load_from_url)
+        elif triggered == 'load_random_data_button.n_clicks' and load_from_url:
+            log("Loading DataFrame with random data")
+            data = create_random_dataframe(num_rows=100_000, sporadic_missing=False)
+            log(f"Loaded data w/ {data.shape[0]:,} rows and {data.shape[1]:,} columns")
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
 
@@ -583,6 +627,7 @@ def numeric_summary_table(numeric_summary: dict) -> dict:
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
     Input('facet_variable_dropdown', 'value'),
+    Input('graph_type_dropdown', 'value'),
     Input('n_bins_slider', 'value'),
     Input('title_textbox', 'value'),
     Input('filtered_data', 'data'),
@@ -592,6 +637,7 @@ def update_graph(
             x_variable: str,
             y_variable: str,
             facet_variable: str,
+            graph_type: str,
             n_bins: int,
             title_textbox: str,
             data: dict,
@@ -602,6 +648,7 @@ def update_graph(
     log_variable('y_variable', y_variable)
     log_variable('facet_variable', facet_variable)
     log_variable('n_bins', n_bins)
+    log_variable('graph_type', graph_type)
     log_variable('type(n_bins)', type(n_bins))
     fig = {}
     if (
@@ -611,13 +658,22 @@ def update_graph(
         and (not y_variable or y_variable in data[0])
         and (not facet_variable or facet_variable in data[0])
         ):
-        fig = px.histogram(
+
+        graph_types_lookup = {
+            'histogram': px.histogram,
+            'scatter': px.scatter,
+            'line': px.line,
+            'bar': px.bar,
+            'box': px.box,
+        }
+
+        fig = graph_types_lookup[graph_type](
             data,
             x=x_variable,
             y=y_variable,
             facet_col=facet_variable,
             title=title_textbox,
-            nbins=n_bins,
+            # nbins=n_bins,
         )
     return fig, data
 
