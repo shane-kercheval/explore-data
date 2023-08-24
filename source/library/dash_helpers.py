@@ -239,6 +239,7 @@ def create_random_dataframe(num_rows: int, sporadic_missing: bool = False) -> pd
         date_home_strings = [None if i in missing_indices else date_home_string for i, date_home_string in enumerate(date_home_strings)]  # noqa
         missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
         categories = [None if i in missing_indices else category for i, category in enumerate(categories)]  # noqa
+        categories2 = [np.nan if i in missing_indices else category for i, category in enumerate(categories)]  # noqa
         missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
         booleans[missing_indices] = np.nan
 
@@ -251,5 +252,6 @@ def create_random_dataframe(num_rows: int, sporadic_missing: bool = False) -> pd
         'DateStrings': date_strings,
         'DateHomeStrings': date_home_strings,
         'Categories': categories,
-        'Booleans': booleans
+        'Categories2': categories2,
+        'Booleans': booleans,
     })
