@@ -554,7 +554,8 @@ def filter_data(
 
     markdown_text = "##### Filters applied:  \n"
     filtered_data = pd.DataFrame(original_data).copy()
-    log(f"{len(filtered_data):,} rows before after filtering")
+    original_num_rows = len(filtered_data)
+    log(f"{original_num_rows:,} rows before after filtering")
     for column in selected_filter_columns:
         log(f"Filtering on `{column}`")
         assert column in filter_columns_cache
@@ -609,7 +610,8 @@ def filter_data(
         #         if id['index'] == column and value:
         #             log(f"filtering on {column} with {value}")
         #             filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]  # noqa
-
+    rows_removed = original_num_rows - len(filtered_data)
+    markdown_text += f"  \n`{len(filtered_data):,}` rows remaining after filtering; `{rows_removed:,}` (`{rows_removed / original_num_rows:.1%}`) rows removed  \n"  # noqa
     log(f"{len(filtered_data):,} rows remaining after filtering")
     return filtered_data.to_dict('records'), markdown_text
 
