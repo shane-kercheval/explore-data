@@ -221,30 +221,7 @@ def create_random_dataframe(num_rows: int, sporadic_missing: bool = False) -> pd
     categories = np.random.choice(['Category A', 'Category B', 'Category C'], num_rows)  # noqa
     booleans = np.random.choice([True, False], num_rows)  # noqa
 
-    # Introduce sporadic missing values
-    if sporadic_missing:
-        num_missing = int(num_rows * 0.1)  # 10% missing values
-
-        # missing_indices = np.random.choice(num_rows, num_missing, replace=False)
-        # integers[missing_indices] = np.nan
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        floats[missing_indices] = np.nan
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        dates = [None if i in missing_indices else date for i, date in enumerate(dates)]
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        date_times = [None if i in missing_indices else date_time for i, date_time in enumerate(date_times)]  # noqa
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        date_strings = [None if i in missing_indices else date_string for i, date_string in enumerate(date_strings)]  # noqa
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        date_home_strings = [None if i in missing_indices else date_home_string for i, date_home_string in enumerate(date_home_strings)]  # noqa
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        categories = [None if i in missing_indices else category for i, category in enumerate(categories)]  # noqa
-        categories2 = [np.nan if i in missing_indices else category for i, category in enumerate(categories)]  # noqa
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        booleans[missing_indices] = np.nan
-
-    # Create the DataFrame
-    return pd.DataFrame({
+    fake_df = pd.DataFrame({
         'Integers': integers,
         'Floats': floats,
         'Dates': dates,
@@ -252,6 +229,40 @@ def create_random_dataframe(num_rows: int, sporadic_missing: bool = False) -> pd
         'DateStrings': date_strings,
         'DateHomeStrings': date_home_strings,
         'Categories': categories,
-        'Categories2': categories2,
+        'Categories2': categories.copy(),
         'Booleans': booleans,
+        'Booleans1': booleans.copy(),
+        'Booleans2': booleans.copy(),
     })
+    # Introduce sporadic missing values
+    if sporadic_missing:
+        num_missing = int(num_rows * 0.1)  # 10% missing values
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'Integers'] = np.nan
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'Floats'] = np.nan
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'Dates'] = np.nan
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'DateTimes'] = np.nan
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'DateStrings'] = np.nan
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'DateHomeStrings'] = np.nan
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'Categories'] = np.nan
+        fake_df.loc[missing_indices, 'Categories2'] = None
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'Booleans1'] = np.nan
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'Booleans2'] = np.nan
+
+    return fake_df
