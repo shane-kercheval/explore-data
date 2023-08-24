@@ -9,6 +9,19 @@
 
 
 
+# Running the project
+
+- .env (shouldn't need to modify unless you're serving the app non-locally)
+-
+
+
+
+
+## Filtering
+
+- filtering on dates, datetimes, or numeric (int/float) automatically removes missing values
+
+
 
 
 
