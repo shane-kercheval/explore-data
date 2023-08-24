@@ -66,19 +66,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             n_clicks=0,
                             style={'width': '200px', 'margin': '0 8px 0 0'},
                         ),
-                        # dcc.NumberInput(
-                        #     id='n_rows',
-                        # ),
-                        # dcc.Input(
-                        #     id='load_from_url',
-                        #     type='text',
-                        #     placeholder='Enter CSV URL',
-                        #     # value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
-                        #     value='https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv',
-                        #     # style={
-                        #     #     'width': '600px',
-                        #     # },
-                        # ),
                     ]),
                     dbc.Tab(label="Load .csv from URL", children=[
                         html.Br(),
@@ -459,9 +446,9 @@ def load_data(  # noqa
         elif triggered == 'load_from_url_button.n_clicks' and load_from_url:
             log("Loading from CSV URL")
             data = pd.read_csv(load_from_url)
-        elif triggered == 'load_random_data_button.n_clicks' and load_from_url:
+        elif triggered == 'load_random_data_button.n_clicks':
             log("Loading DataFrame with random data")
-            data = create_random_dataframe(num_rows=100_000, sporadic_missing=False)
+            data = create_random_dataframe(num_rows=1_000, sporadic_missing=True)
             log(f"Loaded data w/ {data.shape[0]:,} rows and {data.shape[1]:,} columns")
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
@@ -577,7 +564,7 @@ def filter_data(
             # assert isinstance(value, list)
             # log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])
             # filtered_data = filtered_data[series.isin([x.lower() == 'true' for x in value])]
-        elif series.dtype == 'int64':
+        elif pd.api.types.is_numeric_dtype(series):
             assert isinstance(value, list)  # TODO it seems to switch from a list to a tuple
             filtered_data = filtered_data[series.between(value[0], value[1])]
         else:
