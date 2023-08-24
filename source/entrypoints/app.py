@@ -253,21 +253,33 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                 dbc.Col(width=9, children=[
                     dcc.Loading(type="default", children=[
                         dcc.Graph(
-                            id='primary-graph',
+                            id='visualize_graph',
                             config={'staticPlot': False, 'displayModeBar': True},
                             # 3/12 because the sidebar is 3/12 of the width
                             style={'width': '100%', 'height': f'{(1-(3/12)) / GOLDEN_RATIO * 100: .1f}vw'},  # noqa
                         ),
-                    ]),
-                    html.Hr(),
-                    dcc.Loading(type="default", children=[
-                        dash_table.DataTable(
-                            id='table_visualize',
-                            page_size=20,
-                            style_header={
-                                'fontWeight': 'bold',
-                            },
-                        ),
+                        html.Hr(),
+                        dbc.Tabs([
+                            dbc.Tab(label="Filters", children=[
+                                html.Br(),
+                                dcc.Markdown(id="visualize_filter_info", children="No filters applied."),  # noqa
+                            ]),
+                            dbc.Tab(label="Data", children=[
+                                dcc.Loading(type="default", children=[
+                                    dash_table.DataTable(
+                                        id='visualize_table',
+                                        page_size=20,
+                                        style_header={
+                                            'fontWeight': 'bold',
+                                        },
+                                    ),
+                                ]),
+                            ]),
+                            dbc.Tab(label="Code", children=[
+                                html.Br(),
+                                dcc.Markdown("Coming soon..."),
+                            ]),
+                        ]),
                     ]),
                 ]),
             ]),
@@ -362,8 +374,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('filter_columns_dropdown', 'options'),
     Output('filter_columns_cache', 'data', allow_duplicate=True),
     Output('dynamic-filter-controls', 'children', allow_duplicate=True),
-    Output('primary-graph', 'figure', allow_duplicate=True),
-    Output('table_visualize', 'data', allow_duplicate=True),
+    Output('visualize_graph', 'figure', allow_duplicate=True),
+    Output('visualize_table', 'data', allow_duplicate=True),
     Output('table_uploaded_data', 'data'),
     Output('numeric_summary', 'data'),
     Output('non_numeric_summary', 'data'),
@@ -396,7 +408,7 @@ def load_data(  # noqa
     filter_columns_cache = None
     dynamic_filter_controls = None
     primary_graph = {}
-    table_visualize = None
+    visualize_table = None
     table_uploaded_data = None
     numeric_summary = None
     non_numeric_summary = None
@@ -501,7 +513,7 @@ def load_data(  # noqa
         filter_columns_cache,
         dynamic_filter_controls,
         primary_graph,
-        table_visualize,
+        visualize_table,
         table_uploaded_data,
         numeric_summary,
         non_numeric_summary,
@@ -518,6 +530,7 @@ def load_data(  # noqa
 
 @app.callback(
     Output('filtered_data', 'data'),
+    Output('visualize_filter_info', 'children'),
     Input('filter-apply-button', 'n_clicks'),
     State('filter_columns_dropdown', 'value'),
     State('filter_columns_cache', 'data'),
@@ -536,7 +549,11 @@ def filter_data(
     log_function('filtered_data')
     log_variable('selected_filter_columns', selected_filter_columns)
 
+    if not selected_filter_columns:
+        return original_data, "No filters applied."
+
     filtered_data = pd.DataFrame(original_data).copy()
+    log(f"{len(filtered_data):,} rows before after filtering")
     for column in selected_filter_columns:
         log(f"Filtering on `{column}`")
         assert column in filter_columns_cache
@@ -586,7 +603,8 @@ def filter_data(
         #             log(f"filtering on {column} with {value}")
         #             filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]  # noqa
 
-    return filtered_data.to_dict('records')
+    log(f"{len(filtered_data):,} rows remaining after filtering")
+    return filtered_data.to_dict('records'), "Filtered data"
 
 
 @app.callback(
@@ -618,8 +636,8 @@ def numeric_summary_table(numeric_summary: dict) -> dict:
 
 
 @app.callback(
-    Output('primary-graph', 'figure'),
-    Output('table_visualize', 'data'),
+    Output('visualize_graph', 'figure'),
+    Output('visualize_table', 'data'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
     Input('facet_variable_dropdown', 'value'),
@@ -638,7 +656,11 @@ def update_graph(
             title_textbox: str,
             data: dict,
         ) -> dict:
-    """Triggered when the user selects columns from the dropdown."""
+    """
+    Triggered when the user selects columns from the dropdown.
+
+    This function should *not* modify the data. It should only return a figure.
+    """
     log_function('update_graph')
     log_variable('x_variable', x_variable)
     log_variable('y_variable', y_variable)
