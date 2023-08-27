@@ -3,7 +3,7 @@ from datetime import datetime, date
 import pandas as pd
 
 
-def convert_to_datetime(series: pd.Series) -> pd.Series:
+def series_to_datetime(series: pd.Series) -> pd.Series:
     """
     Convert a series to a datetime if possible.
 
@@ -18,8 +18,7 @@ def convert_to_datetime(series: pd.Series) -> pd.Series:
     return series, False
 
 
-
-def convert_columns_to_datetime(df: pd.DataFrame) -> pd.DataFrame:
+def dataframe_columns_to_datetime(df: pd.DataFrame) -> pd.DataFrame:
     """
     Check if each column in the DataFrame can be converted to a date/datetime. If so, convert it.
 
@@ -33,13 +32,13 @@ def convert_columns_to_datetime(df: pd.DataFrame) -> pd.DataFrame:
     """
     converted_columns = []
     for column in df.columns:
-        df[column], converted = convert_to_datetime(df[column])
+        df[column], converted = series_to_datetime(df[column])
         if converted:
             converted_columns.append(column)
     return df, converted_columns
 
 
-def convert_to_date(value: str | datetime | date) -> date:
+def to_date(value: str | datetime | date) -> date:
     """Convert a string or datetime to a date."""
     return pd.to_datetime(value or '').date()
     # if isinstance(value, datetime):

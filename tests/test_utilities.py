@@ -2,12 +2,12 @@
 import pytest
 import pandas as pd
 from datetime import date, datetime
-from source.library.utilities import convert_columns_to_datetime, convert_to_date
+from source.library.utilities import dataframe_columns_to_datetime, to_date
 
 
 def test_convert_columns_to_datetime(data):  # noqa
     data_copy = data.copy()
-    data_converted, converted_columns = convert_columns_to_datetime(data_copy)
+    data_converted, converted_columns = dataframe_columns_to_datetime(data_copy)
 
     assert isinstance(data_converted, pd.DataFrame)
     assert isinstance(converted_columns, list)
@@ -80,21 +80,21 @@ invalid_data = [
 
 @pytest.mark.parametrize("value, expected", test_data)  # noqa
 def test_convert_to_date_valid(value, expected):  # noqa
-    assert convert_to_date(value) == expected
+    assert to_date(value) == expected
 
 @pytest.mark.parametrize("value", invalid_data)
 def test_convert_to_date_invalid(value):  # noqa
     with pytest.raises(ValueError):  # noqa
-        convert_to_date(value)
+        to_date(value)
 
 # Additional edge cases
 def test_convert_to_date_none():  # noqa
-    assert pd.isna(convert_to_date(None))
+    assert pd.isna(to_date(None))
 
 def test_convert_to_date_empty_string():  # noqa
-    assert pd.isna(convert_to_date(None))
+    assert pd.isna(to_date(None))
 
 def test_convert_to_date_datetime_with_microseconds():  # noqa
     input_datetime = datetime(2023, 8, 22, 15, 30, 45, 123456)
     expected_date = date(2023, 8, 22)
-    assert convert_to_date(input_datetime) == expected_date
+    assert to_date(input_datetime) == expected_date

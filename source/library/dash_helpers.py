@@ -6,7 +6,7 @@ from dash import html, dcc
 import dash_daq as daq
 
 
-from source.library.utilities import convert_to_date
+from source.library.utilities import to_date
 
 
 CLASS__GRAPH_PANEL_SECTION = 'graph_panel_section'
@@ -192,8 +192,8 @@ def create_date_range_control(
     else:
         assert isinstance(component_id, dict)
 
-    min_value = convert_to_date(min_value)
-    max_value = convert_to_date(max_value)
+    min_value = to_date(min_value)
+    max_value = to_date(max_value)
 
     return create_control(
         label=label,

@@ -20,7 +20,7 @@ from source.library.dash_helpers import (
     CLASS__GRAPH_PANEL_SECTION,
     create_random_dataframe,
 )
-from source.library.utilities import convert_to_date, convert_to_datetime
+from source.library.utilities import to_date, series_to_datetime
 
 GOLDEN_RATIO = 1.618
 

@@ -22,7 +22,7 @@ from source.library.dash_helpers import (
     CLASS__GRAPH_PANEL_SECTION,
     create_random_dataframe,
 )
-from source.library.utilities import convert_to_date, convert_to_datetime
+from source.library.utilities import to_date, series_to_datetime
 
 
 load_dotenv()
@@ -544,7 +544,6 @@ def filter_data(
         original_data: dict,
         ) -> dict:
     """Filter the data based on the user's selections."""
-
     # TODO: refactor and unit-test
     log_function('filtered_data')
     log_variable('selected_filter_columns', selected_filter_columns)
@@ -566,13 +565,13 @@ def filter_data(
         # e.g. {'column': 'date', 'value': ['2020-01-01', '2020-01-31'], type: 'date'}
         # that way I can just do a switch statement on the type
         # convert to datetime if possible
-        series, _ = convert_to_datetime(filtered_data[column])
+        series, _ = series_to_datetime(filtered_data[column])
         log_variable('series.dtype', series.dtype)
         if pd.api.types.is_datetime64_any_dtype(series):
             series = series.dt.date
             assert isinstance(value, list)
-            start_date = convert_to_date(value[0])
-            end_date = convert_to_date(value[1])
+            start_date = to_date(value[0])
+            end_date = to_date(value[1])
             markdown_text += f"  - `{column}` between `{start_date}` and `{end_date}`  \n"
             filtered_data = filtered_data[(series >= start_date) & (series <= end_date)]
         elif hp.is_series_bool(series):
@@ -585,7 +584,7 @@ def filter_data(
                 filters.append(np.nan)
             filtered_data = filtered_data[series.isin(filters)]
             # assert isinstance(value, list)
-            # log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])
+            # log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])  # noqa
             # filtered_data = filtered_data[series.isin([x.lower() == 'true' for x in value])]
         elif series.dtype == 'object':
             assert isinstance(value, list)
@@ -821,7 +820,7 @@ def update_filter_controls(
     if selected_filter_columns and data:
         data = pd.DataFrame(data)
         for column in selected_filter_columns:
-            series, _ = convert_to_datetime(data[column])
+            series, _ = series_to_datetime(data[column])
 
             log(f"Creating controls for `{column}`")
             value = []
@@ -903,7 +902,7 @@ def update_filter_controls(
     State('filter_columns_cache', 'data'),
     prevent_initial_call=True,
 )
-def cache_filter_columns(
+def cache_filter_columns(  # noqa: PLR0912
         date_range_ids: list[dict],
         date_range_start_date: list[list],
         date_range_end_date: list[list],
