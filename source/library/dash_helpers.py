@@ -263,6 +263,6 @@ def create_random_dataframe(num_rows: int, sporadic_missing: bool = False) -> pd
         missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
         fake_df.loc[missing_indices, 'Booleans1'] = np.nan
         missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        fake_df.loc[missing_indices, 'Booleans2'] = np.nan
+        fake_df.loc[missing_indices, 'Booleans2'] = None
 
     return fake_df

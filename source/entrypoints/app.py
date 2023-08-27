@@ -575,17 +575,22 @@ def filter_data(
             end_date = convert_to_date(value[1])
             markdown_text += f"  - `{column}` between `{start_date}` and `{end_date}`  \n"
             filtered_data = filtered_data[(series >= start_date) & (series <= end_date)]
+        elif hp.is_series_bool(series):
+            assert isinstance(value, list)
+            markdown_text += f"  - `{column}` is `{value}`  \n"
+            # e.g. ['True', 'False', '<Missing>']
+            import numpy as np
+            filters = [x.lower() == 'true' for x in value if value != '<Missing>']
+            if '<Missing>' in value:
+                filters.append(np.nan)
+            filtered_data = filtered_data[series.isin(filters)]
+            # assert isinstance(value, list)
+            # log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])
+            # filtered_data = filtered_data[series.isin([x.lower() == 'true' for x in value])]
         elif series.dtype == 'object':
             assert isinstance(value, list)
             markdown_text += f"  - `{column}` in `{value}`  \n"
             filtered_data = filtered_data[series.isin(value)]
-        elif series.dtype == 'bool':
-            assert isinstance(value, str)
-            markdown_text += f"  - `{column}` is `{value}`  \n"
-            filtered_data = filtered_data[series == (value.lower() == 'true')]
-            # assert isinstance(value, list)
-            # log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])
-            # filtered_data = filtered_data[series.isin([x.lower() == 'true' for x in value])]
         elif pd.api.types.is_numeric_dtype(series):
             assert isinstance(value, list)  # TODO it seems to switch from a list to a tuple
             min_value = value[0]
@@ -955,6 +960,8 @@ def cache_filter_columns(
             log(f"found `{column}` in dropdown_ids")
             for id, value in zip(dropdown_ids, dropdown_values):  # noqa
                 if id['index'] == column:
+                    if not isinstance(value, list):
+                        value = [value]  # noqa
                     log(f"caching `{column}` with `{value}`")
                     filter_columns_cache[column] = value
                     break
