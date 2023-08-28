@@ -181,16 +181,9 @@ def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataF
             # code to work
             values = str(values).replace('nan', 'np.nan')  # noqa
             code += f"    filtered_data = filtered_data[filtered_data['{column}'].isin({values})]\n"  # noqa
-        # elif series.dtype == 'object':
-        #     assert isinstance(value, list)
-        #     markdown_text += f"  - `{column}` in `{value}`  \n"
-        #     filtered_data = filtered_data[series.isin(value)]
-        # elif pd.api.types.is_numeric_dtype(series):
-        #     assert isinstance(value, list)  # TODO it seems to switch from a list to a tuple
-        #     min_value = value[0]
-        #     max_value = value[1]
-        #     markdown_text += f"  - `{column}` between `{min_value}` and `{max_value}`  \n"
-        #     filtered_data = filtered_data[series.between(min_value, max_value)]
+        elif pd.api.types.is_numeric_dtype(series):
+            assert isinstance(values, tuple)
+            code += f"    filtered_data = filtered_data[filtered_data['{column}'].between({values[0]}, {values[1]})]\n"  # noqa
         else:
             raise ValueError(f"Unknown dtype for column `{column}`: {data[column].dtype}")
 

@@ -468,10 +468,6 @@ def test_filter_dataframe_datetimes_with_missing2(mock_data2):  # noqa
     assert filtered_df['integers'].tolist() == [2, 4]
     assert filtered_df['datetimes_with_missing2'].tolist() == mock_data2['datetimes_with_missing2'].iloc[[1,3]].tolist()  # noqa
 
-
-# TODO include tests for datetimes
-
-
 def test_filter_dataframe_boolean_no_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
     # testing all possible values
@@ -1260,3 +1256,284 @@ def test_filter_dataframe_categories_with_missing2(mock_data2):  # noqa
     assert code
     assert filtered_df['integers'].tolist() == [1, 3, 4]
     assert filtered_df['categories_with_missing2'].tolist() == mock_data2['categories_with_missing2'].iloc[[0, 2, 3]].tolist()  # noqa
+
+def test_filter_dataframe_integers_no_missing(mock_data2):  # noqa
+    """Test filter_dataframe function."""
+    # testing integers not in range
+    filters = {
+        'integers': (10, 15),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 0
+    assert code
+
+    filters = {
+        'integers': (2, 4),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 3, 4]
+    assert filtered_df['integers'].tolist() == mock_data2['integers'].tolist()[1:4]
+
+    filters = {
+        'integers': (2, 10),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 4
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 3, 4, 5]
+    assert filtered_df['integers'].tolist() == mock_data2['integers'].tolist()[1:5]
+
+    filters = {
+        'integers': (1, 5),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 5
+    assert code
+    assert filtered_df['integers'].tolist() == [1, 2, 3, 4, 5]
+    assert filtered_df['integers'].tolist() == mock_data2['integers'].tolist()[0:5]
+
+def test_filter_dataframe_integers_with_missing(mock_data2):  # noqa
+    """Test filter_dataframe function."""
+    # testing integers not in range
+    filters = {
+        'integers_with_missing': (10, 15),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 0
+    assert code
+
+    filters = {
+        'integers_with_missing': (2, 4),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df['integers_with_missing'].tolist() == [2, 4]
+    assert filtered_df['integers_with_missing'].tolist() == mock_data2['integers_with_missing'].iloc[[1, 3]].tolist()  # noqa
+
+    filters = {
+        'integers_with_missing': (2, 10),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df['integers_with_missing'].tolist() == [2, 4, 5]
+    assert filtered_df['integers_with_missing'].tolist() == mock_data2['integers_with_missing'].iloc[[1, 3, 4]].tolist()  # noqa
+
+    filters = {
+        'integers_with_missing': (1, 5),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 4
+    assert code
+    assert filtered_df['integers_with_missing'].tolist() == [1, 2, 4, 5]
+    assert filtered_df['integers_with_missing'].tolist() == mock_data2['integers_with_missing'].iloc[[0, 1, 3, 4]].tolist()  # noqa
+
+def test_filter_dataframe_integers_with_missing2(mock_data2):  # noqa
+    """Test filter_dataframe function."""
+    # testing integers not in range
+    filters = {
+        'integers_with_missing2': (10, 15),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 0
+    assert code
+
+    filters = {
+        'integers_with_missing2': (2, 4),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df['integers_with_missing2'].tolist() == [2, 4]
+    assert filtered_df['integers_with_missing2'].tolist() == mock_data2['integers_with_missing2'].iloc[[1, 3]].tolist()  # noqa
+
+    filters = {
+        'integers_with_missing2': (2, 10),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df['integers_with_missing2'].tolist() == [2, 4, 5]
+    assert filtered_df['integers_with_missing2'].tolist() == mock_data2['integers_with_missing2'].iloc[[1, 3, 4]].tolist()  # noqa
+
+    filters = {
+        'integers_with_missing2': (1, 5),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df['integers_with_missing2'].tolist() == mock_data2['integers_with_missing2'].iloc[[1, 3, 4]].tolist()  # noqa
+
+def test_filter_dataframe_floats_no_missing(mock_data2):  # noqa
+    """Test filter_dataframe function."""
+    # testing floats not in range
+    filters = {
+        'floats': (10, 15),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 0
+    assert code
+
+    filters = {
+        'floats': (2, 4),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df['floats'].tolist() == mock_data2['floats'].tolist()[1:3]
+
+    filters = {
+        'floats': (2, 10),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 4
+    assert code
+    assert filtered_df['floats'].tolist() == mock_data2['floats'].tolist()[1:5]
+
+    filters = {
+        'floats': (1, 5),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 4
+    assert code
+    assert filtered_df['floats'].tolist() == mock_data2['floats'].tolist()[0:4]
+
+    filters = {
+        'floats': (1.1, 5.5),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 5
+    assert code
+    assert filtered_df['floats'].tolist() == mock_data2['floats'].tolist()[0:5]
+
+def test_filter_dataframe_floats_with_missing(mock_data2):  # noqa
+    """Test filter_dataframe function."""
+    # testing floats not in range
+    filters = {
+        'floats_with_missing': (10, 15),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 0
+    assert code
+
+    filters = {
+        'floats_with_missing': (2, 4),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 1
+    assert code
+    assert filtered_df['floats_with_missing'].tolist() == mock_data2['floats_with_missing'].iloc[[1]].tolist()  # noqa
+
+    filters = {
+        'floats_with_missing': (2, 10),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df['floats_with_missing'].tolist() == mock_data2['floats_with_missing'].iloc[[1, 3, 4]].tolist()  # noqa
+
+    filters = {
+        'floats_with_missing': (1, 5),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df['floats_with_missing'].tolist() == mock_data2['floats_with_missing'].iloc[[0, 1, 3]].tolist()  # noqa
+
+    filters = {
+        'floats_with_missing': (1.1, 5.5),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 4
+    assert code
+    assert filtered_df['floats_with_missing'].tolist() == mock_data2['floats_with_missing'].iloc[[0, 1, 3, 4]].tolist()  # noqa
+
+def test_filter_dataframe_floats_with_missing2(mock_data2):  # noqa
+    """Test filter_dataframe function."""
+    # testing floats not in range
+    filters = {
+        'floats_with_missing2': (10, 15),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 0
+    assert code
+
+    filters = {
+        'floats_with_missing2': (2, 4),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 1
+    assert code
+    assert filtered_df['floats_with_missing2'].tolist() == mock_data2['floats_with_missing2'].iloc[[1]].tolist()  # noqa
+
+    filters = {
+        'floats_with_missing2': (2, 10),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df['floats_with_missing2'].tolist() == mock_data2['floats_with_missing2'].iloc[[1, 3, 4]].tolist()  # noqa
+
+    filters = {
+        'floats_with_missing2': (1, 5),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df['floats_with_missing2'].tolist() == mock_data2['floats_with_missing2'].iloc[[1, 3]].tolist()  # noqa
+
+    filters = {
+        'floats_with_missing2': (1.1, 5.5),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df['floats_with_missing2'].tolist() == mock_data2['floats_with_missing2'].iloc[[1, 3, 4]].tolist()  # noqa
