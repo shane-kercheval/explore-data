@@ -193,23 +193,3 @@ def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataF
     local_vars = locals()
     exec(code, globals(), local_vars)
     return local_vars['filtered_data'], code
-
-        # log(f"Filtering on `{column}`")
-        # if column in [item['index'] for item in dropdown_ids]:
-        #     for value, id in zip(dropdown_values, dropdown_ids):
-        #         log_variable('value', value)
-        #         log_variable('id', id)
-        #         if id['index'] == column and value:
-        #             log(f"filtering on {column} with {value}")
-        #             filtered_data = filtered_data[filtered_data[column].isin(value)]
-        # if column in [item['index'] for item in slider_ids]:
-        #     for value, id in zip(slider_values, slider_ids):
-        #         print(f"value: {value}", flush=True)
-        #         print(f"id: {id}", flush=True)
-        #         if id['index'] == column and value:
-        #             log(f"filtering on {column} with {value}")
-        #             filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]  # noqa
-    # rows_removed = original_num_rows - len(filtered_data)
-    # markdown_text += f"  \n`{len(filtered_data):,}` rows remaining after filtering; `{rows_removed:,}` (`{rows_removed / original_num_rows:.1%}`) rows removed  \n"  # noqa
-    # log(f"{len(filtered_data):,} rows remaining after filtering")
-    # return filtered_data.to_dict('records'), markdown_text
