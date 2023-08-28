@@ -1,7 +1,5 @@
 """Helper functions for creating dash components."""
-from datetime import date, datetime, timedelta
-import pandas as pd
-import numpy as np
+from datetime import date, datetime
 from dash import html, dcc
 import dash_daq as daq
 
@@ -208,61 +206,3 @@ def create_date_range_control(
             style={'width': '100%'},
         ),
     )
-
-
-def create_random_dataframe(num_rows: int, sporadic_missing: bool = False) -> pd.DataFrame:
-    """Generate random data for the columns."""
-    integers = np.random.randint(1, 100, size=num_rows)  # noqa
-    floats = np.random.rand(num_rows) * 100  # noqa
-    dates = [datetime(2023, 1, 1) + timedelta(days=np.random.randint(0, 365)) for _ in range(num_rows)]  # noqa
-    date_times = [datetime(2023, 1, 1) + timedelta(days=np.random.randint(0, 365), hours=np.random.randint(0, 24)) for _ in range(num_rows)]  # noqa
-    date_strings = [date.strftime('%Y-%m-%d') for date in dates]
-    date_home_strings = [date.strftime('%d/%m/%Y') for date in dates]
-    categories = np.random.choice(['Category A', 'Category B', 'Category C'], num_rows)  # noqa
-    booleans = np.random.choice([True, False], num_rows)  # noqa
-
-    fake_df = pd.DataFrame({
-        'Integers': integers,
-        'Floats': floats,
-        'Dates': dates,
-        'DateTimes': date_times,
-        'DateStrings': date_strings,
-        'DateHomeStrings': date_home_strings,
-        'Categories': categories,
-        'Categories2': categories.copy(),
-        'Booleans': booleans,
-        'Booleans1': booleans.copy(),
-        'Booleans2': booleans.copy(),
-    })
-    # Introduce sporadic missing values
-    if sporadic_missing:
-        num_missing = int(num_rows * 0.1)  # 10% missing values
-
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        fake_df.loc[missing_indices, 'Integers'] = np.nan
-
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        fake_df.loc[missing_indices, 'Floats'] = np.nan
-
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        fake_df.loc[missing_indices, 'Dates'] = np.nan
-
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        fake_df.loc[missing_indices, 'DateTimes'] = np.nan
-
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        fake_df.loc[missing_indices, 'DateStrings'] = np.nan
-
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        fake_df.loc[missing_indices, 'DateHomeStrings'] = np.nan
-
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        fake_df.loc[missing_indices, 'Categories'] = np.nan
-        fake_df.loc[missing_indices, 'Categories2'] = None
-
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        fake_df.loc[missing_indices, 'Booleans1'] = np.nan
-        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
-        fake_df.loc[missing_indices, 'Booleans2'] = None
-
-    return fake_df

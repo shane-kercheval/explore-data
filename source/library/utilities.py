@@ -1,5 +1,6 @@
 """Misc utilities."""
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
+import numpy as np
 import pandas as pd
 
 
@@ -62,3 +63,162 @@ def to_date(value: str | datetime | date) -> date:
     #         pass
 
     # raise ValueError("Invalid input format. Expected 'yyyy-mm-dd' or 'yyyy-mm-dd hh:mm:ss'.")
+
+
+def to_date_string(value: str | datetime | date, str_format: str = '%Y-%m-%d') -> str:
+    """Convert a string/datetime/date to a string in the format of str_format."""
+    return to_date(value).strftime(str_format)
+
+
+def create_random_dataframe(num_rows: int, sporadic_missing: bool = False) -> pd.DataFrame:
+    """Generate random data for the columns."""
+    integers = np.random.randint(1, 100, size=num_rows)  # noqa
+    floats = np.random.rand(num_rows) * 100  # noqa
+    dates = [datetime(2023, 1, 1) + timedelta(days=np.random.randint(0, 365)) for _ in range(num_rows)]  # noqa
+    date_times = [datetime(2023, 1, 1) + timedelta(days=np.random.randint(0, 365), hours=np.random.randint(0, 24)) for _ in range(num_rows)]  # noqa
+    date_strings = [date.strftime('%Y-%m-%d') for date in dates]
+    date_home_strings = [date.strftime('%d/%m/%Y') for date in dates]
+    categories = np.random.choice(['Category A', 'Category B', 'Category C'], num_rows)  # noqa
+    booleans = np.random.choice([True, False], num_rows)  # noqa
+
+    fake_df = pd.DataFrame({
+        'Integers': integers,
+        'Floats': floats,
+        'Dates': dates,
+        'DateTimes': date_times,
+        'DateStrings': date_strings,
+        'DateHomeStrings': date_home_strings,
+        'Categories': categories,
+        'Categories2': categories.copy(),
+        'Booleans': booleans,
+        'Booleans1': booleans.copy(),
+        'Booleans2': booleans.copy(),
+    })
+    # Introduce sporadic missing values
+    if sporadic_missing:
+        num_missing = int(num_rows * 0.1)  # 10% missing values
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'Integers'] = np.nan
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'Floats'] = np.nan
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'Dates'] = np.nan
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'DateTimes'] = np.nan
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'DateStrings'] = np.nan
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'DateHomeStrings'] = np.nan
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'Categories'] = np.nan
+        fake_df.loc[missing_indices, 'Categories2'] = None
+
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'Booleans1'] = np.nan
+        missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
+        fake_df.loc[missing_indices, 'Booleans2'] = None
+
+    return fake_df
+
+
+def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataFrame, str]:
+    """
+    Filter a dataframe based on a dictionary. Each key is a column name and the value is the
+    value(s) (e.g. value or list) to filter on.
+
+    Returns the filtered dataframe, and the code used to recreate the filters (in string format).
+
+    For integers/floats, the value must be a tuple of (min, max) values, and the data will return
+    values between these numbers. Missing values are automatically excluded.
+
+    For dates, the value must be a tuple of (start, max) values, and the data will return values
+    between these dates. Missing values are automatically excluded.
+
+    For booleans, the value must be a list with `True` or `False` values, and the data will return
+    values that match the boolean. `np.nan` values can be included in the list to return missing
+    values.
+
+    For strings, the value must be a list of strings, and the data will return values in the list.
+    `np.nan` values can be included in the list to return missing values.
+
+    For categories, the value must be a list of strings, and the data will return values in the
+    list. `np.nan` values can be included in the list to return missing values.
+    """
+    if not filters:
+        return data.copy(), ''
+
+    # filtered_data = data.copy()
+    code = 'def filter_data(data: pd.DataFrame) -> pd.DataFrame:\n'
+    code += '    filtered_data = data.copy()\n'
+
+    for column, values in filters.items():
+        assert column in data.columns, f"Column `{column}` not found in `data`"
+        code += f"    # Filter on `{column}`\n"
+        # convert the series to a datetime if possible
+        series, converted_to_datetime = series_to_datetime(data[column].copy())
+        if converted_to_datetime:
+            assert isinstance(values, tuple)
+            code += f"    series = pd.to_datetime(filtered_data['{column}']).dt.date\n"
+            code += f"    start_date = pd.to_datetime('{values[0]}').date()\n"
+            code += f"    end_date = pd.to_datetime('{values[1]}').date() + pd.Timedelta(days=1)\n"
+            code += f"    filtered_data = filtered_data[(series >= start_date) & (series < end_date)]\n"  # noqa
+            # series = series.dt.date
+            # start_date, end_date = to_date(values[0]), to_date(values[1])
+            # filtered_data = filtered_data[(series >= start_date) & (series <= end_date)]
+
+        # elif hp.is_series_bool(series):
+        #     assert isinstance(values, list)
+        #     import numpy as np
+        #     filters = [x.lower() == 'true' for x in value if value != '<Missing>']
+        #     if '<Missing>' in value:
+        #         filters.append(np.nan)
+        #     filtered_data = filtered_data[series.isin(filters)]
+        #     # assert isinstance(value, list)
+        #     # log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])  # noqa
+        #     # filtered_data = filtered_data[series.isin([x.lower() == 'true' for x in value])]
+        # elif series.dtype == 'object':
+        #     assert isinstance(value, list)
+        #     markdown_text += f"  - `{column}` in `{value}`  \n"
+        #     filtered_data = filtered_data[series.isin(value)]
+        # elif pd.api.types.is_numeric_dtype(series):
+        #     assert isinstance(value, list)  # TODO it seems to switch from a list to a tuple
+        #     min_value = value[0]
+        #     max_value = value[1]
+        #     markdown_text += f"  - `{column}` between `{min_value}` and `{max_value}`  \n"
+        #     filtered_data = filtered_data[series.between(min_value, max_value)]
+        else:
+            raise ValueError(f"Unknown dtype for column `{column}`: {data[column].dtype}")
+
+    code += '    return filtered_data\n\n'
+    code += "filtered_data = filter_data(data)"
+
+    local_vars = locals()
+    exec(code, globals(), local_vars)
+    return local_vars['filtered_data'], code
+
+        # log(f"Filtering on `{column}`")
+        # if column in [item['index'] for item in dropdown_ids]:
+        #     for value, id in zip(dropdown_values, dropdown_ids):
+        #         log_variable('value', value)
+        #         log_variable('id', id)
+        #         if id['index'] == column and value:
+        #             log(f"filtering on {column} with {value}")
+        #             filtered_data = filtered_data[filtered_data[column].isin(value)]
+        # if column in [item['index'] for item in slider_ids]:
+        #     for value, id in zip(slider_values, slider_ids):
+        #         print(f"value: {value}", flush=True)
+        #         print(f"id: {id}", flush=True)
+        #         if id['index'] == column and value:
+        #             log(f"filtering on {column} with {value}")
+        #             filtered_data = filtered_data[filtered_data[column].between(value[0], value[1])]  # noqa
+    # rows_removed = original_num_rows - len(filtered_data)
+    # markdown_text += f"  \n`{len(filtered_data):,}` rows remaining after filtering; `{rows_removed:,}` (`{rows_removed / original_num_rows:.1%}`) rows removed  \n"  # noqa
+    # log(f"{len(filtered_data):,} rows remaining after filtering")
+    # return filtered_data.to_dict('records'), markdown_text

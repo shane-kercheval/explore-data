@@ -20,9 +20,8 @@ from source.library.dash_helpers import (
     create_min_max_control,
     create_date_range_control,
     CLASS__GRAPH_PANEL_SECTION,
-    create_random_dataframe,
 )
-from source.library.utilities import to_date, series_to_datetime
+from source.library.utilities import to_date, series_to_datetime, create_random_dataframe
 
 
 load_dotenv()

@@ -6,7 +6,7 @@ from datetime import datetime
 
 
 @pytest.fixture()
-def data() -> pd.DataFrame:
+def mock_data1() -> pd.DataFrame:
     """Create a dataframe with various data types."""
     return pd.DataFrame({
         'date_string': ['2023-08-01', '2023-08-15', '2023-09-01'],
@@ -24,4 +24,32 @@ def data() -> pd.DataFrame:
         'datetimes_with_missing': [datetime(2023, 8, 1), pd.NaT, datetime(2023, 9, 1)],
         'dates': [datetime(2023, 8, 1).date(), datetime(2023, 8, 15).date(), datetime(2023, 9, 1).date()],  # noqa
         'dates_with_missing': [pd.NaT, datetime(2023, 8, 15).date(), datetime(2023, 9, 1).date()],
+    })
+
+
+@pytest.fixture()
+def mock_data2() -> pd.DataFrame:
+    """Create a dataframe with various data types."""
+    return pd.DataFrame({
+        'integers': [1, 2, 3, 4, 5],
+        'integers_with_missing': [1, 2, np.nan, 4, 5],
+        'integers_with_missing2': [None, 2, np.nan, 4, 5],
+        'floats': [1.1, 2.2, 3.3, 4.4, 5.5],
+        'floats_with_missing': [1.1, 2.2, np.nan, 4.4, 5.5],
+        'floats_with_missing2': [None, 2.2, np.nan, 4.4, 5.5],
+        'booleans': [True, False, True, False, True],
+        'booleans_with_missing': [True, False, np.nan, False, True],
+        'booleans_with_missing2': [None, False, np.nan, False, True],
+        'strings': ['a', 'b', 'c', 'd', 'e'],
+        'strings_with_missing': ['a', 'b', np.nan, 'd', 'e'],
+        'strings_with_missing2': [None, 'b', np.nan, 'd', 'e'],
+        'categories': pd.Categorical(['a', 'b', 'c', 'd', 'e']),
+        'categories_with_missing': pd.Categorical(['a', 'b', np.nan, 'd', 'e']),
+        'categories_with_missing2': pd.Categorical([None, 'b', np.nan, 'd', 'e']),
+        'dates': pd.to_datetime(['2023-01-01', '2023-01-02', '2023-01-03', '2023-01-04', '2023-01-05']),  # noqa
+        'dates_with_missing': pd.to_datetime(['2023-01-01', '2023-01-02', np.nan, '2023-01-04', '2023-01-05']),  # noqa
+        'dates_with_missing2': pd.to_datetime([None, '2023-01-02', np.nan, '2023-01-04', '2023-01-05']),  # noqa
+        'datetimes': pd.to_datetime(['2023-01-01 01:01:01', '2023-01-02 02:02:02', '2023-01-03 03:03:03', '2023-01-04 04:04:04', '2023-01-05 05:05:05']),  # noqa
+        'datetimes_with_missing': pd.to_datetime(['2023-01-01 01:01:01', '2023-01-02 02:02:02', np.nan, '2023-01-04 04:04:04', '2023-01-05 05:05:05']),  # noqa
+        'datetimes_with_missing2': pd.to_datetime([None, '2023-01-02 02:02:02', np.nan, '2023-01-04 04:04:04', '2023-01-05 05:05:05']),  # noqa
     })
