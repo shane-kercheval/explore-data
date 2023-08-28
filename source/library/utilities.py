@@ -5,7 +5,7 @@ import pandas as pd
 import helpsk.pandas as hp
 
 
-def series_to_datetime(series: pd.Series) -> pd.Series:
+def series_to_datetime(series: pd.Series) -> tuple[pd.Series, bool]:
     """
     Convert a series to a datetime if possible.
 
@@ -176,7 +176,7 @@ def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataF
             or series.dtype == 'object'
             or series.dtype.name == 'category'
             ):
-            assert isinstance(values, list)
+            assert isinstance(values, list), f"Values for column `{column}` must be a list not `{type(values)}`"  # noqa
             # np.nan values are converted to 'nan' strings, but we need 'np.nan' string for the
             # code to work
             values = str(values).replace('nan', 'np.nan')  # noqa
