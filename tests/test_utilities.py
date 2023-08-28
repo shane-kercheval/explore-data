@@ -288,6 +288,186 @@ def test_filter_dataframe_dates_with_missing2(mock_data2):  # noqa
     assert filtered_df['integers'].tolist() == [2, 4]
     assert filtered_df['dates_with_missing2'].tolist() == mock_data2['dates_with_missing2'].iloc[[1,3]].tolist()  # noqa
 
+def test_filter_dataframe_datetimes_no_missing(mock_data2):  # noqa
+    """Test filter_dataframe function."""
+    # testing datetimes not in range
+    filters = {
+        'datetimes': (pd.to_datetime('2025-01-02'), pd.to_datetime('2025-01-04')),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 0
+    assert code
+
+    # testing datetimes
+    filters = {
+        'datetimes': (pd.to_datetime('2023-01-02'), pd.to_datetime('2023-01-04')),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 3, 4]
+    assert filtered_df['datetimes'].tolist() == mock_data2['datetimes'].tolist()[1:4]
+
+    # testing datetimes
+    filters = {
+        'datetimes': (pd.to_datetime('2023-01-02 12:00:00'), pd.to_datetime('2023-01-04 12:00:00')),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 3, 4]
+    assert filtered_df['datetimes'].tolist() == mock_data2['datetimes'].tolist()[1:4]
+
+    # testing date strings
+    filters = {
+        'datetimes': ('2023-01-02', '2023-01-04'),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 3, 4]
+    assert filtered_df['datetimes'].tolist() == mock_data2['datetimes'].tolist()[1:4]
+
+    # testing datetime strings
+    filters = {
+        'datetimes': ('2023-01-02 12:00:00', '2023-01-04 12:00:00'),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 3, 4]
+    assert filtered_df['datetimes'].tolist() == mock_data2['datetimes'].tolist()[1:4]
+
+def test_filter_dataframe_datetimes_with_missing(mock_data2):  # noqa
+    """Test filter_dataframe function."""
+    # testing datetimes not in range
+    filters = {
+        'datetimes_with_missing': (pd.to_datetime('2025-01-02'), pd.to_datetime('2025-01-04')),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 0
+    assert code
+
+    # testing datetimes
+    filters = {
+        'datetimes_with_missing': (pd.to_datetime('2023-01-02'), pd.to_datetime('2023-01-04')),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 4]
+    assert filtered_df['datetimes_with_missing'].tolist() == mock_data2['datetimes_with_missing'].iloc[[1,3]].tolist()  # noqa
+
+    # testing datetimes
+    filters = {
+        'datetimes_with_missing': (pd.to_datetime('2023-01-02 12:00:00'), pd.to_datetime('2023-01-04 12:00:00')),  # noqa
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 4]
+    assert filtered_df['datetimes_with_missing'].tolist() == mock_data2['datetimes_with_missing'].iloc[[1,3]].tolist()  # noqa
+
+    # testing date strings
+    filters = {
+        'datetimes_with_missing': ('2023-01-02', '2023-01-04'),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 4]
+    assert filtered_df['datetimes_with_missing'].tolist() == mock_data2['datetimes_with_missing'].iloc[[1,3]].tolist()  # noqa
+
+    # testing datetime strings
+    filters = {
+        'datetimes_with_missing': ('2023-01-02 12:00:00', '2023-01-04 12:00:00'),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 4]
+    assert filtered_df['datetimes_with_missing'].tolist() == mock_data2['datetimes_with_missing'].iloc[[1,3]].tolist()  # noqa
+
+def test_filter_dataframe_datetimes_with_missing2(mock_data2):  # noqa
+    """Test filter_dataframe function."""
+    # testing datetimes not in range
+    filters = {
+        'datetimes_with_missing2': (pd.to_datetime('2025-01-02'), pd.to_datetime('2025-01-04')),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 0
+    assert code
+
+    # testing datetimes
+    filters = {
+        'datetimes_with_missing2': (pd.to_datetime('2023-01-01'), pd.to_datetime('2023-01-04')),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 4]
+    assert filtered_df['datetimes_with_missing2'].tolist() == mock_data2['datetimes_with_missing2'].iloc[[1,3]].tolist()  # noqa
+
+    # testing datetimes
+    filters = {
+        'datetimes_with_missing2': (pd.to_datetime('2023-01-01 12:00:00'), pd.to_datetime('2023-01-04 12:00:00')),  # noqa
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 4]
+    assert filtered_df['datetimes_with_missing2'].tolist() == mock_data2['datetimes_with_missing2'].iloc[[1,3]].tolist()  # noqa
+
+    # testing date strings
+    filters = {
+        'datetimes_with_missing2': ('2023-01-01', '2023-01-04'),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 4]
+    assert filtered_df['datetimes_with_missing2'].tolist() == mock_data2['datetimes_with_missing2'].iloc[[1,3]].tolist()  # noqa
+
+    # testing datetime strings
+    filters = {
+        'datetimes_with_missing2': ('2023-01-01 00:00:01', '2023-01-04 12:00:00'),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df['integers'].tolist() == [2, 4]
+    assert filtered_df['datetimes_with_missing2'].tolist() == mock_data2['datetimes_with_missing2'].iloc[[1,3]].tolist()  # noqa
+
 
 # TODO include tests for datetimes
 
@@ -847,7 +1027,7 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     assert filtered_df['integers'].tolist() == [3, 4]
     assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[2, 3]].tolist()  # noqa
 
-def test_filter_dataframe_categorie_no_missing(mock_data2):  # noqa
+def test_filter_dataframe_categories_no_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
     # testing non-existant value
     filters = {
@@ -944,7 +1124,7 @@ def test_filter_dataframe_categorie_no_missing(mock_data2):  # noqa
     assert filtered_df['integers'].tolist() == [1, 4]
     assert filtered_df['categories'].tolist() == mock_data2['categories'].iloc[[0, 3]].tolist()
 
-def test_filter_dataframe_categorie_with_missing(mock_data2):  # noqa
+def test_filter_dataframe_categories_with_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
     # testing all possible values
     filters = {
@@ -1006,7 +1186,7 @@ def test_filter_dataframe_categorie_with_missing(mock_data2):  # noqa
     assert filtered_df['integers'].tolist() == [1, 3, 4]
     assert filtered_df['categories_with_missing'].tolist() == mock_data2['categories_with_missing'].iloc[[0, 2, 3]].tolist()  # noqa
 
-def test_filter_dataframe_categorie_with_missing2(mock_data2):  # noqa
+def test_filter_dataframe_categories_with_missing2(mock_data2):  # noqa
     """Test filter_dataframe function."""
     # testing all possible values
     filters = {
