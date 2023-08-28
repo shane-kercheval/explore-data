@@ -314,7 +314,7 @@ def test_filter_dataframe_datetimes_no_missing(mock_data2):  # noqa
 
     # testing datetimes
     filters = {
-        'datetimes': (pd.to_datetime('2023-01-02 12:00:00'), pd.to_datetime('2023-01-04 12:00:00')),
+        'datetimes': (pd.to_datetime('2023-01-02 12:00:00'), pd.to_datetime('2023-01-04 12:00:00')),  # noqa
     }
     filtered_df, code = filter_dataframe(mock_data2, filters)
     assert mock_data2 is not filtered_df
