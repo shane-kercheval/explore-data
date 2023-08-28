@@ -40,12 +40,12 @@ def mock_data2() -> pd.DataFrame:
         'booleans': [True, False, True, False, True],
         'booleans_with_missing': [True, False, np.nan, False, True],
         'booleans_with_missing2': [None, False, np.nan, False, True],
-        'strings': ['a', 'b', 'c', 'd', 'e'],
-        'strings_with_missing': ['a', 'b', np.nan, 'd', 'e'],
-        'strings_with_missing2': [None, 'b', np.nan, 'd', 'e'],
-        'categories': pd.Categorical(['a', 'b', 'c', 'd', 'e']),
-        'categories_with_missing': pd.Categorical(['a', 'b', np.nan, 'd', 'e']),
-        'categories_with_missing2': pd.Categorical([None, 'b', np.nan, 'd', 'e']),
+        'strings': ['a', 'b', 'c', 'a', 'b'],
+        'strings_with_missing': ['a', 'b', np.nan, 'a', 'b'],
+        'strings_with_missing2': [None, 'b', np.nan, 'a', 'b'],
+        'categories': pd.Categorical(['a', 'b', 'c', 'a', 'b']),
+        'categories_with_missing': pd.Categorical(['a', 'b', np.nan, 'a', 'b']),
+        'categories_with_missing2': pd.Categorical([None, 'b', np.nan, 'a', 'b']),
         'dates': pd.to_datetime(['2023-01-01', '2023-01-02', '2023-01-03', '2023-01-04', '2023-01-05']),  # noqa
         'dates_with_missing': pd.to_datetime(['2023-01-01', '2023-01-02', np.nan, '2023-01-04', '2023-01-05']),  # noqa
         'dates_with_missing2': pd.to_datetime([None, '2023-01-02', np.nan, '2023-01-04', '2023-01-05']),  # noqa

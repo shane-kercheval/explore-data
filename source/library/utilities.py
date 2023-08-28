@@ -171,14 +171,12 @@ def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataF
             code += f"    start_date = pd.to_datetime('{values[0]}').date()\n"
             code += f"    end_date = pd.to_datetime('{values[1]}').date() + pd.Timedelta(days=1)\n"
             code += f"    filtered_data = filtered_data[(series >= start_date) & (series < end_date)]\n"  # noqa
-        elif hp.is_series_bool(series):
+        elif hp.is_series_bool(series) or series.dtype == 'object':
             assert isinstance(values, list)
             # np.nan values are converted to 'nan' strings, but we need 'np.nan' string for the
             # code to work
             values = str(values).replace('nan', 'np.nan')  # noqa
             code += f"    filtered_data = filtered_data[filtered_data['{column}'].isin({values})]\n"  # noqa
-            # import numpy as np
-            # filtered_data = filtered_data[series.isin(filters)]
         # elif series.dtype == 'object':
         #     assert isinstance(value, list)
         #     markdown_text += f"  - `{column}` in `{value}`  \n"
