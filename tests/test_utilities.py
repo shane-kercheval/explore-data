@@ -3,7 +3,8 @@ import numpy as np
 import pytest
 import pandas as pd
 from datetime import date, datetime
-from source.library.utilities import dataframe_columns_to_datetime, filter_dataframe, to_date
+from source.library.utilities import dataframe_columns_to_datetime, filter_dataframe, to_date, \
+    create_random_dataframe, to_date_string
 
 
 def test_convert_columns_to_datetime(mock_data1):  # noqa
@@ -107,6 +108,12 @@ def test_convert_to_date_datetime_with_microseconds():  # noqa
     input_datetime = datetime(2023, 8, 22, 15, 30, 45, 123456)
     expected_date = date(2023, 8, 22)
     assert to_date(input_datetime) == expected_date
+
+def test_to_date_string():  # noqa
+    # test to_date_string function with string, date, and datetime
+    assert to_date_string("2023-08-22") == "2023-08-22"
+    assert to_date_string(date(2023, 8, 22)) == "2023-08-22"
+    assert to_date_string(datetime(2023, 8, 22, 15, 30, 45)) == "2023-08-22"
 
 def test_filter_dataframe_dates_no_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
@@ -1537,3 +1544,15 @@ def test_filter_dataframe_floats_with_missing2(mock_data2):  # noqa
     assert len(filtered_df) == 3
     assert code
     assert filtered_df['floats_with_missing2'].tolist() == mock_data2['floats_with_missing2'].iloc[[1, 3, 4]].tolist()  # noqa
+
+def test_filter_dataframe_no_filters(mock_data2):  # noqa
+    """Test filter_dataframe function."""
+    filtered_df, code = filter_dataframe(mock_data2, {})
+    assert mock_data2 is not filtered_df
+    assert mock_data2.shape[1] == filtered_df.shape[1]
+    assert len(filtered_df) == 5
+    assert not code
+
+def test_create_random_dataframe():  # noqa
+    assert len(create_random_dataframe(500, sporadic_missing=False)) == 500
+    assert len(create_random_dataframe(500, sporadic_missing=True)) == 500
