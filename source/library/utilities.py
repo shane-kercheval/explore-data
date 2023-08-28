@@ -2,6 +2,7 @@
 from datetime import datetime, date, timedelta
 import numpy as np
 import pandas as pd
+import helpsk.pandas as hp
 
 
 def series_to_datetime(series: pd.Series) -> pd.Series:
@@ -139,7 +140,8 @@ def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataF
     values between these numbers. Missing values are automatically excluded.
 
     For dates, the value must be a tuple of (start, max) values, and the data will return values
-    between these dates. Missing values are automatically excluded.
+    between these dates. Missing values are automatically excluded. NOTE: datetime values are not
+    supported. Any datetime value will be converted to a date.
 
     For booleans, the value must be a list with `True` or `False` values, and the data will return
     values that match the boolean. `np.nan` values can be included in the list to return missing
@@ -169,20 +171,14 @@ def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataF
             code += f"    start_date = pd.to_datetime('{values[0]}').date()\n"
             code += f"    end_date = pd.to_datetime('{values[1]}').date() + pd.Timedelta(days=1)\n"
             code += f"    filtered_data = filtered_data[(series >= start_date) & (series < end_date)]\n"  # noqa
-            # series = series.dt.date
-            # start_date, end_date = to_date(values[0]), to_date(values[1])
-            # filtered_data = filtered_data[(series >= start_date) & (series <= end_date)]
-
-        # elif hp.is_series_bool(series):
-        #     assert isinstance(values, list)
-        #     import numpy as np
-        #     filters = [x.lower() == 'true' for x in value if value != '<Missing>']
-        #     if '<Missing>' in value:
-        #         filters.append(np.nan)
-        #     filtered_data = filtered_data[series.isin(filters)]
-        #     # assert isinstance(value, list)
-        #     # log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])  # noqa
-        #     # filtered_data = filtered_data[series.isin([x.lower() == 'true' for x in value])]
+        elif hp.is_series_bool(series):
+            assert isinstance(values, list)
+            # np.nan values are converted to 'nan' strings, but we need 'np.nan' string for the
+            # code to work
+            values = str(values).replace('nan', 'np.nan')  # noqa
+            code += f"    filtered_data = filtered_data[filtered_data['{column}'].isin({values})]\n"  # noqa
+            # import numpy as np
+            # filtered_data = filtered_data[series.isin(filters)]
         # elif series.dtype == 'object':
         #     assert isinstance(value, list)
         #     markdown_text += f"  - `{column}` in `{value}`  \n"
