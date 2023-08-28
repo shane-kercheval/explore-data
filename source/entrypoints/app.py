@@ -583,13 +583,13 @@ def filter_data(
             # filtered_data = filtered_data[(series >= start_date) & (series <= end_date)]
         elif hp.is_series_bool(series):
             assert isinstance(value, list)
-            markdown_text += f"  - `{column}` is `{value}`  \n"
             # e.g. ['True', 'False', '<Missing>']
             import numpy as np
             filters_list = [x.lower() == 'true' for x in value if x != '<Missing>']
             if '<Missing>' in value:
                 filters_list.extend([np.nan, None])
             log_variable('filters_list', filters_list)
+            markdown_text += f"  - `{column}` in `{filters_list}`  \n"
             filters[column] = filters_list
             # filtered_data = filtered_data[series.isin(filters)]
             # assert isinstance(value, list)
@@ -840,10 +840,14 @@ def update_filter_controls(
             elif hp.is_series_bool(series):
                 log("Creating dropdown control")
                 options = ['True', 'False']
-                multi = False
                 if series.isna().any():
                     options.append('<Missing>')
                     multi = True
+                else:
+                    multi = False
+                    if value:
+                        value = value[0]
+
                 components.append(create_dropdown_control(
                     label=column,
                     id=f"filter_control_{column}",
