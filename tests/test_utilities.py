@@ -1553,6 +1553,240 @@ def test_filter_dataframe_no_filters(mock_data2):  # noqa
     assert len(filtered_df) == 5
     assert not code
 
+def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
+    """Test filter_dataframe function."""
+    filters = {
+        'integers': (2, 4),
+        'strings': ['a', 'b'],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df.index.tolist() == [1, 3]
+    assert filtered_df['integers'].tolist() == [2, 4]
+    assert filtered_df['strings'].tolist() == ['b', 'a']
+
+    # no overlap
+    filters = {
+        'integers': (1, 2),
+        'strings': ['c'],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 0
+    assert code
+
+    filters = {
+        'integers': (2, 4),
+        'booleans': [True],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 1
+    assert code
+    assert filtered_df.index.tolist() == [2]
+    assert filtered_df['integers'].tolist() == [3]
+    assert filtered_df['strings'].tolist() == ['c']
+    assert filtered_df['booleans'].tolist() == [True]
+
+    filters = {
+        'booleans': [True],
+        'booleans_with_missing': [True],
+        'booleans_with_missing2': [True],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 1
+    assert code
+    assert filtered_df.index.tolist() == [4]
+    assert filtered_df['integers'].tolist() == [5]
+    assert filtered_df['strings'].tolist() == ['b']
+    assert filtered_df['booleans'].tolist() == [True]
+    assert filtered_df['booleans_with_missing'].tolist() == [True]
+    assert filtered_df['booleans_with_missing2'].tolist() == [True]
+
+    # this won't change anything because boolean_with_missing2 is also np.nan on the same index
+    filters = {
+        'booleans': [True],
+        'booleans_with_missing': [True, np.nan],
+        'booleans_with_missing2': [True],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 1
+    assert code
+    assert filtered_df.index.tolist() == [4]
+    assert filtered_df['integers'].tolist() == [5]
+    assert filtered_df['strings'].tolist() == ['b']
+    assert filtered_df['booleans'].tolist() == [True]
+    assert filtered_df['booleans_with_missing'].tolist() == [True]
+    assert filtered_df['booleans_with_missing2'].tolist() == [True]
+
+    filters = {
+        'booleans': [True],
+        'booleans_with_missing': [True, np.nan],
+        'booleans_with_missing2': [True, np.nan],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df.index.tolist() == [2, 4]
+    assert filtered_df['integers'].tolist() == [3, 5]
+    assert filtered_df['strings'].tolist() == ['c', 'b']
+    assert filtered_df['booleans'].tolist() == [True, True]
+    assert filtered_df['booleans_with_missing'].tolist() == [np.nan, True]
+    assert filtered_df['booleans_with_missing2'].tolist() == [np.nan, True]
+
+    filters = {
+        'booleans': [True],
+        'booleans_with_missing': [True, np.nan],
+        'booleans_with_missing2': [True, np.nan, None],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 3
+    assert code
+    assert filtered_df.index.tolist() == [0, 2, 4]
+    assert filtered_df['integers'].tolist() == [1, 3, 5]
+    assert filtered_df['strings'].tolist() == ['a', 'c', 'b']
+    assert filtered_df['booleans'].tolist() == [True, True, True]
+    assert filtered_df['booleans_with_missing'].tolist() == [True, np.nan, True]
+    assert filtered_df['booleans_with_missing2'].tolist() == [None, np.nan, True]
+
+
+
+
+
+
+
+
+
+
+    filters = {
+        'booleans': [True],
+        'strings': ['a', 'c'],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df.index.tolist() == [0, 2]
+    assert filtered_df['integers'].tolist() == [1, 3]
+    assert filtered_df['strings'].tolist() == ['a', 'c']
+    assert filtered_df['booleans'].tolist() == [True, True]
+
+    filters = {
+        'booleans': [True],
+        'categories_with_missing': ['a', 'c'],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 1
+    assert code
+    assert filtered_df.index.tolist() == [0]
+    assert filtered_df['integers'].tolist() == [1]
+    assert filtered_df['strings'].tolist() == ['a']
+    assert filtered_df['categories_with_missing'].tolist() == ['a']
+
+    filters = {
+        'booleans': [True],
+        'categories_with_missing': [np.nan],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 1
+    assert code
+    assert filtered_df.index.tolist() == [2]
+    assert filtered_df['integers'].tolist() == [3]
+    assert filtered_df['booleans'].tolist() == [True]
+    assert filtered_df['categories_with_missing'].tolist() == [np.nan]
+
+    filters = {
+        'booleans': [True],
+        'dates_with_missing': ('2024-01-01', '2024-01-04'),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 0
+    assert code
+
+    filters = {
+        'booleans': [True],
+        'dates_with_missing': ('2023-01-01', '2023-01-04'),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 1
+    assert code
+    assert filtered_df.index.tolist() == [0]
+    assert filtered_df['integers'].tolist() == [1]
+    assert filtered_df['strings'].tolist() == ['a']
+    assert filtered_df['booleans'].tolist() == [True]
+    assert filtered_df['dates_with_missing'].tolist() == [pd.to_datetime('2023-01-01')]
+    assert filtered_df['categories_with_missing2'].tolist() == [np.nan]
+
+    filters = {
+        'booleans': [False],
+        'dates_with_missing': (pd.to_datetime('2023-01-03'), pd.to_datetime('2023-01-04')),
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 1
+    assert code
+    assert filtered_df.index.tolist() == [3]
+    assert filtered_df['integers'].tolist() == [4]
+    assert filtered_df['strings'].tolist() == ['a']
+    assert filtered_df['booleans'].tolist() == [False]
+    assert filtered_df['dates_with_missing'].tolist() == [pd.to_datetime('2023-01-04')]
+
+    filters = {
+        'categories_with_missing': [np.nan],
+        'categories_with_missing2': [np.nan],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 1
+    assert code
+    assert filtered_df.index.tolist() == [2]
+    assert filtered_df['integers'].tolist() == [3]
+    assert filtered_df['strings'].tolist() == ['c']
+    assert filtered_df['categories_with_missing'].tolist() == [np.nan]
+    assert filtered_df['categories_with_missing2'].tolist() == [np.nan]
+
+
+    filters = {
+        'categories_with_missing': [np.nan],
+        'categories_with_missing2': [np.nan, None],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 1
+    assert code
+    assert filtered_df.index.tolist() == [2]
+    assert filtered_df['integers'].tolist() == [3]
+    assert filtered_df['strings'].tolist() == ['c']
+    assert filtered_df['categories_with_missing'].tolist() == [np.nan]
+    assert filtered_df['categories_with_missing2'].tolist() == [np.nan]
+
+    filters = {
+        'categories_with_missing': [np.nan, 'a'],
+        'categories_with_missing2': [np.nan],
+    }
+    filtered_df, code = filter_dataframe(mock_data2, filters)
+    assert mock_data2 is not filtered_df
+    assert len(filtered_df) == 2
+    assert code
+    assert filtered_df.index.tolist() == [0, 2]
+    assert filtered_df['integers'].tolist() == [1, 3]
+    assert filtered_df['strings'].tolist() == ['a', 'c']
+    assert filtered_df['categories_with_missing'].tolist() == ['a', np.nan]
+    assert filtered_df['categories_with_missing2'].tolist() == [np.nan, np.nan]
+
+
+
+
 def test_create_random_dataframe():  # noqa
     assert len(create_random_dataframe(500, sporadic_missing=False)) == 500
     assert len(create_random_dataframe(500, sporadic_missing=True)) == 500
