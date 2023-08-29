@@ -555,7 +555,8 @@ def filter_data(
     log_variable('filter_columns_cache', filter_columns_cache)
 
     if not selected_filter_columns:
-        return original_data, "No filters applied."
+        log("No filters applied.")
+        return original_data, "No filters applied.", "No filters applied."
 
     filters = {}
     log_variable('filters', filters)
