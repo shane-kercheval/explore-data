@@ -7,6 +7,7 @@ from dash import Dash, html, dash_table, dcc, Output, Input, State, callback_con
 from dash.dependencies import ALL
 import plotly.express as px
 import pandas as pd
+import numpy as np
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
 from source.library.dash_helpers import (
@@ -469,8 +470,8 @@ def load_data(  # noqa
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
 
-        # i can't do this here because the dataframe gets converted to a dict and loses the
-        # converted datetime dtypes
+        # i can't convert columns to datetime here because the dataframe gets converted to a dict
+        # and loses the converted datetime dtypes
         # data, converted_columns = convert_columns_to_datetime(data)
         # log_variable('converted_columns', converted_columns)
         all_columns = data.columns.tolist()
@@ -545,74 +546,70 @@ def load_data(  # noqa
 def filter_data(
         n_clicks: int,  # noqa
         selected_filter_columns: list[str],
-        filter_columns_cache: list[str],
+        filter_columns_cache: dict,
         original_data: dict,
         ) -> dict:
     """Filter the data based on the user's selections."""
-    # TODO: refactor and unit-test
     log_function('filtered_data')
     log_variable('selected_filter_columns', selected_filter_columns)
+    log_variable('filter_columns_cache', filter_columns_cache)
 
     if not selected_filter_columns:
         return original_data, "No filters applied."
 
-    # filters = {column: filter_columns_cache[column] for column in selected_filter_columns}
     filters = {}
     log_variable('filters', filters)
 
-    # filtered_data, code = filter_dataframe(original_data, filters)
     original_data = pd.DataFrame(original_data)
-
     markdown_text = "##### Filters applied:  \n"
-    original_num_rows = len(original_data)
-    log(f"{original_num_rows:,} rows before after filtering")
+
+    # this for loop builds the filters dictionary and the markdown text
     for column in selected_filter_columns:
         assert column in filter_columns_cache
         value = filter_columns_cache[column]
         log(f"filtering on `{column}` with `{value}`")
-        log(len(original_data[column]))
+
         series, _ = series_to_datetime(original_data[column])
         log_variable('series.dtype', series.dtype)
         if pd.api.types.is_datetime64_any_dtype(series):
             series = series.dt.date
             assert isinstance(value, list)
+            assert len(value) == 2
             start_date = to_date(value[0])
             end_date = to_date(value[1])
             filters[column] = (start_date, end_date)
             markdown_text += f"  - `{column}` between `{start_date}` and `{end_date}`  \n"
-            # filtered_data = filtered_data[(series >= start_date) & (series <= end_date)]
         elif hp.is_series_bool(series):
+            # e.g. [True, False, '<Missing>']
             assert isinstance(value, list)
-            # e.g. ['True', 'False', '<Missing>']
-            import numpy as np
-            filters_list = [x.lower() == 'true' for x in value if x != '<Missing>' and x is not None]  # noqa
+            filters_list = [
+                x.lower() == 'true'
+                for x in value
+                if x != '<Missing>' and x is not None
+            ]
             if '<Missing>' in value:
                 filters_list.extend([np.nan, None])
             log_variable('filters_list', filters_list)
-            markdown_text += f"  - `{column}` in `{filters_list}`  \n"
             filters[column] = filters_list
-            # filtered_data = filtered_data[series.isin(filters)]
-            # assert isinstance(value, list)
-            # log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])  # noqa
-            # filtered_data = filtered_data[series.isin([x.lower() == 'true' for x in value])]
+            markdown_text += f"  - `{column}` in `{filters_list}`  \n"
         elif series.dtype in ('object', 'category'):
             assert isinstance(value, list)
-            markdown_text += f"  - `{column}` in `{value}`  \n"
             filters[column] = value
-            # filtered_data = filtered_data[series.isin(value)]
+            markdown_text += f"  - `{column}` in `{value}`  \n"
         elif pd.api.types.is_numeric_dtype(series):
-            assert isinstance(value, list)  # TODO it seems to switch from a list to a tuple
+            assert isinstance(value, list)
+            assert len(value) == 2
             min_value = value[0]
             max_value = value[1]
-            markdown_text += f"  - `{column}` between `{min_value}` and `{max_value}`  \n"
-            # filtered_data = filtered_data[series.between(min_value, max_value)]
             filters[column] = (min_value, max_value)
+            markdown_text += f"  - `{column}` between `{min_value}` and `{max_value}`  \n"
         else:
             raise ValueError(f"Unknown dtype for column `{column}`: {original_data[column].dtype}")
 
-    filtered_data, code = filter_dataframe(original_data, filters)
-    rows_removed = original_num_rows - len(filtered_data)
-    markdown_text += f"  \n`{len(filtered_data):,}` rows remaining after filtering; `{rows_removed:,}` (`{rows_removed / original_num_rows:.1%}`) rows removed  \n"  # noqa
+    filtered_data, code = filter_dataframe(data=original_data, filters=filters)
+    rows_removed = len(original_data) - len(filtered_data)
+    markdown_text += f"  \n`{len(filtered_data):,}` rows remaining after filtering; `{rows_removed:,}` (`{rows_removed / len(original_data):.1%}`) rows removed  \n"  # noqa
+    log(f"{len(original_data):,} rows before after filtering")
     log(f"{len(filtered_data):,} rows remaining after filtering")
     return filtered_data.to_dict('records'), markdown_text, f"""```\n{code}\n```"""
 
