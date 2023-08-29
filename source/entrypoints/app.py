@@ -585,7 +585,7 @@ def filter_data(
             assert isinstance(value, list)
             # e.g. ['True', 'False', '<Missing>']
             import numpy as np
-            filters_list = [x.lower() == 'true' for x in value if x != '<Missing>']
+            filters_list = [x.lower() == 'true' for x in value if x != '<Missing>' and x is not None]  # noqa
             if '<Missing>' in value:
                 filters_list.extend([np.nan, None])
             log_variable('filters_list', filters_list)
@@ -595,7 +595,7 @@ def filter_data(
             # assert isinstance(value, list)
             # log_variable("[x.lower() == 'true' for x in value]", [x.lower() == 'true' for x in value])  # noqa
             # filtered_data = filtered_data[series.isin([x.lower() == 'true' for x in value])]
-        elif series.dtype == 'object' or series.dtype == 'category':
+        elif series.dtype in ('object', 'category'):
             assert isinstance(value, list)
             markdown_text += f"  - `{column}` in `{value}`  \n"
             filters[column] = value
