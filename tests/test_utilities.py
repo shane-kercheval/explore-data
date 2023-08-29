@@ -1655,15 +1655,6 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
     assert filtered_df['booleans_with_missing'].tolist() == [True, np.nan, True]
     assert filtered_df['booleans_with_missing2'].tolist() == [None, np.nan, True]
 
-
-
-
-
-
-
-
-
-
     filters = {
         'booleans': [True],
         'strings': ['a', 'c'],
@@ -1755,7 +1746,6 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
     assert filtered_df['categories_with_missing'].tolist() == [np.nan]
     assert filtered_df['categories_with_missing2'].tolist() == [np.nan]
 
-
     filters = {
         'categories_with_missing': [np.nan],
         'categories_with_missing2': [np.nan, None],
@@ -1783,9 +1773,6 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
     assert filtered_df['strings'].tolist() == ['a', 'c']
     assert filtered_df['categories_with_missing'].tolist() == ['a', np.nan]
     assert filtered_df['categories_with_missing2'].tolist() == [np.nan, np.nan]
-
-
-
 
 def test_create_random_dataframe():  # noqa
     assert len(create_random_dataframe(500, sporadic_missing=False)) == 500
