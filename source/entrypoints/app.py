@@ -1,9 +1,10 @@
 """Dash app entry point."""
+import math
 import os
 from dotenv import load_dotenv
 import base64
 import io
-from dash import Dash, html, dash_table, dcc, Output, Input, State, callback_context
+from dash import Dash, dash_table, callback_context
 from dash.dependencies import ALL
 import plotly.express as px
 import pandas as pd
@@ -29,6 +30,10 @@ from source.library.utilities import (
     create_random_dataframe,
 )
 
+from dash_extensions.enrich import DashProxy, Output, Input, State, Serverside, html, dcc, \
+    ServersideOutputTransform
+
+
 
 load_dotenv()
 HOST = os.getenv('HOST')
@@ -36,15 +41,16 @@ DEBUG = os.getenv('DEBUG').lower() == 'true'
 PORT = os.getenv('PORT')
 GOLDEN_RATIO = 1.618
 
-
-app = Dash(
+app = DashProxy(
     __name__,
     title="Data Explorer",
     external_stylesheets=[
         dbc.themes.BOOTSTRAP,
         # 'https://codepen.io/chriddyp/pen/bWLwgP.css',
     ],
+    transforms=[ServersideOutputTransform()],
 )
+
 app.layout = dbc.Container(className="app-container", fluid=True, style={"max-width": "99%"}, children=[  # noqa
     dcc.Store(id='original_data'),
     dcc.Store(id='filtered_data'),
@@ -118,13 +124,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
             html.Br(),
             dbc.Row(children=[
                 html.Hr(),
-                dash_table.DataTable(
-                    id='table_uploaded_data',
-                    page_size=20,
-                    style_header={
-                        'fontWeight': 'bold',
-                    },
-                ),
+                html.Div(id='table_uploaded_data'),
             ]),
             ]),
         ]),
@@ -270,6 +270,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 dcc.Markdown(id="visualize_filter_info", children="No filters applied."),  # noqa
                             ]),
                             dbc.Tab(label="Data", children=[
+                                dcc.Markdown("#### Sample of Uploaded Data (first 500 rows):"),
                                 dcc.Loading(type="default", children=[
                                     dash_table.DataTable(
                                         id='visualize_table',
@@ -381,7 +382,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('dynamic-filter-controls', 'children', allow_duplicate=True),
     Output('visualize_graph', 'figure', allow_duplicate=True),
     Output('visualize_table', 'data', allow_duplicate=True),
-    Output('table_uploaded_data', 'data'),
+    Output('table_uploaded_data', 'children'),
     Output('numeric_summary', 'data'),
     Output('non_numeric_summary', 'data'),
     Output('original_data', 'data'),
@@ -465,7 +466,7 @@ def load_data(  # noqa
             data = pd.read_csv(load_from_url)
         elif triggered == 'load_random_data_button.n_clicks':
             log("Loading DataFrame with random data")
-            data = create_random_dataframe(num_rows=1_000, sporadic_missing=True)
+            data = create_random_dataframe(num_rows=10_000, sporadic_missing=True)
             log(f"Loaded data w/ {data.shape[0]:,} rows and {data.shape[1]:,} columns")
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
@@ -502,12 +503,22 @@ def load_data(  # noqa
             non_numeric_summary = None
 
         options = values_to_dropdown_options(all_columns)
-        data = data.to_dict('records')
+        # data = Serverside(data)
 
         x_variable_dropdown = options
         y_variable_dropdown = options
         filter_columns_dropdown = options
-        table_uploaded_data = data
+        table_uploaded_data = [
+            dcc.Markdown("#### Sample of Uploaded Data (first 500 rows):"),
+            dash_table.DataTable(
+                id='adsf',
+                data=data.iloc[0:500].to_dict('records'),
+                page_size=20,
+                style_header={
+                    'fontWeight': 'bold',
+                },
+            ),
+        ]
         original_data = data
         filtered_data = data.copy()
 
@@ -522,8 +533,8 @@ def load_data(  # noqa
         table_uploaded_data,
         numeric_summary,
         non_numeric_summary,
-        original_data,
-        filtered_data,
+        Serverside(original_data),
+        Serverside(filtered_data),
         all_columns,
         numeric_columns,
         non_numeric_columns,
@@ -561,7 +572,6 @@ def filter_data(
     filters = {}
     log_variable('filters', filters)
 
-    original_data = pd.DataFrame(original_data)
     markdown_text = "##### Filters applied:  \n"
 
     # this for loop builds the filters dictionary and the markdown text
@@ -579,7 +589,11 @@ def filter_data(
             start_date = to_date(value[0])
             end_date = to_date(value[1])
             filters[column] = (start_date, end_date)
-            markdown_text += f"  - `{column}` between `{start_date}` and `{end_date}`  \n"
+            markdown_text += f"  - `{column}` between `{start_date}` and `{end_date}`"
+            num_missing = series.isna().sum()
+            if num_missing > 0:
+                markdown_text += f"; removing `{num_missing:,}` missing values"
+            markdown_text += "  \n"
         elif hp.is_series_bool(series):
             # e.g. [True, False, '<Missing>']
             assert isinstance(value, list)
@@ -603,7 +617,11 @@ def filter_data(
             min_value = value[0]
             max_value = value[1]
             filters[column] = (min_value, max_value)
-            markdown_text += f"  - `{column}` between `{min_value}` and `{max_value}`  \n"
+            markdown_text += f"  - `{column}` between `{min_value}` and `{max_value}`"
+            num_missing = series.isna().sum()
+            if num_missing > 0:
+                markdown_text += f"; removing `{num_missing:,}` missing values"
+            markdown_text += "  \n"
         else:
             raise ValueError(f"Unknown dtype for column `{column}`: {original_data[column].dtype}")
 
@@ -612,7 +630,7 @@ def filter_data(
     markdown_text += f"  \n`{len(filtered_data):,}` rows remaining after filtering; `{rows_removed:,}` (`{rows_removed / len(original_data):.1%}`) rows removed  \n"  # noqa
     log(f"{len(original_data):,} rows before after filtering")
     log(f"{len(filtered_data):,} rows remaining after filtering")
-    return filtered_data.to_dict('records'), markdown_text, f"""```\n{code}\n```"""
+    return Serverside(filtered_data), markdown_text, f"""```\n{code}\n```"""
 
 
 @app.callback(
@@ -662,8 +680,8 @@ def update_graph(
             graph_type: str,
             n_bins: int,
             title_textbox: str,
-            data: dict,
-        ) -> dict:
+            data: pd.DataFrame,
+        ) -> pd.DataFrame:
     """
     Triggered when the user selects columns from the dropdown.
 
@@ -676,13 +694,15 @@ def update_graph(
     log_variable('n_bins', n_bins)
     log_variable('graph_type', graph_type)
     log_variable('type(n_bins)', type(n_bins))
+    log_variable('type(data)', type(data))
+    log_variable('data', data)
     fig = {}
     if (
         (x_variable or y_variable)
-        and data
-        and (not x_variable or x_variable in data[0])
-        and (not y_variable or y_variable in data[0])
-        and (not facet_variable or facet_variable in data[0])
+        and data is not None and len(data) > 0
+        and (not x_variable or x_variable in data.columns)
+        and (not y_variable or y_variable in data.columns)
+        and (not facet_variable or facet_variable in data.columns)
         ):
 
         graph_types_lookup = {
@@ -692,16 +712,20 @@ def update_graph(
             'bar': px.bar,
             'box': px.box,
         }
-
+        log("creating fig")
+        columns = [x_variable, y_variable, facet_variable]
         fig = graph_types_lookup[graph_type](
-            data,
+            # data.to_dict('records'),
+            data[[col for col in columns if col is not None]],
             x=x_variable,
             y=y_variable,
             facet_col=facet_variable,
             title=title_textbox,
             # nbins=n_bins,
         )
-    return fig, data
+    log("returning fig")
+    log_variable('fig', fig)
+    return fig, data.iloc[0:500].to_dict('records')
 
 
 @app.callback(
@@ -812,8 +836,8 @@ def update_filter_controls(
     log_variable('numeric_columns', numeric_columns)
 
     components = []
-    if selected_filter_columns and data:
-        data = pd.DataFrame(data)
+    if selected_filter_columns and data is not None and len(data) > 0:
+        # data = pd.DataFrame(data)
         for column in selected_filter_columns:
             series, _ = series_to_datetime(data[column])
 
@@ -874,8 +898,8 @@ def update_filter_controls(
                 components.append(create_min_max_control(
                     label=column,
                     id=f"filter_control_{column}",
-                    min_value=value[0] if value else series.min(),
-                    max_value=value[1] if value else series.max(),
+                    min_value=value[0] if value else round(series.min()),
+                    max_value=value[1] if value else math.ceil(series.max()),
                     component_id={"type": "filter-control-min-max", "index": column},
                 ))
             else:

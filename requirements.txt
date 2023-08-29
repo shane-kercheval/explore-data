@@ -2,6 +2,7 @@ coverage
 dash
 dash_bootstrap_components
 dash_daq
+dash-extensions
 helpsk
 jupyter-contrib-nbextensions
 notebook
