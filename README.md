@@ -25,6 +25,17 @@
 
 
 
+## Combinations
+
+create a spreadsheet (or something) to track the combinations.. and expected types of graphs possible and default
+
+e.g. 
+
+- `x (numeric)`
+    - box
+    - histogram
+    - scatter (y is index)
+    - bar (y is index)
 
 
 
