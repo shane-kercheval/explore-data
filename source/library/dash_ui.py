@@ -37,6 +37,7 @@ def create_dropdown_control(
         options: list[dict] | None = None,
         value: str | None = None,
         placeholder: str | None = None,
+        clearable: bool = True,
         component_id: dict | None = None,
         ) -> html.Div:
     """Create a dropdown control."""
@@ -57,6 +58,7 @@ def create_dropdown_control(
             options=options,
             value=value,
             placeholder=placeholder,
+            clearable=clearable,
         ),
     )
 
@@ -158,9 +160,9 @@ def create_date_range_control(
         hidden: bool = False,
         component_id: dict | None = None,
         ) -> html.Div:
-    """Create a dropdown control."""
+    """Create a date-range control."""
     if component_id is None:
-        component_id = f'{id}_dropdown'
+        component_id = f'{id}_date_range'
     else:
         assert isinstance(component_id, dict)
 

@@ -7,6 +7,7 @@ import io
 from dash import dash_table, callback_context
 from dash.dependencies import ALL
 import plotly.express as px
+import plotly.graph_objs as go
 import pandas as pd
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
@@ -201,6 +202,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     id='graph_type',
                                     hidden=False,
                                     multi=False,
+                                    clearable=False,
                                     options=[
                                         {'label': 'Histogram', 'value': 'histogram'},
                                         {'label': 'Box', 'value': 'box'},
@@ -585,7 +587,7 @@ def update_graph(
             n_bins: int,
             title_textbox: str,
             data: pd.DataFrame,
-        ) -> pd.DataFrame:
+        ) -> tuple[go.Figure, dict]:
     """
     Triggered when the user selects columns from the dropdown.
 
@@ -604,6 +606,7 @@ def update_graph(
     if (
         (x_variable or y_variable)
         and data is not None and len(data) > 0
+        and graph_type
         and (not x_variable or x_variable in data.columns)
         and (not y_variable or y_variable in data.columns)
         and (not facet_variable or facet_variable in data.columns)
