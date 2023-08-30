@@ -2,37 +2,11 @@
 from datetime import date, datetime
 from dash import html, dcc
 import dash_daq as daq
-
-
+from source.library.dash_utilities import log_variable
 from source.library.utilities import to_date
 
 
 CLASS__GRAPH_PANEL_SECTION = 'graph_panel_section'
-
-def log(value: str) -> None:
-    """Log value."""
-    print(value, flush=True)
-
-
-def log_function(name: str) -> None:
-    """Log function calls."""
-    log(f"\nFUNCTION: `{name}`")
-
-
-def log_variable(var: str, value: str) -> None:
-    """Log variable value."""
-    log(f"VARIABLE: `{var}` = `{value}`")
-
-
-def log_error(message: str) -> None:
-    """Log variable value."""
-    log(f">>>>>>>>>ERROR: `{message}`")
-
-
-def values_to_dropdown_options(values: list[str]) -> list[dict]:
-    """Convert a list of columns to a list of options for a dropdown."""
-    # needs to be converted to str for dcc.Dropdown other wise it will fail
-    return [{'label': str(value), 'value': str(value)} for value in values]
 
 
 def create_control(

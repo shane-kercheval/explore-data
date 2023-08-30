@@ -4,28 +4,29 @@ import os
 from dotenv import load_dotenv
 import base64
 import io
-from dash import Dash, dash_table, callback_context
+from dash import dash_table, callback_context
 from dash.dependencies import ALL
 import plotly.express as px
 import pandas as pd
 import numpy as np
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
-from source.library.dash_helpers import (
-    log,
-    log_error,
-    log_function,
-    log_variable,
-    values_to_dropdown_options,
+from source.library.dash_ui import (
     create_dropdown_control,
     create_slider_control,
     create_min_max_control,
     create_date_range_control,
     CLASS__GRAPH_PANEL_SECTION,
 )
+from source.library.dash_utilities import (
+    log,
+    log_error,
+    log_function,
+    log_variable,
+    values_to_dropdown_options,
+    filter_data_from_ui_control,
+)
 from source.library.utilities import (
-    filter_dataframe,
-    to_date,
     series_to_datetime,
     create_random_dataframe,
 )
@@ -554,79 +555,15 @@ def filter_data(  # noqa: PLR0915
         n_clicks: int,  # noqa
         selected_filter_columns: list[str],
         filter_columns_cache: dict,
-        original_data: dict,
+        original_data: pd.DataFrame,
         ) -> dict:
     """Filter the data based on the user's selections."""
-    log_function('filtered_data')
-    log_variable('selected_filter_columns', selected_filter_columns)
-    log_variable('filter_columns_cache', filter_columns_cache)
-
-    if not selected_filter_columns:
-        log("No filters applied.")
-        return original_data, "No filters applied.", "No filters applied."
-
-    filters = {}
-    log_variable('filters', filters)
-
-    markdown_text = "##### Filters applied:  \n"
-
-    # this for loop builds the filters dictionary and the markdown text
-    for column in selected_filter_columns:
-        assert column in filter_columns_cache
-        value = filter_columns_cache[column]
-        log(f"filtering on `{column}` with `{value}`")
-
-        series, _ = series_to_datetime(original_data[column])
-        log_variable('series.dtype', series.dtype)
-        if pd.api.types.is_datetime64_any_dtype(series):
-            series = series.dt.date
-            assert isinstance(value, list)
-            assert len(value) == 2
-            start_date = to_date(value[0])
-            end_date = to_date(value[1])
-            filters[column] = (start_date, end_date)
-            markdown_text += f"  - `{column}` between `{start_date}` and `{end_date}`"
-            num_missing = series.isna().sum()
-            if num_missing > 0:
-                markdown_text += f"; `{num_missing:,}` missing values removed"
-            markdown_text += "  \n"
-        elif hp.is_series_bool(series):
-            # e.g. [True, False, '<Missing>']
-            assert isinstance(value, list)
-            filters_list = [
-                x.lower() == 'true'
-                for x in value
-                if x != '<Missing>' and x is not None
-            ]
-            if '<Missing>' in value:
-                filters_list.extend([np.nan, None])
-            log_variable('filters_list', filters_list)
-            filters[column] = filters_list
-            markdown_text += f"  - `{column}` in `{filters_list}`  \n"
-        elif series.dtype in ('object', 'category'):
-            assert isinstance(value, list)
-            filters[column] = value
-            markdown_text += f"  - `{column}` in `{value}`  \n"
-        elif pd.api.types.is_numeric_dtype(series):
-            assert isinstance(value, list)
-            assert len(value) == 2
-            min_value = value[0]
-            max_value = value[1]
-            filters[column] = (min_value, max_value)
-            markdown_text += f"  - `{column}` between `{min_value}` and `{max_value}`"
-            num_missing = series.isna().sum()
-            if num_missing > 0:
-                markdown_text += f"; `{num_missing:,}` missing values removed"
-            markdown_text += "  \n"
-        else:
-            raise ValueError(f"Unknown dtype for column `{column}`: {original_data[column].dtype}")
-
-    filtered_data, code = filter_dataframe(data=original_data, filters=filters)
-    rows_removed = len(original_data) - len(filtered_data)
-    markdown_text += f"  \n`{len(filtered_data):,}` rows remaining after filtering; `{rows_removed:,}` (`{rows_removed / len(original_data):.1%}`) rows removed  \n"  # noqa
-    log(f"{len(original_data):,} rows before after filtering")
-    log(f"{len(filtered_data):,} rows remaining after filtering")
-    return Serverside(filtered_data), markdown_text, f"""```\n{code}\n```"""
+    filtered_data, markdown_text, code = filter_data_from_ui_control(
+        selected_columns=selected_filter_columns,
+        cache=filter_columns_cache,
+        data=original_data,
+    )
+    return Serverside(filtered_data), markdown_text, code
 
 
 @app.callback(
