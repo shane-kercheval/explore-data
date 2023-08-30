@@ -600,8 +600,8 @@ def update_graph(
     log_variable('n_bins', n_bins)
     log_variable('graph_type', graph_type)
     log_variable('type(n_bins)', type(n_bins))
-    log_variable('type(data)', type(data))
-    log_variable('data', data)
+    # log_variable('type(data)', type(data))
+    # log_variable('data', data)
     fig = {}
     if (
         (x_variable or y_variable)
@@ -653,7 +653,7 @@ def facet_variable_div(
     log_function('facet_variable_div')
     if x_variable_dropdown or y_variable_dropdown:
         log("returning display: block")
-        options = [{'label': col, 'value': col} for col in non_numeric_columns]
+        options = non_numeric_columns
         return {'display': 'block'}, options
     log("returning display: none")
     return  {'display': 'none'}, []
