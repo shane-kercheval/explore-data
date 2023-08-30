@@ -264,7 +264,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     min=0,
                                     max=1,
                                     step=0.1,
-                                    value=0.7,
+                                    value=0.5,
                                 ),
                             ]),
                         ]),
@@ -634,6 +634,7 @@ def filter_data(
     Input('facet_variable_dropdown', 'value'),
     Input('graph_type_dropdown', 'value'),
     Input('n_bins_slider', 'value'),
+    Input('opacity_slider', 'value'),
     Input('title_textbox', 'value'),
     Input('filtered_data', 'data'),
     State('numeric_columns', 'data'),
@@ -652,6 +653,7 @@ def update_graph(
             facet_variable: str,
             graph_type: str,
             n_bins: int,
+            opacity: float,
             title_textbox: str,
             data: pd.DataFrame,
             numeric_columns: list[str],
@@ -673,6 +675,7 @@ def update_graph(
     log_variable('size_variable', size_variable)
     log_variable('facet_variable', facet_variable)
     log_variable('n_bins', n_bins)
+    log_variable('opacity', opacity)
     log_variable('graph_type', graph_type)
     log_variable('type(n_bins)', type(n_bins))
     # log_variable('type(data)', type(data))
@@ -702,24 +705,66 @@ def update_graph(
                     missing_value_replacement='<Missing>',
                 )
 
-        graph_types_lookup = {
-            'scatter': px.scatter,
-            'histogram': px.histogram,
-            'line': px.line,
-            'bar': px.bar,
-            'box': px.box,
-        }
         log("creating fig")
-        fig = graph_types_lookup[graph_type](
-            graph_data,
-            x=x_variable,
-            y=y_variable,
-            color=color_variable,
-            size=size_variable,
-            facet_col=facet_variable,
-            title=title_textbox,
-            # nbins=n_bins,
-        )
+        if graph_type == 'scatter':
+            fig = px.scatter(
+                graph_data,
+                x=x_variable,
+                y=y_variable,
+                color=color_variable,
+                size=size_variable,
+                opacity=opacity,
+                facet_col=facet_variable,
+                facet_col_wrap=4,
+                title=title_textbox,
+            )
+        elif graph_type == 'histogram':
+            fig = px.histogram(
+                graph_data,
+                x=x_variable,
+                y=y_variable,
+                color=color_variable,
+                opacity=opacity,
+                facet_col=facet_variable,
+                facet_col_wrap=4,
+                title=title_textbox,
+                nbins=n_bins,
+            )
+        elif graph_type == 'box':
+            fig = px.box(
+                graph_data,
+                x=x_variable,
+                y=y_variable,
+                color=color_variable,
+                # opacity=opacity,
+                facet_col=facet_variable,
+                facet_col_wrap=4,
+                title=title_textbox,
+            )
+        elif graph_type == 'bar':
+            fig = px.bar(
+                graph_data,
+                x=x_variable,
+                y=y_variable,
+                color=color_variable,
+                # opacity=opacity,
+                facet_col=facet_variable,
+                facet_col_wrap=4,
+                title=title_textbox,
+            )
+        elif graph_type == 'line':
+            fig = px.line(
+                graph_data,
+                x=x_variable,
+                y=y_variable,
+                color=color_variable,
+                # opacity=opacity,
+                facet_col=facet_variable,
+                facet_col_wrap=4,
+                title=title_textbox,
+            )
+        else:
+            raise ValueError(f"Unknown graph type: {graph_type}")
     log("returning fig")
     return fig, graph_data.iloc[0:500].to_dict('records')
 
