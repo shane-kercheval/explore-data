@@ -156,6 +156,11 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     placeholder="Select a variable",
                                     hidden=True,
                                 ),
+                                dbc.Button(
+                                    "Clear",
+                                    id="clear-settings-button",
+                                    style={'margin': '0 20px 20px 0'},
+                                ),
                             ]),
                         ]),
                     ]),
@@ -502,7 +507,7 @@ def load_data(  # noqa
         else:
             non_numeric_summary = None
 
-        options = values_to_dropdown_options(all_columns)
+        options = all_columns
         x_variable_dropdown = options
         y_variable_dropdown = options
         filter_columns_dropdown = options
@@ -633,31 +638,56 @@ def update_graph(
             # nbins=n_bins,
         )
     log("returning fig")
-    log_variable('fig', fig)
     return fig, data.iloc[0:500].to_dict('records')
 
 
 @app.callback(
     Output('facet_variable_div', 'style'),
     Output('facet_variable_dropdown', 'options'),
+    Output('facet_variable_dropdown', 'value'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
+    State('facet_variable_dropdown', 'value'),
     State('non_numeric_columns', 'data'),
     prevent_initial_call=True,
 )
 def facet_variable_div(
         x_variable_dropdown: str,
         y_variable_dropdown: str,
+        current_value: str,
         non_numeric_columns: dict) -> dict:
-    """Triggered when the user selects columns from the dropdown."""
+    """
+    Triggered when the user selects columns (specified in Input fields in callback) from the
+    dropdown.
+    This function is used to show/hide the facet variable dropdown and to populate it with options.
+    """
     log_function('facet_variable_div')
+    # log_variable('x_variable_dropdown', x_variable_dropdown)
+    # log_variable('y_variable_dropdown', y_variable_dropdown)
+    # log_variable('current_value', current_value)
+    # log_variable('non_numeric_columns', non_numeric_columns)
     if x_variable_dropdown or y_variable_dropdown:
-        log("returning display: block")
+        log("returning {display: block}")
         options = non_numeric_columns
-        return {'display': 'block'}, options
-    log("returning display: none")
-    return  {'display': 'none'}, []
+        return {'display': 'block'}, options, current_value
+    log("returning {display: none}")
+    return  {'display': 'none'}, [], None
 
+
+
+@app.callback(
+    Output('x_variable_dropdown', 'value'),
+    Output('y_variable_dropdown', 'value'),
+    Input('clear-settings-button', 'n_clicks'),
+    State('all_columns', 'data'),
+    prevent_initial_call=True,
+)
+def clear_settings(n_clicks: int, all_columns: list[str]) -> str:
+    """Triggered when the user clicks on the Clear button."""
+    log_function('clear_settings')
+    log_variable('n_clicks', n_clicks)
+    log_variable('all_columns', all_columns)
+    return None, None
 
 @app.callback(
     Output("collapse-variables", "is_open"),
