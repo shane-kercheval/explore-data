@@ -23,7 +23,6 @@ from source.library.dash_utilities import (
     log_error,
     log_function,
     log_variable,
-    values_to_dropdown_options,
     filter_data_from_ui_control,
 )
 from source.library.utilities import (
@@ -582,6 +581,11 @@ def filter_data(
     Input('n_bins_slider', 'value'),
     Input('title_textbox', 'value'),
     Input('filtered_data', 'data'),
+    State('numeric_columns', 'data'),
+    State('non_numeric_columns', 'data'),
+    State('date_columns', 'data'),
+    State('categorical_columns', 'data'),
+    State('string_columns', 'data'),
     prevent_initial_call=True,
 )
 def update_graph(
@@ -592,6 +596,11 @@ def update_graph(
             n_bins: int,
             title_textbox: str,
             data: pd.DataFrame,
+            numeric_columns: list[str],
+            non_numeric_columns: list[str],
+            date_columns: list[str],
+            categorical_columns: list[str],
+            string_columns: list[str],
         ) -> tuple[go.Figure, dict]:
     """
     Triggered when the user selects columns from the dropdown.
@@ -608,6 +617,7 @@ def update_graph(
     # log_variable('type(data)', type(data))
     # log_variable('data', data)
     fig = {}
+    graph_data = data.copy()
     if (
         (x_variable or y_variable)
         and data is not None and len(data) > 0
@@ -616,6 +626,12 @@ def update_graph(
         and (not y_variable or y_variable in data.columns)
         and (not facet_variable or facet_variable in data.columns)
         ):
+        if x_variable and (x_variable in string_columns or x_variable in categorical_columns):
+            log(f"filling na for {x_variable}")
+            graph_data[x_variable] = hp.fill_na(
+                series=graph_data[x_variable],
+                missing_value_replacement='<Missing>',
+            )
 
         graph_types_lookup = {
             'histogram': px.histogram,
@@ -629,8 +645,7 @@ def update_graph(
         columns = [col for col in columns if col is not None]
         columns = list(set(columns))
         fig = graph_types_lookup[graph_type](
-            # data.to_dict('records'),
-            data[columns],
+            graph_data[columns],
             x=x_variable,
             y=y_variable,
             facet_col=facet_variable,
@@ -638,7 +653,7 @@ def update_graph(
             # nbins=n_bins,
         )
     log("returning fig")
-    return fig, data.iloc[0:500].to_dict('records')
+    return fig, graph_data.iloc[0:500].to_dict('records')
 
 
 @app.callback(
