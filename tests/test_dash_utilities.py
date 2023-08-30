@@ -91,6 +91,28 @@ def test_filter_data_from_ui_control__integers_booleans(capsys, mock_data2):  # 
     assert filtered_data['booleans_with_missing2'].tolist() == [None, np.nan]
 
 
+def test_filter_data_from_ui_control__integers_with_missing_booleans(capsys, mock_data2):  # noqa
+    selected_columns = ['integers_with_missing', 'booleans_with_missing2']
+    cache = {
+        'integers_with_missing': [1, 3],
+        'booleans_with_missing2': ['True', '<Missing>'],
+    }
+    filtered_data, markdown_text, code = filter_data_from_ui_control(
+        selected_columns=selected_columns,
+        cache=cache,
+        data=mock_data2,
+    )
+    assert filtered_data.shape == (1, 21)
+    assert 'filters applied' in markdown_text.lower()
+    assert 'integers_with_missing' in markdown_text
+    assert 'booleans_with_missing2' in markdown_text
+    assert 'integers_with_missing' in code
+    assert 'booleans_with_missing2' in code
+    assert filtered_data['integers_with_missing'].tolist() == [1]
+    assert filtered_data['booleans_with_missing'].tolist() == [True]
+    assert filtered_data['booleans_with_missing2'].tolist() == [None]
+
+
 def test_filter_data_from_ui_control__strings_with_missing(capsys, mock_data2):  # noqa
     selected_columns = ['floats', 'strings_with_missing2']
     cache = {

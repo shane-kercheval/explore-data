@@ -8,7 +8,6 @@ from dash import dash_table, callback_context
 from dash.dependencies import ALL
 import plotly.express as px
 import pandas as pd
-import numpy as np
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
 from source.library.dash_ui import (
@@ -551,8 +550,8 @@ def load_data(  # noqa
     State('original_data', 'data'),
     prevent_initial_call=True,
 )
-def filter_data(  # noqa: PLR0915
-        n_clicks: int,  # noqa
+def filter_data(
+        n_clicks: int,  # noqa: ARG001
         selected_filter_columns: list[str],
         filter_columns_cache: dict,
         original_data: pd.DataFrame,
