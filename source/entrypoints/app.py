@@ -617,7 +617,7 @@ def update_graph(
     # log_variable('type(data)', type(data))
     # log_variable('data', data)
     fig = {}
-    graph_data = data.copy()
+    graph_data = pd.DataFrame()
     if (
         (x_variable or y_variable)
         and data is not None and len(data) > 0
@@ -626,6 +626,11 @@ def update_graph(
         and (not y_variable or y_variable in data.columns)
         and (not facet_variable or facet_variable in data.columns)
         ):
+        columns = [x_variable, y_variable, facet_variable]
+        columns = [col for col in columns if col is not None]
+        columns = list(set(columns))
+        graph_data = data[columns].copy()
+
         if x_variable and (x_variable in string_columns or x_variable in categorical_columns):
             log(f"filling na for {x_variable}")
             graph_data[x_variable] = hp.fill_na(
@@ -641,11 +646,8 @@ def update_graph(
             'box': px.box,
         }
         log("creating fig")
-        columns = [x_variable, y_variable, facet_variable]
-        columns = [col for col in columns if col is not None]
-        columns = list(set(columns))
         fig = graph_types_lookup[graph_type](
-            graph_data[columns],
+            graph_data,
             x=x_variable,
             y=y_variable,
             facet_col=facet_variable,
