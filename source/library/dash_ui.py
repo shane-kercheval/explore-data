@@ -66,10 +66,11 @@ def create_dropdown_control(
 def create_slider_control(
         label: str,
         id: str,  # noqa: A002
-        min: int | float,  # noqa: A002
-        max: int | float,  # noqa: A002
         value: int | float | list[int] | list[float],
+        min: int | float | None = None,  # noqa: A002
+        max: int | float | None = None,  # noqa: A002
         step: int | float | None = None,
+        marks: dict = {},
         hidden: bool = False,
         component_id: dict | None = None,
         ) -> html.Div:
@@ -79,9 +80,9 @@ def create_slider_control(
     else:
         assert isinstance(component_id, dict)
 
-    if step is None:
-        # step should create 5 steps
-        step = (max - min) / 5
+    # if step is None:
+    #     # step should create 5 steps
+    #     step = (max - min) / 5
 
     slider_type = dcc.RangeSlider if isinstance(value, list) else dcc.Slider
 
@@ -94,7 +95,7 @@ def create_slider_control(
             min=min,
             max=max,
             step=step,
-            # marks={i: str(i) for i in np.arange(min, max + step, step)},
+            marks=marks,
             value=value,
         ),
     )

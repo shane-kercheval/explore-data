@@ -151,6 +151,18 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     placeholder="Select a variable",
                                 ),
                                 create_dropdown_control(
+                                    label="Color variable",
+                                    id="color_variable",
+                                    placeholder="Select a variable",
+                                    hidden=True,
+                                ),
+                                create_dropdown_control(
+                                    label="Size variable",
+                                    id="size_variable",
+                                    placeholder="Select a variable",
+                                    hidden=True,
+                                ),
+                                create_dropdown_control(
                                     label="Facet variable",
                                     id="facet_variable",
                                     placeholder="Select a variable",
@@ -209,13 +221,13 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     multi=False,
                                     clearable=False,
                                     options=[
+                                        {'label': 'Scatter', 'value': 'scatter'},
                                         {'label': 'Histogram', 'value': 'histogram'},
                                         {'label': 'Box', 'value': 'box'},
-                                        {'label': 'Scatter', 'value': 'scatter'},
                                         {'label': 'Line', 'value': 'line'},
                                         {'label': 'Bar', 'value': 'bar'},
                                     ],
-                                    value='histogram',
+                                    value='scatter',
                                 ),
                                 create_slider_control(
                                     label="# of Bins",
@@ -224,6 +236,35 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     max=100,
                                     step=20,
                                     value=40,
+                                ),
+                                create_slider_control(
+                                    label="Top N Categories",
+                                    id="top_n_categories",
+                                    value=6,
+                                    step=1,
+                                    min=0,
+                                    max=10,
+                                    marks={
+                                        0: 'None',
+                                        1: '1',
+                                        2: '2',
+                                        3: '3',
+                                        4: '4',
+                                        5: '5',
+                                        6: '10',
+                                        7: '15',
+                                        8: '20',
+                                        9: '40',
+                                        10: '50',
+                                    },
+                                ),
+                                create_slider_control(
+                                    label="Opacity",
+                                    id="opacity",
+                                    min=0,
+                                    max=1,
+                                    step=0.1,
+                                    value=0.7,
                                 ),
                             ]),
                         ]),
@@ -588,6 +629,8 @@ def filter_data(
     Output('visualize_table', 'data'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
+    Input('color_variable_dropdown', 'value'),
+    Input('size_variable_dropdown', 'value'),
     Input('facet_variable_dropdown', 'value'),
     Input('graph_type_dropdown', 'value'),
     Input('n_bins_slider', 'value'),
@@ -604,6 +647,8 @@ def filter_data(
 def update_graph(
             x_variable: str,
             y_variable: str,
+            color_variable: str,
+            size_variable: str,
             facet_variable: str,
             graph_type: str,
             n_bins: int,
@@ -624,6 +669,8 @@ def update_graph(
     log_function('update_graph')
     log_variable('x_variable', x_variable)
     log_variable('y_variable', y_variable)
+    log_variable('color_variable', color_variable)
+    log_variable('size_variable', size_variable)
     log_variable('facet_variable', facet_variable)
     log_variable('n_bins', n_bins)
     log_variable('graph_type', graph_type)
@@ -638,9 +685,11 @@ def update_graph(
         and graph_type
         and (not x_variable or x_variable in data.columns)
         and (not y_variable or y_variable in data.columns)
+        and (not color_variable or color_variable in data.columns)
+        and (not size_variable or size_variable in data.columns)
         and (not facet_variable or facet_variable in data.columns)
         ):
-        columns = [x_variable, y_variable, facet_variable]
+        columns = [x_variable, y_variable, color_variable, size_variable, facet_variable]
         columns = [col for col in columns if col is not None]
         columns = list(set(columns))
         graph_data = data[columns].copy()
@@ -654,8 +703,8 @@ def update_graph(
                 )
 
         graph_types_lookup = {
-            'histogram': px.histogram,
             'scatter': px.scatter,
+            'histogram': px.histogram,
             'line': px.line,
             'bar': px.bar,
             'box': px.box,
@@ -665,6 +714,8 @@ def update_graph(
             graph_data,
             x=x_variable,
             y=y_variable,
+            color=color_variable,
+            size=size_variable,
             facet_col=facet_variable,
             title=title_textbox,
             # nbins=n_bins,
@@ -694,10 +745,6 @@ def facet_variable_div(
     This function is used to show/hide the facet variable dropdown and to populate it with options.
     """
     log_function('facet_variable_div')
-    # log_variable('x_variable_dropdown', x_variable_dropdown)
-    # log_variable('y_variable_dropdown', y_variable_dropdown)
-    # log_variable('current_value', current_value)
-    # log_variable('non_numeric_columns', non_numeric_columns)
     if x_variable_dropdown or y_variable_dropdown:
         log("returning {display: block}")
         options = non_numeric_columns
@@ -705,6 +752,63 @@ def facet_variable_div(
     log("returning {display: none}")
     return  {'display': 'none'}, [], None
 
+
+@app.callback(
+    Output('color_variable_div', 'style'),
+    Output('color_variable_dropdown', 'options'),
+    Output('color_variable_dropdown', 'value'),
+    Input('x_variable_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
+    State('color_variable_dropdown', 'value'),
+    State('all_columns', 'data'),
+    prevent_initial_call=True,
+)
+def color_variable_div(
+        x_variable_dropdown: str,
+        y_variable_dropdown: str,
+        current_value: str,
+        all_columns: dict) -> dict:
+    """
+    Triggered when the user selects columns (specified in Input fields in callback) from the
+    dropdown.
+    This function is used to show/hide the color variable dropdown and to populate it with options.
+    """
+    log_function('color_variable_div')
+    if x_variable_dropdown or y_variable_dropdown:
+        log("returning {display: block}")
+        options = all_columns
+        return {'display': 'block'}, options, current_value
+    log("returning {display: none}")
+    return  {'display': 'none'}, [], None
+
+
+@app.callback(
+    Output('size_variable_div', 'style'),
+    Output('size_variable_dropdown', 'options'),
+    Output('size_variable_dropdown', 'value'),
+    Input('x_variable_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
+    State('size_variable_dropdown', 'value'),
+    State('all_columns', 'data'),
+    prevent_initial_call=True,
+)
+def size_variable_div(
+        x_variable_dropdown: str,
+        y_variable_dropdown: str,
+        current_value: str,
+        all_columns: dict) -> dict:
+    """
+    Triggered when the user selects columns (specified in Input fields in callback) from the
+    dropdown.
+    This function is used to show/hide the size variable dropdown and to populate it with options.
+    """
+    log_function('size_variable_div')
+    if x_variable_dropdown or y_variable_dropdown:
+        log("returning {display: block}")
+        options = all_columns
+        return {'display': 'block'}, options, current_value
+    log("returning {display: none}")
+    return  {'display': 'none'}, [], None
 
 
 @app.callback(
