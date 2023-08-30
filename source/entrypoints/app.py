@@ -61,6 +61,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     dcc.Store(id='date_columns'),
     dcc.Store(id='categorical_columns'),
     dcc.Store(id='string_columns'),
+    dcc.Store(id='boolean_columns'),
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
             dcc.Loading(type="default", children=[
@@ -397,6 +398,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('date_columns', 'data'),
     Output('categorical_columns', 'data'),
     Output('string_columns', 'data'),
+    Output('boolean_columns', 'data'),
     Input('load_random_data_button', 'n_clicks'),
     Input('load_from_url_button', 'n_clicks'),
     Input('upload-data', 'contents'),
@@ -430,6 +432,7 @@ def load_data(  # noqa
     date_columns = None
     categorical_columns = None
     string_columns = None
+    boolean_columns = None
 
     if callback_context.triggered:
         triggered = callback_context.triggered[0]['prop_id']
@@ -485,6 +488,14 @@ def load_data(  # noqa
         date_columns = hp.get_date_columns(data)
         categorical_columns = hp.get_categorical_columns(data)
         string_columns = hp.get_string_columns(data)
+        boolean_columns = [x for x in all_columns if hp.is_series_bool(data[x])]
+        log_variable('all_columns', all_columns)
+        log_variable('numeric_columns', numeric_columns)
+        log_variable('non_numeric_columns', non_numeric_columns)
+        log_variable('date_columns', date_columns)
+        log_variable('categorical_columns', categorical_columns)
+        log_variable('string_columns', string_columns)
+        log_variable('boolean_columns', boolean_columns)
 
         log('creating numeric summary')
         numeric_summary = hp.numeric_summary(data, return_style=False)
@@ -543,6 +554,7 @@ def load_data(  # noqa
         date_columns,
         categorical_columns,
         string_columns,
+        boolean_columns,
     )
 
 
@@ -586,6 +598,7 @@ def filter_data(
     State('date_columns', 'data'),
     State('categorical_columns', 'data'),
     State('string_columns', 'data'),
+    State('boolean_columns', 'data'),
     prevent_initial_call=True,
 )
 def update_graph(
@@ -601,6 +614,7 @@ def update_graph(
             date_columns: list[str],
             categorical_columns: list[str],
             string_columns: list[str],
+            boolean_columns: list[str],
         ) -> tuple[go.Figure, dict]:
     """
     Triggered when the user selects columns from the dropdown.
@@ -631,12 +645,13 @@ def update_graph(
         columns = list(set(columns))
         graph_data = data[columns].copy()
 
-        if x_variable and (x_variable in string_columns or x_variable in categorical_columns):
-            log(f"filling na for {x_variable}")
-            graph_data[x_variable] = hp.fill_na(
-                series=graph_data[x_variable],
-                missing_value_replacement='<Missing>',
-            )
+        for column in columns:
+            if column in string_columns or column in categorical_columns or column in boolean_columns:  # noqa
+                log(f"filling na for {column}")
+                graph_data[column] = hp.fill_na(
+                    series=graph_data[column],
+                    missing_value_replacement='<Missing>',
+                )
 
         graph_types_lookup = {
             'histogram': px.histogram,
