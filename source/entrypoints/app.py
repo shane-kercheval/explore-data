@@ -503,8 +503,6 @@ def load_data(  # noqa
             non_numeric_summary = None
 
         options = values_to_dropdown_options(all_columns)
-        # data = Serverside(data)
-
         x_variable_dropdown = options
         y_variable_dropdown = options
         filter_columns_dropdown = options
@@ -554,7 +552,7 @@ def load_data(  # noqa
     State('original_data', 'data'),
     prevent_initial_call=True,
 )
-def filter_data(
+def filter_data(  # noqa: PLR0915
         n_clicks: int,  # noqa
         selected_filter_columns: list[str],
         filter_columns_cache: dict,
