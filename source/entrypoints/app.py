@@ -712,9 +712,11 @@ def update_graph(
         }
         log("creating fig")
         columns = [x_variable, y_variable, facet_variable]
+        columns = [col for col in columns if col is not None]
+        columns = list(set(columns))
         fig = graph_types_lookup[graph_type](
             # data.to_dict('records'),
-            data[[col for col in columns if col is not None]],
+            data[columns],
             x=x_variable,
             y=y_variable,
             facet_col=facet_variable,
