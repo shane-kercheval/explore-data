@@ -55,8 +55,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     dcc.Store(id='original_data'),
     dcc.Store(id='filtered_data'),
     dcc.Store(id='filter_columns_cache'),
-    dcc.Store(id='numeric_summary'),
-    dcc.Store(id='non_numeric_summary'),
     dcc.Store(id='all_columns'),
     dcc.Store(id='numeric_columns'),
     dcc.Store(id='non_numeric_columns'),
@@ -383,8 +381,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('visualize_graph', 'figure', allow_duplicate=True),
     Output('visualize_table', 'data', allow_duplicate=True),
     Output('table_uploaded_data', 'children'),
-    Output('numeric_summary', 'data'),
-    Output('non_numeric_summary', 'data'),
+    Output('numeric_summary_table', 'data'),
+    Output('non_numeric_summary_table', 'data'),
     Output('original_data', 'data'),
     Output('filtered_data', 'data', allow_duplicate=True),
     Output('all_columns', 'data'),
@@ -629,34 +627,6 @@ def filter_data(  # noqa: PLR0915
     log(f"{len(original_data):,} rows before after filtering")
     log(f"{len(filtered_data):,} rows remaining after filtering")
     return Serverside(filtered_data), markdown_text, f"""```\n{code}\n```"""
-
-
-@app.callback(
-    Output('non_numeric_summary_table', 'data'),
-    Input('non_numeric_summary', 'data'),
-    prevent_initial_call=True,
-)
-def non_numeric_summary_table(non_numeric_summary: dict) -> dict:
-    """Triggered when the user clicks on the Load button."""
-    log_function('non_numeric_summary_table')
-    if non_numeric_summary:
-        non_numeric_summary = pd.DataFrame(non_numeric_summary)
-        return non_numeric_summary.to_dict('records')
-    return []
-
-
-@app.callback(
-    Output('numeric_summary_table', 'data'),
-    Input('numeric_summary', 'data'),
-    prevent_initial_call=True,
-)
-def numeric_summary_table(numeric_summary: dict) -> dict:
-    """Triggered when the user clicks on the Load button."""
-    log_function('numeric_summary_table')
-    if numeric_summary:
-        numeric_summary = pd.DataFrame(numeric_summary)
-        return numeric_summary.to_dict('records')
-    return []
 
 
 @app.callback(
