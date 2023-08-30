@@ -269,6 +269,10 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 html.Br(),
                                 dcc.Markdown(id="visualize_filter_info", children="No filters applied."),  # noqa
                             ]),
+                            dbc.Tab(label="Code", children=[
+                                html.Br(),
+                                dcc.Markdown(id="visualize_filter_code", children="No filters applied."),  # noqa
+                            ]),
                             dbc.Tab(label="Data", children=[
                                 dcc.Markdown("#### Sample of Uploaded Data (first 500 rows):"),
                                 dcc.Loading(type="default", children=[
@@ -280,10 +284,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                         },
                                     ),
                                 ]),
-                            ]),
-                            dbc.Tab(label="Code", children=[
-                                html.Br(),
-                                dcc.Markdown(id="visualize_filter_code", children="No filters applied."),  # noqa
                             ]),
                         ]),
                     ]),
@@ -590,7 +590,7 @@ def filter_data(  # noqa: PLR0915
             markdown_text += f"  - `{column}` between `{start_date}` and `{end_date}`"
             num_missing = series.isna().sum()
             if num_missing > 0:
-                markdown_text += f"; removing `{num_missing:,}` missing values"
+                markdown_text += f"; `{num_missing:,}` missing values removed"
             markdown_text += "  \n"
         elif hp.is_series_bool(series):
             # e.g. [True, False, '<Missing>']
@@ -618,7 +618,7 @@ def filter_data(  # noqa: PLR0915
             markdown_text += f"  - `{column}` between `{min_value}` and `{max_value}`"
             num_missing = series.isna().sum()
             if num_missing > 0:
-                markdown_text += f"; removing `{num_missing:,}` missing values"
+                markdown_text += f"; `{num_missing:,}` missing values removed"
             markdown_text += "  \n"
         else:
             raise ValueError(f"Unknown dtype for column `{column}`: {original_data[column].dtype}")
