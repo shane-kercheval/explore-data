@@ -226,7 +226,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 className='panel_toggle_button',
                             ),
                         ),
-                        dbc.Collapse(id="collapse-graph-options", is_open=True, children=[
+                        dbc.Collapse(id='collapse-graph-options', is_open=True, children=[
                             dbc.CardBody([
                                 create_dropdown_control(
                                     label="Graph Type",
@@ -245,7 +245,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 ),
                                 create_slider_control(
                                     label="# of Bins",
-                                    id="n_bins",
+                                    id='n_bins',
                                     min=20,
                                     max=100,
                                     step=20,
@@ -253,7 +253,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 ),
                                 create_slider_control(
                                     label="Top N Categories",
-                                    id="top_n_categories",
+                                    id='top_n_categories',
                                     value=6,
                                     step=1,
                                     min=0,
@@ -262,11 +262,11 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 ),
                                 create_slider_control(
                                     label="Opacity",
-                                    id="opacity",
+                                    id='opacity',
                                     min=0,
                                     max=1,
                                     step=0.1,
-                                    value=0.5,
+                                    value=0.6,
                                 ),
                             ]),
                         ]),
