@@ -315,14 +315,17 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         dbc.Tabs([
                             dbc.Tab(label="Filters", children=[
                                 html.Br(),
-                                dcc.Markdown(id="visualize_filter_info", children="No filters applied."),  # noqa
+                                dcc.Markdown(id="visualize_numeric_na_removal_markdown", children=""),  # noqa
+                                dcc.Markdown(id="visualize_filter_info", children="No manual filters applied."),  # noqa
+                                dcc.Markdown(children="\n\n---\nManual filters are applied first. Automatic filters are subsequently applied when visualizing numeric data."),  # noqa
                             ]),
                             dbc.Tab(label="Code", children=[
                                 html.Br(),
-                                dcc.Markdown(id="visualize_filter_code", children="No filters applied."),  # noqa
+                                dcc.Markdown(id="visualize_filter_code", children="Select columns to graph."),  # noqa
                             ]),
                             dbc.Tab(label="Data", children=[
-                                dcc.Markdown("#### Sample of Uploaded Data (first 500 rows):"),
+                                html.Br(),
+                                dcc.Markdown("##### Sample of Uploaded Data (first 500 rows):"),
                                 dcc.Loading(type="default", children=[
                                     dash_table.DataTable(
                                         id='visualize_table',
@@ -629,6 +632,7 @@ def filter_data(
 @app.callback(
     Output('visualize_graph', 'figure'),
     Output('visualize_table', 'data'),
+    Output('visualize_numeric_na_removal_markdown', 'children'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
     Input('color_variable_dropdown', 'value'),
@@ -688,6 +692,7 @@ def update_graph(
     # log_variable('data', data)
     fig = {}
     graph_data = pd.DataFrame()
+    numeric_na_removal_markdown = ''
     if (
         (x_variable or y_variable)
         and data is not None and len(data) > 0
@@ -704,6 +709,9 @@ def update_graph(
         graph_data = data[columns].copy()
 
         # TODO: need to convert code to string and execute string
+        if any(x in numeric_columns for x in columns):
+            numeric_na_removal_markdown = "##### Automatic filters applied:  \n"
+
         for column in columns:
             if column in string_columns or column in categorical_columns or column in boolean_columns:  # noqa
                 log(f"filling na for {column}")
@@ -718,6 +726,17 @@ def update_graph(
                         top_n=int(top_n_categories_lookup[top_n_categories]),
                         other_category='<Other>',
                     )
+            if column in numeric_columns:
+                log(f"removing missing values for {column}")
+                num_values_removed = graph_data[column].isna().sum()
+                if num_values_removed > 0:
+                    numeric_na_removal_markdown += f"- `{num_values_removed:,}` missing values have been removed from `{column}`  \n"  # noqa
+                graph_data = graph_data[graph_data[column].notna()]
+
+        if any(x in numeric_columns for x in columns):
+            numeric_na_removal_markdown += f"\nRemoved `{len(data) - len(graph_data):,}` values; `{len(graph_data):,}` rows remain\n"  # noqa
+            numeric_na_removal_markdown += "---  \n"
+
         # TODO: need to convert code to string and execute string
         log("creating fig")
         if graph_type == 'scatter':
@@ -780,7 +799,7 @@ def update_graph(
         else:
             raise ValueError(f"Unknown graph type: {graph_type}")
     log("returning fig")
-    return fig, graph_data.iloc[0:500].to_dict('records')
+    return fig, graph_data.iloc[0:500].to_dict('records'), numeric_na_removal_markdown
 
 
 @app.callback(

@@ -65,7 +65,7 @@ def filter_data_from_ui_control(  # noqa: PLR0915
     filters = {}
     log_variable('filters', filters)
 
-    markdown_text = "##### Filters applied:  \n"
+    markdown_text = "##### Manual filters applied:  \n"
 
     # this for loop builds the filters dictionary and the markdown text
     for column in selected_columns:
