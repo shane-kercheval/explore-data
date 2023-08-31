@@ -34,6 +34,20 @@ from dash_extensions.enrich import DashProxy, Output, Input, State, Serverside, 
     ServersideOutputTransform
 
 
+top_n_categories_lookup = {
+    0: 'None',
+    1: '1',
+    2: '2',
+    3: '3',
+    4: '4',
+    5: '5',
+    6: '10',
+    7: '15',
+    8: '20',
+    9: '40',
+    10: '50',
+}
+
 
 load_dotenv()
 HOST = os.getenv('HOST')
@@ -244,19 +258,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     step=1,
                                     min=0,
                                     max=10,
-                                    marks={
-                                        0: 'None',
-                                        1: '1',
-                                        2: '2',
-                                        3: '3',
-                                        4: '4',
-                                        5: '5',
-                                        6: '10',
-                                        7: '15',
-                                        8: '20',
-                                        9: '40',
-                                        10: '50',
-                                    },
+                                    marks=top_n_categories_lookup,
                                 ),
                                 create_slider_control(
                                     label="Opacity",
@@ -635,6 +637,7 @@ def filter_data(
     Input('graph_type_dropdown', 'value'),
     Input('n_bins_slider', 'value'),
     Input('opacity_slider', 'value'),
+    Input('top_n_categories_slider', 'value'),
     Input('title_textbox', 'value'),
     Input('filtered_data', 'data'),
     State('numeric_columns', 'data'),
@@ -654,6 +657,7 @@ def update_graph(
             graph_type: str,
             n_bins: int,
             opacity: float,
+            top_n_categories: float,
             title_textbox: str,
             data: pd.DataFrame,
             numeric_columns: list[str],
@@ -668,6 +672,7 @@ def update_graph(
 
     This function should *not* modify the data. It should only return a figure.
     """
+    # TODO: refactor and unit test
     log_function('update_graph')
     log_variable('x_variable', x_variable)
     log_variable('y_variable', y_variable)
@@ -676,6 +681,7 @@ def update_graph(
     log_variable('facet_variable', facet_variable)
     log_variable('n_bins', n_bins)
     log_variable('opacity', opacity)
+    log_variable('top_n_categories', top_n_categories)
     log_variable('graph_type', graph_type)
     log_variable('type(n_bins)', type(n_bins))
     # log_variable('type(data)', type(data))
@@ -697,6 +703,7 @@ def update_graph(
         columns = list(set(columns))
         graph_data = data[columns].copy()
 
+        # TODO: need to convert code to string and execute string
         for column in columns:
             if column in string_columns or column in categorical_columns or column in boolean_columns:  # noqa
                 log(f"filling na for {column}")
@@ -704,7 +711,14 @@ def update_graph(
                     series=graph_data[column],
                     missing_value_replacement='<Missing>',
                 )
-
+                if top_n_categories:
+                    log(f"top_n_categories_lookup[{top_n_categories}]: {top_n_categories_lookup[top_n_categories]}")  # noqa
+                    graph_data[column] = hp.top_n_categories(
+                        categorical=graph_data[column],
+                        top_n=int(top_n_categories_lookup[top_n_categories]),
+                        other_category='<Other>',
+                    )
+        # TODO: need to convert code to string and execute string
         log("creating fig")
         if graph_type == 'scatter':
             fig = px.scatter(
