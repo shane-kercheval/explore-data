@@ -124,7 +124,7 @@ def filter_data_from_ui_control(  # noqa: PLR0915
 
     filtered_data, code = filter_dataframe(data=data, filters=filters)
     rows_removed = len(data) - len(filtered_data)
-    markdown_text += f"  \n`{len(filtered_data):,}` rows remaining after filtering; `{rows_removed:,}` (`{rows_removed / len(data):.1%}`) rows removed  \n"  # noqa
+    markdown_text += f"  \n`{len(filtered_data):,}` rows remaining after manual filtering; `{rows_removed:,}` (`{rows_removed / len(data):.1%}`) rows removed  \n"  # noqa
     log(f"{len(data):,} rows before after filtering")
     log(f"{len(filtered_data):,} rows remaining after filtering")
 

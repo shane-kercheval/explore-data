@@ -734,7 +734,9 @@ def update_graph(
                 graph_data = graph_data[graph_data[column].notna()]
 
         if any(x in numeric_columns for x in columns):
-            numeric_na_removal_markdown += f"\nRemoved `{len(data) - len(graph_data):,}` values; `{len(graph_data):,}` rows remain\n"  # noqa
+            rows_remaining = len(graph_data)
+            rows_removed = len(data) - rows_remaining
+            numeric_na_removal_markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / len(data):.1%}`) rows removed from automatic filtering\n"  # noqa
             numeric_na_removal_markdown += "---  \n"
 
         # TODO: need to convert code to string and execute string
