@@ -16,17 +16,22 @@ def create_control(
         hidden: bool = False) -> html.Div:
     """Create a generic control with a given component (e.g. dropdown)."""
     style = {'display': 'none'} if hidden else {}
-    return html.Div(
-        id=f'{id}_div',
-        className=CLASS__GRAPH_PANEL_SECTION,
-        style=style,
-        children=[
+    if label:
+        children = [
             html.Label(
                 f"{label}:",
                 className=CLASS__GRAPH_PANEL_SECTION + '_label',
             ),
             component,
-    ])
+        ]
+    else:
+        children = [component]
+    return html.Div(
+        id=f'{id}_div',
+        className=CLASS__GRAPH_PANEL_SECTION,
+        style=style,
+        children=children
+    )
 
 
 def create_dropdown_control(
@@ -59,6 +64,35 @@ def create_dropdown_control(
             value=value,
             placeholder=placeholder,
             clearable=clearable,
+        ),
+    )
+
+
+def create_checklist_control(
+        id: str,  # noqa: A002
+        hidden: bool = False,
+        options: list[str] | None = None,
+        value: list[str] | None = None,
+        component_id: dict | None = None,
+        ) -> html.Div:
+    """Create a dropdown control."""
+    if options is None:
+        options = []
+    if component_id is None:
+        component_id = f'{id}_checklist'
+    else:
+        assert isinstance(component_id, dict)
+
+    return create_control(
+        label=None,
+        id=id,
+        hidden=hidden,
+        component=dcc.Checklist(
+            id=component_id,
+            className='checkbox-label',
+            options=options or [],
+            value=value or [],
+            inline=True,
         ),
     )
 

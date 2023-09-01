@@ -13,6 +13,7 @@ import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
 from source.library.dash_ui import (
     create_dropdown_control,
+    create_checklist_control,
     create_slider_control,
     create_min_max_control,
     create_date_range_control,
@@ -286,6 +287,11 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     max=1,
                                     step=0.1,
                                     value=0.6,
+                                ),
+                                create_checklist_control(
+                                    id='log_x_y_axis',
+                                    options=['Log X-Axis', 'Log Y-Axis'],
+                                    value=[],
                                 ),
                             ]),
                         ]),
@@ -662,6 +668,7 @@ def filter_data(
     Input('opacity_slider', 'value'),
     Input('top_n_categories_slider', 'value'),
     Input('bar_mode_dropdown', 'value'),
+    Input('log_x_y_axis_checklist', 'value'),
     Input('title_textbox', 'value'),
     Input('filtered_data', 'data'),
     State('numeric_columns', 'data'),
@@ -683,6 +690,7 @@ def update_graph(
             opacity: float,
             top_n_categories: float,
             bar_mode: str,
+            log_x_y_axis: list[str],
             title_textbox: str,
             data: pd.DataFrame,
             numeric_columns: list[str],
@@ -708,6 +716,7 @@ def update_graph(
     log_variable('opacity', opacity)
     log_variable('top_n_categories', top_n_categories)
     log_variable('bar_mode', bar_mode)
+    log_variable('log_x_y_axis', log_x_y_axis)
     log_variable('graph_type', graph_type)
     log_variable('type(n_bins)', type(n_bins))
     # log_variable('type(data)', type(data))
@@ -773,6 +782,8 @@ def update_graph(
                 opacity=opacity,
                 facet_col=facet_variable,
                 facet_col_wrap=4,
+                log_x='Log X-Axis' in log_x_y_axis,
+                log_y='Log Y-Axis' in log_x_y_axis,
                 title=title_textbox,
             )
         elif graph_type == 'box':
@@ -784,6 +795,8 @@ def update_graph(
                 # opacity=opacity,
                 facet_col=facet_variable,
                 facet_col_wrap=4,
+                log_x='Log X-Axis' in log_x_y_axis,
+                log_y='Log Y-Axis' in log_x_y_axis,
                 title=title_textbox,
             )
         elif graph_type == 'line':
@@ -795,6 +808,8 @@ def update_graph(
                 # opacity=opacity,
                 facet_col=facet_variable,
                 facet_col_wrap=4,
+                log_x='Log X-Axis' in log_x_y_axis,
+                log_y='Log Y-Axis' in log_x_y_axis,
                 title=title_textbox,
             )
         elif graph_type == 'histogram':
@@ -810,6 +825,8 @@ def update_graph(
                 # log_y bool
                 facet_col=facet_variable,
                 facet_col_wrap=4,
+                log_x='Log X-Axis' in log_x_y_axis,
+                log_y='Log Y-Axis' in log_x_y_axis,
                 title=title_textbox,
                 nbins=n_bins,
             )
@@ -823,6 +840,8 @@ def update_graph(
                 barmode=bar_mode,
                 facet_col=facet_variable,
                 facet_col_wrap=4,
+                log_x='Log X-Axis' in log_x_y_axis,
+                log_y='Log Y-Axis' in log_x_y_axis,
                 title=title_textbox,
             )
         else:

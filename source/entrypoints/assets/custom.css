@@ -10,6 +10,16 @@ label.graph_panel_section_label {
     margin: 0 0 6px 0;
 }
 
+.checkbox-label label {
+    font-weight: bold; /* Makes the label text bold */
+    margin-right: 15px; /* Adds space between the checkbox and its label */
+}
+
+.checkbox-label input[type="checkbox"] {
+    margin-right: 5px; /* Adds space between the checkbox and its label */
+}
+
+
 /* Reset some of the browser default styles for better consistency */
 * {
     box-sizing: border-box;
