@@ -775,19 +775,6 @@ def update_graph(
                 facet_col_wrap=4,
                 title=title_textbox,
             )
-        elif graph_type == 'histogram':
-            fig = px.histogram(
-                graph_data,
-                x=x_variable,
-                y=y_variable,
-                color=color_variable,
-                opacity=opacity,
-                barmode=bar_mode,
-                facet_col=facet_variable,
-                facet_col_wrap=4,
-                title=title_textbox,
-                nbins=n_bins,
-            )
         elif graph_type == 'box':
             fig = px.box(
                 graph_data,
@@ -799,6 +786,33 @@ def update_graph(
                 facet_col_wrap=4,
                 title=title_textbox,
             )
+        elif graph_type == 'line':
+            fig = px.line(
+                graph_data,
+                x=x_variable,
+                y=y_variable,
+                color=color_variable,
+                # opacity=opacity,
+                facet_col=facet_variable,
+                facet_col_wrap=4,
+                title=title_textbox,
+            )
+        elif graph_type == 'histogram':
+            fig = px.histogram(
+                graph_data,
+                x=x_variable,
+                y=y_variable,
+                color=color_variable,
+                opacity=opacity,
+                barmode=bar_mode,
+                # histnorm='percent',
+                # log_x bool
+                # log_y bool
+                facet_col=facet_variable,
+                facet_col_wrap=4,
+                title=title_textbox,
+                nbins=n_bins,
+            )
         elif graph_type == 'bar':
             fig = px.bar(
                 graph_data,
@@ -807,17 +821,6 @@ def update_graph(
                 color=color_variable,
                 # opacity=opacity,
                 barmode=bar_mode,
-                facet_col=facet_variable,
-                facet_col_wrap=4,
-                title=title_textbox,
-            )
-        elif graph_type == 'line':
-            fig = px.line(
-                graph_data,
-                x=x_variable,
-                y=y_variable,
-                color=color_variable,
-                # opacity=opacity,
                 facet_col=facet_variable,
                 facet_col_wrap=4,
                 title=title_textbox,
