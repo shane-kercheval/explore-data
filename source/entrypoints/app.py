@@ -244,15 +244,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     ],
                                     value='scatter',
                                 ),
-                                create_slider_control(
-                                    label="Top N Categories",
-                                    id='top_n_categories',
-                                    value=6,
-                                    step=1,
-                                    min=0,
-                                    max=10,
-                                    marks=top_n_categories_lookup,
-                                ),
                                 # One of 'group', 'overlay' or 'relative'
                                 # In 'relative' mode, bars are stacked above zero for positive
                                 # values and below zero for negative values.
@@ -270,6 +261,15 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                         {'label': 'Overlay', 'value': 'overlay'},
                                     ],
                                     value='relative',
+                                ),
+                                create_slider_control(
+                                    label="Top N Categories",
+                                    id='top_n_categories',
+                                    value=6,
+                                    step=1,
+                                    min=0,
+                                    max=10,
+                                    marks=top_n_categories_lookup,
                                 ),
                                 create_slider_control(
                                     label="# of Bins",
@@ -782,6 +782,7 @@ def update_graph(
                 y=y_variable,
                 color=color_variable,
                 opacity=opacity,
+                barmode=bar_mode,
                 facet_col=facet_variable,
                 facet_col_wrap=4,
                 title=title_textbox,
