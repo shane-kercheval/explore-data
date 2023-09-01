@@ -80,3 +80,13 @@ configurations:
             facet_variable:
               types:
                 - non_numeric
+      - histogram:
+          description: Shows the distribution of the sum of {y_variable} values across {x_variable} values.
+          optional_variables:
+            color_variable:
+              types:
+                - non_numeric
+                - numeric
+            facet_variable:
+              types:
+                - non_numeric
