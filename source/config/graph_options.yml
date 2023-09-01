@@ -90,3 +90,20 @@ configurations:
             facet_variable:
               types:
                 - non_numeric
+  - selected_variables:
+      x_variable: non_numeric
+      y_variable: None
+      color_variable: None
+      size_variable: None
+      facet_variable: None
+    graph_types:
+      - histogram:
+          description: Shows the counts of {x_variable}.
+          optional_variables:
+            color_variable:
+              types:
+                - numeric
+                - non_numeric
+            facet_variable:
+              types:
+                - non_numeric
