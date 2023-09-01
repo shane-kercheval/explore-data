@@ -245,14 +245,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     value='scatter',
                                 ),
                                 create_slider_control(
-                                    label="# of Bins",
-                                    id='n_bins',
-                                    min=20,
-                                    max=100,
-                                    step=20,
-                                    value=40,
-                                ),
-                                create_slider_control(
                                     label="Top N Categories",
                                     id='top_n_categories',
                                     value=6,
@@ -260,6 +252,32 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     min=0,
                                     max=10,
                                     marks=top_n_categories_lookup,
+                                ),
+                                # One of 'group', 'overlay' or 'relative'
+                                # In 'relative' mode, bars are stacked above zero for positive
+                                # values and below zero for negative values.
+                                # In 'overlay' mode, bars are drawn on top of one another.
+                                # In 'group' mode, bars are placed beside each other.
+                                create_dropdown_control(
+                                    label="Bar Mode",
+                                    id='bar_mode',
+                                    hidden=False,
+                                    multi=False,
+                                    clearable=False,
+                                    options=[
+                                        {'label': 'Stacked', 'value': 'relative'},
+                                        {'label': 'Side-by-Side', 'value': 'group'},
+                                        {'label': 'Overlay', 'value': 'overlay'},
+                                    ],
+                                    value='relative',
+                                ),
+                                create_slider_control(
+                                    label="# of Bins",
+                                    id='n_bins',
+                                    min=20,
+                                    max=100,
+                                    step=20,
+                                    value=40,
                                 ),
                                 create_slider_control(
                                     label="Opacity",
@@ -643,6 +661,7 @@ def filter_data(
     Input('n_bins_slider', 'value'),
     Input('opacity_slider', 'value'),
     Input('top_n_categories_slider', 'value'),
+    Input('bar_mode_dropdown', 'value'),
     Input('title_textbox', 'value'),
     Input('filtered_data', 'data'),
     State('numeric_columns', 'data'),
@@ -663,6 +682,7 @@ def update_graph(
             n_bins: int,
             opacity: float,
             top_n_categories: float,
+            bar_mode: str,
             title_textbox: str,
             data: pd.DataFrame,
             numeric_columns: list[str],
@@ -687,6 +707,7 @@ def update_graph(
     log_variable('n_bins', n_bins)
     log_variable('opacity', opacity)
     log_variable('top_n_categories', top_n_categories)
+    log_variable('bar_mode', bar_mode)
     log_variable('graph_type', graph_type)
     log_variable('type(n_bins)', type(n_bins))
     # log_variable('type(data)', type(data))
@@ -784,6 +805,7 @@ def update_graph(
                 y=y_variable,
                 color=color_variable,
                 # opacity=opacity,
+                barmode=bar_mode,
                 facet_col=facet_variable,
                 facet_col_wrap=4,
                 title=title_textbox,
