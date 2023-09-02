@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 import base64
 import io
-from dash import dash_table, callback_context
+from dash import callback_context, dash_table
 from dash.dependencies import ALL
 import plotly.express as px
 import plotly.graph_objs as go
@@ -35,6 +35,11 @@ from dash_extensions.enrich import DashProxy, Output, Input, State, Serverside, 
     ServersideOutputTransform
 
 
+load_dotenv()
+HOST = os.getenv('HOST')
+DEBUG = os.getenv('DEBUG').lower() == 'true'
+PORT = os.getenv('PORT')
+GOLDEN_RATIO = 1.618
 top_n_categories_lookup = {
     0: 'None',
     1: '1',
@@ -49,12 +54,6 @@ top_n_categories_lookup = {
     10: '50',
 }
 
-
-load_dotenv()
-HOST = os.getenv('HOST')
-DEBUG = os.getenv('DEBUG').lower() == 'true'
-PORT = os.getenv('PORT')
-GOLDEN_RATIO = 1.618
 
 app = DashProxy(
     __name__,
@@ -634,21 +633,18 @@ def load_data(  # noqa
     Output('visualize_filter_info', 'children'),
     Output('visualize_filter_code', 'children'),
     Input('filter-apply-button', 'n_clicks'),
-    State('filter_columns_dropdown', 'value'),
     State('filter_columns_cache', 'data'),
     State('original_data', 'data'),
     prevent_initial_call=True,
 )
 def filter_data(
         n_clicks: int,  # noqa: ARG001
-        selected_filter_columns: list[str],
         filter_columns_cache: dict,
         original_data: pd.DataFrame,
         ) -> dict:
     """Filter the data based on the user's selections."""
     filtered_data, markdown_text, code = filter_data_from_ui_control(
-        selected_columns=selected_filter_columns,
-        cache=filter_columns_cache,
+        filters=filter_columns_cache,
         data=original_data,
     )
     return Serverside(filtered_data), markdown_text, code
@@ -679,7 +675,7 @@ def filter_data(
     State('boolean_columns', 'data'),
     prevent_initial_call=True,
 )
-def update_graph(
+def update_graph(  # noqa
             x_variable: str,
             y_variable: str,
             color_variable: str,
@@ -694,8 +690,8 @@ def update_graph(
             title_textbox: str,
             data: pd.DataFrame,
             numeric_columns: list[str],
-            non_numeric_columns: list[str],
-            date_columns: list[str],
+            non_numeric_columns: list[str],  # noqa: ARG001
+            date_columns: list[str],  # noqa: ARG001
             categorical_columns: list[str],
             string_columns: list[str],
             boolean_columns: list[str],
@@ -1160,14 +1156,12 @@ def cache_filter_columns(  # noqa: PLR0912
     # cache the values from the dropdown and slider controls
     if filter_columns_cache is None:
         filter_columns_cache = {}
-    # NOTE: I can't seem to remove values from the cache. I get an error complaining that the value
-    # has been modified
-    # else:
-    #     filter_columns_cache = filter_columns_cache.copy()
-    #     for column in filter_columns_cache:
-    #         if column not in selected_filter_columns:
-    #             log(f"removing {column} from filter_columns_cache")
-    #             filter_columns_cache.pop(column)
+    else:
+        # remove any columns that are no longer selected
+        for column in filter_columns_cache.copy():
+            if column not in selected_filter_columns:
+                log(f"removing {column} from filter_columns_cache")
+                filter_columns_cache.pop(column)
 
     for column in selected_filter_columns:
         log(f"caching column: `{column}`")
