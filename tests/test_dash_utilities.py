@@ -1,5 +1,4 @@
 """Tests for dash_utilities.py."""
-import pytest
 import pandas as pd
 import numpy as np
 from source.library.dash_utilities import (
@@ -46,38 +45,28 @@ def test_values_to_dropdown_options():  # noqa
 
 
 def test_filter_data_from_ui_control__no_selected_columns(capsys, mock_data2):  # noqa
-    selected_columns = []
-    cache = {
-        'integers': [1, 3],
-        'booleans_with_missing2': ['True', '<Missing>'],
-    }
     filtered_data, _, _ = filter_data_from_ui_control(
-        selected_columns=selected_columns,
-        cache=cache,
+        filters={},
+        data=mock_data2,
+    )
+    assert filtered_data is not mock_data2
+    assert filtered_data.equals(mock_data2)
+
+    filtered_data, _, _ = filter_data_from_ui_control(
+        filters=None,
         data=mock_data2,
     )
     assert filtered_data is not mock_data2
     assert filtered_data.equals(mock_data2)
 
 
-def test_filter_data_from_ui_control_selected_column_in_cache(capsys, mock_data2):  # noqa
-    with pytest.raises(AssertionError):
-        filter_data_from_ui_control(
-            selected_columns=['booleans', 'not_column'],
-            cache={'booleans': ['True']},
-            data=mock_data2,
-        )
-
-
 def test_filter_data_from_ui_control__integers_booleans(capsys, mock_data2):  # noqa
-    selected_columns = ['integers', 'booleans_with_missing2']
-    cache = {
+    filters = {
         'integers': [1, 3],
         'booleans_with_missing2': ['True', '<Missing>'],
     }
     filtered_data, markdown_text, code = filter_data_from_ui_control(
-        selected_columns=selected_columns,
-        cache=cache,
+        filters=filters,
         data=mock_data2,
     )
     assert filtered_data.shape == (2, 21)
@@ -92,14 +81,12 @@ def test_filter_data_from_ui_control__integers_booleans(capsys, mock_data2):  # 
 
 
 def test_filter_data_from_ui_control__integers_with_missing_booleans(capsys, mock_data2):  # noqa
-    selected_columns = ['integers_with_missing', 'booleans_with_missing2']
-    cache = {
+    filters = {
         'integers_with_missing': [1, 3],
         'booleans_with_missing2': ['True', '<Missing>'],
     }
     filtered_data, markdown_text, code = filter_data_from_ui_control(
-        selected_columns=selected_columns,
-        cache=cache,
+        filters=filters,
         data=mock_data2,
     )
     assert filtered_data.shape == (1, 21)
@@ -114,14 +101,12 @@ def test_filter_data_from_ui_control__integers_with_missing_booleans(capsys, moc
 
 
 def test_filter_data_from_ui_control__strings_with_missing(capsys, mock_data2):  # noqa
-    selected_columns = ['floats', 'strings_with_missing2']
-    cache = {
+    filters = {
         'floats': [1, 3.5],
         'strings_with_missing2': ['b', '<Missing>'],
     }
     filtered_data, markdown_text, code = filter_data_from_ui_control(
-        selected_columns=selected_columns,
-        cache=cache,
+        filters=filters,
         data=mock_data2,
     )
     assert filtered_data.shape == (3, 21)
@@ -136,14 +121,12 @@ def test_filter_data_from_ui_control__strings_with_missing(capsys, mock_data2): 
 
 
 def test_filter_data_from_ui_control__categorical_with_missing(capsys, mock_data2):  # noqa
-    selected_columns = ['floats', 'categories_with_missing2']
-    cache = {
+    filters = {
         'floats': [1, 3.5],
         'categories_with_missing2': ['b', '<Missing>'],
     }
     filtered_data, markdown_text, code = filter_data_from_ui_control(
-        selected_columns=selected_columns,
-        cache=cache,
+        filters=filters,
         data=mock_data2,
     )
     assert filtered_data.shape == (3, 21)
@@ -159,13 +142,11 @@ def test_filter_data_from_ui_control__categorical_with_missing(capsys, mock_data
 
 
 def test_filter_data_from_ui_control__dates_with_missing(capsys, mock_data2):  # noqa
-    selected_columns = ['dates_with_missing2']
-    cache = {
+    filters = {
         'dates_with_missing2': ['2023-01-01', '2023-01-04'],
     }
     filtered_data, markdown_text, code = filter_data_from_ui_control(
-        selected_columns=selected_columns,
-        cache=cache,
+        filters=filters,
         data=mock_data2,
     )
     assert filtered_data.shape == (2, 21)
@@ -178,13 +159,11 @@ def test_filter_data_from_ui_control__dates_with_missing(capsys, mock_data2):  #
 
 
 def test_filter_data_from_ui_control__datetimes_with_missing(capsys, mock_data2):  # noqa
-    selected_columns = ['datetimes_with_missing2']
-    cache = {
+    filters = {
         'datetimes_with_missing2': ['2023-01-01', '2023-01-04'],
     }
     filtered_data, markdown_text, code = filter_data_from_ui_control(
-        selected_columns=selected_columns,
-        cache=cache,
+        filters=filters,
         data=mock_data2,
     )
     assert filtered_data.shape == (2, 21)

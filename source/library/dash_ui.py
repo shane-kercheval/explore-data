@@ -30,7 +30,7 @@ def create_control(
         id=f'{id}_div',
         className=CLASS__GRAPH_PANEL_SECTION,
         style=style,
-        children=children
+        children=children,
     )
 
 

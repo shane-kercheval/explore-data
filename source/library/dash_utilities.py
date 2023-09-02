@@ -31,8 +31,7 @@ def values_to_dropdown_options(values: list[str]) -> list[dict]:
 
 
 def filter_data_from_ui_control(  # noqa: PLR0915
-        selected_columns: list[str],
-        cache: dict,
+        filters: dict,
         data: pd.DataFrame) -> tuple[pd.DataFrame, str, str]:
     """
     Filters data based on the selected columns and values. Returns the filtered data, markdown
@@ -55,22 +54,17 @@ def filter_data_from_ui_control(  # noqa: PLR0915
     `filter_data` function.
     """
     log_function('filtered_data')
-    log_variable('selected_columns', selected_columns)
-    log_variable('cache', cache)
+    log_variable('filters', filters)
 
-    if not selected_columns:
+    if not filters:
         log("No filters applied.")
         return data.copy(), "No filters applied.", "No filters applied."
 
-    filters = {}
-    log_variable('filters', filters)
-
+    converted_filters = {}
     markdown_text = "##### Manual filters applied:  \n"
 
     # this for loop builds the filters dictionary and the markdown text
-    for column in selected_columns:
-        assert column in cache
-        value = cache[column]
+    for column, value in filters.items():
         log(f"filtering on `{column}` with `{value}`")
 
         series, _ = series_to_datetime(data[column])
@@ -81,7 +75,7 @@ def filter_data_from_ui_control(  # noqa: PLR0915
             assert len(value) == 2
             start_date = to_date(value[0])
             end_date = to_date(value[1])
-            filters[column] = (start_date, end_date)
+            converted_filters[column] = (start_date, end_date)
             markdown_text += f"  - `{column}` between `{start_date}` and `{end_date}`"
             num_missing = series.isna().sum()
             if num_missing > 0:
@@ -98,7 +92,7 @@ def filter_data_from_ui_control(  # noqa: PLR0915
             if '<Missing>' in value:
                 filters_list.extend([np.nan, None])
             log_variable('filters_list', filters_list)
-            filters[column] = filters_list
+            converted_filters[column] = filters_list
             markdown_text += f"  - `{column}` in `{filters_list}`  \n"
         elif series.dtype in ('object', 'category'):
             assert isinstance(value, list)
@@ -106,14 +100,14 @@ def filter_data_from_ui_control(  # noqa: PLR0915
             if '<Missing>' in value:
                 filters_list.extend([np.nan, None])
             log_variable('filters_list', filters_list)
-            filters[column] = filters_list
+            converted_filters[column] = filters_list
             markdown_text += f"  - `{column}` in `{filters_list}`  \n"
         elif pd.api.types.is_numeric_dtype(series):
             assert isinstance(value, list)
             assert len(value) == 2
             min_value = value[0]
             max_value = value[1]
-            filters[column] = (min_value, max_value)
+            converted_filters[column] = (min_value, max_value)
             markdown_text += f"  - `{column}` between `{min_value}` and `{max_value}`"
             num_missing = series.isna().sum()
             if num_missing > 0:
@@ -122,7 +116,7 @@ def filter_data_from_ui_control(  # noqa: PLR0915
         else:
             raise ValueError(f"Unknown dtype for column `{column}`: {data[column].dtype}")
 
-    filtered_data, code = filter_dataframe(data=data, filters=filters)
+    filtered_data, code = filter_dataframe(data=data, filters=converted_filters)
     rows_removed = len(data) - len(filtered_data)
     markdown_text += f"  \n`{len(filtered_data):,}` rows remaining after manual filtering; `{rows_removed:,}` (`{rows_removed / len(data):.1%}`) rows removed  \n"  # noqa
     log(f"{len(data):,} rows before after filtering")
