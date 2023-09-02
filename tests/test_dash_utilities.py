@@ -3,13 +3,14 @@ import pandas as pd
 import numpy as np
 import pytest
 from source.library.dash_utilities import (
+    filter_data_from_ui_control,
+    get_graph_config,
+    get_variable_type,
     log,
     log_function,
     log_variable,
     log_error,
     values_to_dropdown_options,
-    filter_data_from_ui_control,
-    get_variable_type,
 )
 import helpsk.pandas as hp
 
@@ -170,7 +171,7 @@ def test_filter_data_from_ui_control__datetimes_with_missing(capsys, mock_data2)
     assert filtered_data['floats'].tolist() == [2.2, 4.4]
     assert filtered_data['strings'].tolist() == ['b', 'a']
 
-def test_xxx(mock_data2):  # noqa
+def test_get_variable_type(mock_data2):  # noqa
     all_columns = mock_data2.columns.tolist()
     numeric_columns = hp.get_numeric_columns(mock_data2)
     date_columns = hp.get_date_columns(mock_data2)
@@ -211,3 +212,30 @@ def test_xxx(mock_data2):  # noqa
     assert get_variable_type('datetimes', options=options) == 'date'
     assert get_variable_type('datetimes_with_missing', options=options) == 'date'
     assert get_variable_type('datetimes_with_missing2', options=options) == 'date'
+
+def test_get_graph_config(mock_data2, graphing_configurations):  # noqa
+    with pytest.raises(ValueError):  # noqa: PT011
+        get_graph_config(
+            configurations=graphing_configurations,
+            x_variable='non_numeric',
+            y_variable=None,
+            color_variable=None,
+            size_variable=None,
+            facet_variable='numeric',
+        )
+
+
+    config = get_graph_config(
+        configurations=graphing_configurations,
+        x_variable='string',
+        y_variable=None,
+        color_variable=None,
+        size_variable=None,
+        facet_variable=None,
+    )
+    assert isinstance(config, dict)
+    assert 'string' in config['selected_variables']['x_variable']
+    assert config['selected_variables']['y_variable'] is None
+    assert config['selected_variables']['color_variable'] is None
+    assert config['selected_variables']['size_variable'] is None
+    assert config['selected_variables']['facet_variable'] is None

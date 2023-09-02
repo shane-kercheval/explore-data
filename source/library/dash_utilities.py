@@ -143,3 +143,61 @@ def get_variable_type(variable: str | None, options: dict) -> str | None:
             return key
 
     raise ValueError(f"Unknown dtype for column `{variable}`")
+
+
+
+def get_graph_config(
+          configurations: list[dict],
+          x_variable: str | None,
+          y_variable: str | None,
+          color_variable: str | None,
+          size_variable: str | None,
+          facet_variable: str | None) -> dict:
+    """
+    Takes a list of configurations and returns the matching configuration based on the selected x,
+    y, color, size, and facet variables. If no matching configuration is found, then an error is
+    raised. If more than one matching configuration is found, then an error is raised.
+    """
+    if (
+        x_variable is None
+        and y_variable is None
+        and color_variable is None
+        and size_variable is None
+        and facet_variable is None
+        ):
+        return []
+
+    matching_configs = []
+
+    for config in configurations:
+        selected_variables = config['selected_variables']
+        if (
+            (
+                (x_variable is None and selected_variables['x_variable'] is None)
+                or (x_variable in selected_variables['x_variable'])
+            )
+            and (
+                (y_variable is None and selected_variables['y_variable'] is None)
+                or (y_variable in selected_variables['y_variable'])
+            )
+            and (
+                (color_variable is None and selected_variables['color_variable'] is None)
+                or (color_variable in selected_variables['color_variable'])
+            )
+            and (
+                (size_variable is None and selected_variables['size_variable'] is None)
+                or (size_variable in selected_variables['size_variable'])
+            )
+            and (
+                (facet_variable is None and selected_variables['facet_variable'] is None)
+                or (facet_variable in selected_variables['facet_variable'])
+            )
+        ):
+            matching_configs.append(config)
+
+    if len(matching_configs) == 0:
+        raise ValueError("No matching configurations found.")
+    if len(matching_configs) > 1:
+        raise ValueError("More than one matching configuration found.")
+
+    return matching_configs[0]
