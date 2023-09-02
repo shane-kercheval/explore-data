@@ -213,7 +213,7 @@ def test_get_variable_type(mock_data2):  # noqa
     assert get_variable_type('datetimes_with_missing', options=options) == 'date'
     assert get_variable_type('datetimes_with_missing2', options=options) == 'date'
 
-def test_get_graph_config(mock_data2, graphing_configurations):  # noqa
+def test_get_graph_config__not_found_raises_value_error(graphing_configurations):  # noqa
     with pytest.raises(ValueError):  # noqa: PT011
         get_graph_config(
             configurations=graphing_configurations,
@@ -224,18 +224,102 @@ def test_get_graph_config(mock_data2, graphing_configurations):  # noqa
             facet_variable='numeric',
         )
 
-
+def test_get_graph_config__numeric(graphing_configurations):  # noqa
     config = get_graph_config(
         configurations=graphing_configurations,
-        x_variable='string',
+        x_variable='numeric',
         y_variable=None,
         color_variable=None,
         size_variable=None,
         facet_variable=None,
     )
     assert isinstance(config, dict)
-    assert 'string' in config['selected_variables']['x_variable']
+    assert 'numeric' in config['selected_variables']['x_variable']
     assert config['selected_variables']['y_variable'] is None
     assert config['selected_variables']['color_variable'] is None
     assert config['selected_variables']['size_variable'] is None
     assert config['selected_variables']['facet_variable'] is None
+
+    assert isinstance(config['graph_types'], list)
+    assert len(config['graph_types']) > 0
+    assert isinstance(config['graph_types'][0], dict)
+    assert 'name' in config['graph_types'][0]
+    assert config['graph_types'][0]['name'] == 'box'
+    assert 'description' in config['graph_types'][0]
+    assert 'optional_variables' in config['graph_types'][0]
+
+def test_get_graph_config__numeric_numeric(graphing_configurations):  # noqa
+    config = get_graph_config(
+        configurations=graphing_configurations,
+        x_variable='numeric',
+        y_variable='numeric',
+        color_variable=None,
+        size_variable=None,
+        facet_variable=None,
+    )
+    assert isinstance(config, dict)
+    assert 'numeric' in config['selected_variables']['x_variable']
+    assert 'numeric' in config['selected_variables']['y_variable']
+    assert config['selected_variables']['color_variable'] is None
+    assert config['selected_variables']['size_variable'] is None
+    assert config['selected_variables']['facet_variable'] is None
+
+    assert isinstance(config['graph_types'], list)
+    assert len(config['graph_types']) > 0
+    assert isinstance(config['graph_types'][0], dict)
+    assert 'name' in config['graph_types'][0]
+    assert config['graph_types'][0]['name'] == 'scatter'
+    assert 'description' in config['graph_types'][0]
+    assert 'optional_variables' in config['graph_types'][0]
+
+@pytest.mark.parametrize('x_variable', ['date', 'boolean', 'string', 'categorical'])
+def test_get_graph_config__nonnumeric(x_variable, graphing_configurations):  # noqa
+    config = get_graph_config(
+        configurations=graphing_configurations,
+        x_variable=x_variable,
+        y_variable=None,
+        color_variable=None,
+        size_variable=None,
+        facet_variable=None,
+    )
+    # test variables
+    assert isinstance(config, dict)
+    assert x_variable in config['selected_variables']['x_variable']
+    assert config['selected_variables']['y_variable'] is None
+    assert config['selected_variables']['color_variable'] is None
+    assert config['selected_variables']['size_variable'] is None
+    assert config['selected_variables']['facet_variable'] is None
+    # test graph types
+    assert isinstance(config['graph_types'], list)
+    assert len(config['graph_types']) > 0
+    assert isinstance(config['graph_types'][0], dict)
+    assert 'name' in config['graph_types'][0]
+    assert config['graph_types'][0]['name'] == 'histogram'
+    assert 'description' in config['graph_types'][0]
+    assert 'optional_variables' in config['graph_types'][0]
+
+@pytest.mark.parametrize('x_variable', ['date', 'boolean', 'string', 'categorical'])
+def test_get_graph_config__nonnumeric_numeric(x_variable, graphing_configurations):  # noqa
+    config = get_graph_config(
+        configurations=graphing_configurations,
+        x_variable=x_variable,
+        y_variable='numeric',
+        color_variable=None,
+        size_variable=None,
+        facet_variable=None,
+    )
+    # test variables
+    assert isinstance(config, dict)
+    assert x_variable in config['selected_variables']['x_variable']
+    assert 'numeric' in config['selected_variables']['y_variable']
+    assert config['selected_variables']['color_variable'] is None
+    assert config['selected_variables']['size_variable'] is None
+    assert config['selected_variables']['facet_variable'] is None
+    # test graph types
+    assert isinstance(config['graph_types'], list)
+    assert len(config['graph_types']) > 0
+    assert isinstance(config['graph_types'][0], dict)
+    assert 'name' in config['graph_types'][0]
+    assert config['graph_types'][0]['name'] == 'histogram'
+    assert 'description' in config['graph_types'][0]
+    assert 'optional_variables' in config['graph_types'][0]
