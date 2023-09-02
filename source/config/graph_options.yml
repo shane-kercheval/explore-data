@@ -1,11 +1,20 @@
 # this file defines the different configurations for possible graphs based on the selected columns
 configurations:
+  # selected_variables: the variables that are selected by the user
+  # this is used to determine which graph types are possible
+  # variables can be of type: numeric, date, boolean, string, categorical
+  # variables are lists because some graphs can be made with multiple types of variables
+  # graph_types: the types of graphs that are possible with the selected variables
+  # each graph type has a description and a list of optional variables
+  # optional variables are variables that can be added to the graph and define the possible values
+  # for that the dropdown list will contain
   - selected_variables:
-      x_variable: numeric
-      y_variable: None
-      color_variable: None
-      size_variable: None
-      facet_variable: None
+      x_variable:
+        - numeric
+      y_variable:
+      color_variable:
+      size_variable:
+      facet_variable:
     graph_types:
       - boxplot:
           description: Shows the distribution of {x_variable}.
@@ -52,11 +61,13 @@ configurations:
               types:
                 - non_numeric
   - selected_variables:
-      x_variable: numeric
-      y_variable: numeric
-      color_variable: None
-      size_variable: None
-      facet_variable: None
+      x_variable:
+        - numeric
+      y_variable:
+        - numeric
+      color_variable:
+      size_variable:
+      facet_variable:
     graph_types:
       - scatter:
           description: Shows the relationship between {x_variable} and {y_variable}.
@@ -91,11 +102,15 @@ configurations:
               types:
                 - non_numeric
   - selected_variables:
-      x_variable: non_numeric
-      y_variable: None
-      color_variable: None
-      size_variable: None
-      facet_variable: None
+      x_variable:
+        - date
+        - boolean
+        - string
+        - categorical
+      y_variable:
+      color_variable:
+      size_variable:
+      facet_variable:
     graph_types:
       - histogram:
           description: Shows the counts of {x_variable}.
@@ -108,11 +123,16 @@ configurations:
               types:
                 - non_numeric
   - selected_variables:
-      x_variable: non_numeric
-      y_variable: numeric
-      color_variable: None
-      size_variable: None
-      facet_variable: None
+      x_variable:
+        - date
+        - boolean
+        - string
+        - categorical
+      y_variable:
+        - numeric
+      color_variable:
+      size_variable:
+      facet_variable:
     graph_types:
       - histogram:
           description: Shows the sum of {y_variable} across each value of {x_variable}.

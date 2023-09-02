@@ -123,3 +123,23 @@ def filter_data_from_ui_control(  # noqa: PLR0915
     log(f"{len(filtered_data):,} rows remaining after filtering")
 
     return filtered_data, markdown_text, f"""```\n{code}\n```"""
+
+
+def get_variable_type(variable: str | None, options: dict) -> str | None:
+    """
+    Takes a variable name and returns the type of the variable based on the options.
+    The type will be one of 'numeric', 'date', 'categorical', 'string', or 'boolean', which will
+    be associated with the keys in `options`. The values in option are lists of column types that
+    match the key. For example, `options['numeric']` is a list of all numeric columns in the
+    dataset.
+    If the variable is None, then None is returned. If the variable is not found in the options,
+    then an error is raised.
+    """
+    if variable is None:
+        return None
+
+    for key, value in options.items():
+        if variable in value:
+            return key
+
+    raise ValueError(f"Unknown dtype for column `{variable}`")
