@@ -700,7 +700,7 @@ def filter_data(
     State('boolean_columns', 'data'),
     prevent_initial_call=True,
 )
-def update(  # noqa
+def update_controls_and_graph(  # noqa
             x_variable: str,
             y_variable: str,
             # color variable
