@@ -4,7 +4,7 @@ import os
 from dotenv import load_dotenv
 import base64
 import io
-from dash import callback_context, dash_table
+from dash import ctx, callback_context, dash_table
 from dash.dependencies import ALL
 import plotly.express as px
 import plotly.graph_objs as go
@@ -654,11 +654,35 @@ def filter_data(
     Output('visualize_graph', 'figure'),
     Output('visualize_table', 'data'),
     Output('visualize_numeric_na_removal_markdown', 'children'),
+    # color variable
+    Output('color_variable_div', 'style'),
+    Output('color_variable_dropdown', 'options'),
+    Output('color_variable_dropdown', 'value'),
+    # size variable
+    Output('size_variable_div', 'style'),
+    Output('size_variable_dropdown', 'options'),
+    Output('size_variable_dropdown', 'value'),
+    # facet variable
+    Output('facet_variable_div', 'style'),
+    Output('facet_variable_dropdown', 'options'),
+    Output('facet_variable_dropdown', 'value'),
+
+    # INPUTS
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
+    # color variable
+    Input('color_variable_div', 'style'),
+    Input('color_variable_dropdown', 'options'),
     Input('color_variable_dropdown', 'value'),
+    # size variable
+    Input('size_variable_div', 'style'),
+    Input('size_variable_dropdown', 'options'),
     Input('size_variable_dropdown', 'value'),
+    # facet variable
+    Input('facet_variable_div', 'style'),
+    Input('facet_variable_dropdown', 'options'),
     Input('facet_variable_dropdown', 'value'),
+
     Input('graph_type_dropdown', 'value'),
     Input('n_bins_slider', 'value'),
     Input('opacity_slider', 'value'),
@@ -667,6 +691,7 @@ def filter_data(
     Input('log_x_y_axis_checklist', 'value'),
     Input('title_textbox', 'value'),
     Input('filtered_data', 'data'),
+    State('all_columns', 'data'),
     State('numeric_columns', 'data'),
     State('non_numeric_columns', 'data'),
     State('date_columns', 'data'),
@@ -675,12 +700,22 @@ def filter_data(
     State('boolean_columns', 'data'),
     prevent_initial_call=True,
 )
-def update_graph(  # noqa
+def update(  # noqa
             x_variable: str,
             y_variable: str,
+            # color variable
+            color_variable_div: dict,
+            color_variable_dropdown: list[str],
             color_variable: str,
+            # size variable
+            size_variable_div: dict,
+            size_variable_dropdown: list[str],
             size_variable: str,
+            # facet variable
+            facet_variable_div: dict,
+            facet_variable_dropdown: list[str],
             facet_variable: str,
+
             graph_type: str,
             n_bins: int,
             opacity: float,
@@ -689,6 +724,7 @@ def update_graph(  # noqa
             log_x_y_axis: list[str],
             title_textbox: str,
             data: pd.DataFrame,
+            all_columns: list[str],
             numeric_columns: list[str],
             non_numeric_columns: list[str],  # noqa: ARG001
             date_columns: list[str],  # noqa: ARG001
@@ -702,7 +738,9 @@ def update_graph(  # noqa
     This function should *not* modify the data. It should only return a figure.
     """
     # TODO: refactor and unit test
+
     log_function('update_graph')
+    log_variable('triggered_id', ctx.triggered_id)
     log_variable('x_variable', x_variable)
     log_variable('y_variable', y_variable)
     log_variable('color_variable', color_variable)
@@ -717,6 +755,36 @@ def update_graph(  # noqa
     log_variable('type(n_bins)', type(n_bins))
     # log_variable('type(data)', type(data))
     # log_variable('data', data)
+
+    ####
+    # update variables
+    ####
+    if ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown']:
+        log("Updating variable options")
+        log_function('facet_variable_div')
+        if x_variable or y_variable:
+            color_variable_div = {'display': 'block'}
+            color_variable_dropdown = all_columns
+
+            size_variable_div = {'display': 'block'}
+            size_variable_dropdown = all_columns
+
+            facet_variable_div = {'display': 'block'}
+            facet_variable_dropdown = non_numeric_columns
+
+        else:
+            color_variable_div = {'display': 'none'}
+            color_variable_dropdown = []
+            color_variable = None
+
+            size_variable_div = {'display': 'none'}
+            size_variable_dropdown = []
+            size_variable = None
+
+            facet_variable_div = {'display': 'none'}
+            facet_variable_dropdown = []
+            facet_variable = None
+
     fig = {}
     graph_data = pd.DataFrame()
     numeric_na_removal_markdown = ''
@@ -763,7 +831,7 @@ def update_graph(  # noqa
         if any(x in numeric_columns for x in columns):
             rows_remaining = len(graph_data)
             rows_removed = len(data) - rows_remaining
-            numeric_na_removal_markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / len(data):.1%}`) rows removed from filtering\n"  # noqa
+            numeric_na_removal_markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / len(data):.1%}`) rows removed from automatic filtering\n"  # noqa
             numeric_na_removal_markdown += "---  \n"
 
         # TODO: need to convert code to string and execute string
@@ -843,95 +911,24 @@ def update_graph(  # noqa
         else:
             raise ValueError(f"Unknown graph type: {graph_type}")
     log("returning fig")
-    return fig, graph_data.iloc[0:500].to_dict('records'), numeric_na_removal_markdown
+    return (
+        fig,
+        graph_data.iloc[0:500].to_dict('records'),
+        numeric_na_removal_markdown,
+        # color variable
+        color_variable_div,
+        color_variable_dropdown,
+        color_variable,
+        # size variable
+        size_variable_div,
+        size_variable_dropdown,
+        size_variable,
+        # facet variable
+        facet_variable_div,
+        facet_variable_dropdown,
+        facet_variable,
 
-
-@app.callback(
-    Output('facet_variable_div', 'style'),
-    Output('facet_variable_dropdown', 'options'),
-    Output('facet_variable_dropdown', 'value'),
-    Input('x_variable_dropdown', 'value'),
-    Input('y_variable_dropdown', 'value'),
-    State('facet_variable_dropdown', 'value'),
-    State('non_numeric_columns', 'data'),
-    prevent_initial_call=True,
-)
-def facet_variable_div(
-        x_variable_dropdown: str,
-        y_variable_dropdown: str,
-        current_value: str,
-        non_numeric_columns: dict) -> dict:
-    """
-    Triggered when the user selects columns (specified in Input fields in callback) from the
-    dropdown.
-    This function is used to show/hide the facet variable dropdown and to populate it with options.
-    """
-    log_function('facet_variable_div')
-    if x_variable_dropdown or y_variable_dropdown:
-        log("returning {display: block}")
-        options = non_numeric_columns
-        return {'display': 'block'}, options, current_value
-    log("returning {display: none}")
-    return  {'display': 'none'}, [], None
-
-
-@app.callback(
-    Output('color_variable_div', 'style'),
-    Output('color_variable_dropdown', 'options'),
-    Output('color_variable_dropdown', 'value'),
-    Input('x_variable_dropdown', 'value'),
-    Input('y_variable_dropdown', 'value'),
-    State('color_variable_dropdown', 'value'),
-    State('all_columns', 'data'),
-    prevent_initial_call=True,
-)
-def color_variable_div(
-        x_variable_dropdown: str,
-        y_variable_dropdown: str,
-        current_value: str,
-        all_columns: dict) -> dict:
-    """
-    Triggered when the user selects columns (specified in Input fields in callback) from the
-    dropdown.
-    This function is used to show/hide the color variable dropdown and to populate it with options.
-    """
-    log_function('color_variable_div')
-    if x_variable_dropdown or y_variable_dropdown:
-        log("returning {display: block}")
-        options = all_columns
-        return {'display': 'block'}, options, current_value
-    log("returning {display: none}")
-    return  {'display': 'none'}, [], None
-
-
-@app.callback(
-    Output('size_variable_div', 'style'),
-    Output('size_variable_dropdown', 'options'),
-    Output('size_variable_dropdown', 'value'),
-    Input('x_variable_dropdown', 'value'),
-    Input('y_variable_dropdown', 'value'),
-    State('size_variable_dropdown', 'value'),
-    State('all_columns', 'data'),
-    prevent_initial_call=True,
-)
-def size_variable_div(
-        x_variable_dropdown: str,
-        y_variable_dropdown: str,
-        current_value: str,
-        all_columns: dict) -> dict:
-    """
-    Triggered when the user selects columns (specified in Input fields in callback) from the
-    dropdown.
-    This function is used to show/hide the size variable dropdown and to populate it with options.
-    """
-    log_function('size_variable_div')
-    if x_variable_dropdown or y_variable_dropdown:
-        log("returning {display: block}")
-        options = all_columns
-        return {'display': 'block'}, options, current_value
-    log("returning {display: none}")
-    return  {'display': 'none'}, [], None
-
+    )
 
 @app.callback(
     Output('x_variable_dropdown', 'value'),
