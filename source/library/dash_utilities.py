@@ -174,23 +174,38 @@ def get_graph_config(
         if (
             (
                 (x_variable is None and selected_variables['x_variable'] is None)
-                or (x_variable in selected_variables['x_variable'])
+                or (
+                    selected_variables['x_variable']
+                    and x_variable in selected_variables['x_variable']
+                )
             )
             and (
                 (y_variable is None and selected_variables['y_variable'] is None)
-                or (y_variable in selected_variables['y_variable'])
+                or (
+                    selected_variables['y_variable']
+                    and y_variable in selected_variables['y_variable']
+                )
             )
             and (
                 (color_variable is None and selected_variables['color_variable'] is None)
-                or (color_variable in selected_variables['color_variable'])
+                or (
+                    selected_variables['color_variable']
+                    and color_variable in selected_variables['color_variable']
+                )
             )
             and (
                 (size_variable is None and selected_variables['size_variable'] is None)
-                or (size_variable in selected_variables['size_variable'])
+                or (
+                    selected_variables['size_variable']
+                    and size_variable in selected_variables['size_variable']
+                )
             )
             and (
                 (facet_variable is None and selected_variables['facet_variable'] is None)
-                or (facet_variable in selected_variables['facet_variable'])
+                or (
+                    selected_variables['facet_variable']
+                    and facet_variable in selected_variables['facet_variable']
+                )
             )
         ):
             matching_configs.append(config)
