@@ -788,7 +788,7 @@ def update_controls_and_graph(  # noqa
         # update graph options
         ####
         # get current configuration based on graph_options.yml (selected_variables)
-        type_options = {
+        columns_by_type = {
             'numeric': numeric_columns,
             'date': date_columns,
             'string': string_columns,
@@ -797,8 +797,8 @@ def update_controls_and_graph(  # noqa
         }
         graph_config = get_graph_config(
             configurations=GRAPH_CONFIGS['configurations'],
-            x_variable=get_variable_type(variable=x_variable, options=type_options),
-            y_variable=get_variable_type(variable=y_variable, options=type_options),
+            x_variable=get_variable_type(variable=x_variable, options=columns_by_type),
+            y_variable=get_variable_type(variable=y_variable, options=columns_by_type),
         )
         log_variable('graph_config', graph_config)
         graph_type_configs = graph_config['graph_types']
@@ -965,9 +965,8 @@ def update_controls_and_graph(  # noqa
             allowed_types = optional_variables[variable]['types']
             types = []
             for allowed_type in allowed_types:
-                types.extend(type_options[allowed_type])
+                types.extend(columns_by_type[allowed_type])
             return types
-
 
         if 'color_variable' in optional_variables:
             color_variable_div = {'display': 'block'}
@@ -1004,35 +1003,6 @@ def update_controls_and_graph(  # noqa
         facet_variable_div = {'display': 'none'}
         facet_variable_dropdown = []
         facet_variable = None
-
-
-    # if ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown']:
-    #     log("Updating variable options")
-    #     log_function('facet_variable_div')
-    #     if x_variable or y_variable:
-    #         color_variable_div = {'display': 'block'}
-    #         color_variable_dropdown = all_columns
-
-    #         size_variable_div = {'display': 'block'}
-    #         size_variable_dropdown = all_columns
-
-    #         facet_variable_div = {'display': 'block'}
-    #         facet_variable_dropdown = non_numeric_columns
-
-    #     else:
-    #         color_variable_div = {'display': 'none'}
-    #         color_variable_dropdown = []
-    #         color_variable = None
-
-    #         size_variable_div = {'display': 'none'}
-    #         size_variable_dropdown = []
-    #         size_variable = None
-
-    #         facet_variable_div = {'display': 'none'}
-    #         facet_variable_dropdown = []
-    #         facet_variable = None
-
-
 
     log("returning fig")
     return (
