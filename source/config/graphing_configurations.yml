@@ -12,9 +12,6 @@ configurations:
       x_variable:
         - numeric
       y_variable:
-      color_variable:
-      size_variable:
-      facet_variable:
     graph_types:
       - name: box
         description: Shows the distribution of {{x_variable}}.
@@ -65,9 +62,6 @@ configurations:
         - numeric
       y_variable:
         - numeric
-      color_variable:
-      size_variable:
-      facet_variable:
     graph_types:
       - name: scatter
         description: Shows the relationship between {{x_variable}} and {{y_variable}}.
@@ -108,9 +102,6 @@ configurations:
         - string
         - categorical
       y_variable:
-      color_variable:
-      size_variable:
-      facet_variable:
     graph_types:
       - name: histogram
         description: Shows the counts of {{x_variable}}.
@@ -130,9 +121,6 @@ configurations:
         - categorical
       y_variable:
         - numeric
-      color_variable:
-      size_variable:
-      facet_variable:
     graph_types:
       - name: histogram
         description: Shows the sum of {{y_variable}} across each value of {{x_variable}}.

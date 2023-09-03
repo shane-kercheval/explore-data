@@ -799,9 +799,6 @@ def update_controls_and_graph(  # noqa
             configurations=GRAPH_CONFIGS['configurations'],
             x_variable=get_variable_type(variable=x_variable, options=type_options),
             y_variable=get_variable_type(variable=y_variable, options=type_options),
-            color_variable=get_variable_type(variable=color_variable, options=type_options),
-            size_variable=get_variable_type(variable=size_variable, options=type_options),
-            facet_variable=get_variable_type(variable=facet_variable, options=type_options),
         )
         log_variable('graph_config', graph_config)
         graph_type_configs = graph_config['graph_types']
@@ -818,7 +815,6 @@ def update_controls_and_graph(  # noqa
             graph_type = graph_types[0]
 
         # we have to decide if we are setting graph types or using something that was already selected
-        
 
         # selected graph config
         graph_config = next(x for x in graph_type_configs if x['name'] == graph_type)
@@ -953,7 +949,6 @@ def update_controls_and_graph(  # noqa
             )
         else:
             raise ValueError(f"Unknown graph type: {graph_type}")
-
 
     if graph_config:
         # update color/size/facet variable options based on graph type

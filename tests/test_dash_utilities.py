@@ -217,11 +217,8 @@ def test_get_graph_config__not_found_raises_value_error(graphing_configurations)
     with pytest.raises(ValueError):  # noqa: PT011
         get_graph_config(
             configurations=graphing_configurations,
-            x_variable='non_numeric',
+            x_variable='doesnotexist',
             y_variable=None,
-            color_variable=None,
-            size_variable=None,
-            facet_variable='numeric',
         )
 
 def test_get_graph_config__numeric(graphing_configurations):  # noqa
@@ -229,16 +226,10 @@ def test_get_graph_config__numeric(graphing_configurations):  # noqa
         configurations=graphing_configurations,
         x_variable='numeric',
         y_variable=None,
-        color_variable=None,
-        size_variable=None,
-        facet_variable=None,
     )
     assert isinstance(config, dict)
     assert 'numeric' in config['selected_variables']['x_variable']
     assert config['selected_variables']['y_variable'] is None
-    assert config['selected_variables']['color_variable'] is None
-    assert config['selected_variables']['size_variable'] is None
-    assert config['selected_variables']['facet_variable'] is None
 
     assert isinstance(config['graph_types'], list)
     assert len(config['graph_types']) > 0
@@ -253,16 +244,10 @@ def test_get_graph_config__numeric_numeric(graphing_configurations):  # noqa
         configurations=graphing_configurations,
         x_variable='numeric',
         y_variable='numeric',
-        color_variable=None,
-        size_variable=None,
-        facet_variable=None,
     )
     assert isinstance(config, dict)
     assert 'numeric' in config['selected_variables']['x_variable']
     assert 'numeric' in config['selected_variables']['y_variable']
-    assert config['selected_variables']['color_variable'] is None
-    assert config['selected_variables']['size_variable'] is None
-    assert config['selected_variables']['facet_variable'] is None
 
     assert isinstance(config['graph_types'], list)
     assert len(config['graph_types']) > 0
@@ -278,17 +263,11 @@ def test_get_graph_config__nonnumeric(x_variable, graphing_configurations):  # n
         configurations=graphing_configurations,
         x_variable=x_variable,
         y_variable=None,
-        color_variable=None,
-        size_variable=None,
-        facet_variable=None,
     )
     # test variables
     assert isinstance(config, dict)
     assert x_variable in config['selected_variables']['x_variable']
     assert config['selected_variables']['y_variable'] is None
-    assert config['selected_variables']['color_variable'] is None
-    assert config['selected_variables']['size_variable'] is None
-    assert config['selected_variables']['facet_variable'] is None
     # test graph types
     assert isinstance(config['graph_types'], list)
     assert len(config['graph_types']) > 0
@@ -304,17 +283,11 @@ def test_get_graph_config__nonnumeric_numeric(x_variable, graphing_configuration
         configurations=graphing_configurations,
         x_variable=x_variable,
         y_variable='numeric',
-        color_variable=None,
-        size_variable=None,
-        facet_variable=None,
     )
     # test variables
     assert isinstance(config, dict)
     assert x_variable in config['selected_variables']['x_variable']
     assert 'numeric' in config['selected_variables']['y_variable']
-    assert config['selected_variables']['color_variable'] is None
-    assert config['selected_variables']['size_variable'] is None
-    assert config['selected_variables']['facet_variable'] is None
     # test graph types
     assert isinstance(config['graph_types'], list)
     assert len(config['graph_types']) > 0

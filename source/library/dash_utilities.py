@@ -148,22 +148,13 @@ def get_variable_type(variable: str | None, options: dict) -> str | None:
 def get_graph_config(
           configurations: list[dict],
           x_variable: str | None,
-          y_variable: str | None,
-          color_variable: str | None,
-          size_variable: str | None,
-          facet_variable: str | None) -> dict:
+          y_variable: str | None) -> dict:
     """
     Takes a list of configurations and returns the matching configuration based on the selected x,
     y, color, size, and facet variables. If no matching configuration is found, then an error is
     raised. If more than one matching configuration is found, then an error is raised.
     """
-    if (
-        x_variable is None
-        and y_variable is None
-        and color_variable is None
-        and size_variable is None
-        and facet_variable is None
-        ):
+    if (x_variable is None and y_variable is None):
         return []
 
     matching_configs = []
@@ -183,27 +174,6 @@ def get_graph_config(
                 or (
                     selected_variables['y_variable']
                     and y_variable in selected_variables['y_variable']
-                )
-            )
-            and (
-                (color_variable is None and selected_variables['color_variable'] is None)
-                or (
-                    selected_variables['color_variable']
-                    and color_variable in selected_variables['color_variable']
-                )
-            )
-            and (
-                (size_variable is None and selected_variables['size_variable'] is None)
-                or (
-                    selected_variables['size_variable']
-                    and size_variable in selected_variables['size_variable']
-                )
-            )
-            and (
-                (facet_variable is None and selected_variables['facet_variable'] is None)
-                or (
-                    selected_variables['facet_variable']
-                    and facet_variable in selected_variables['facet_variable']
                 )
             )
         ):
