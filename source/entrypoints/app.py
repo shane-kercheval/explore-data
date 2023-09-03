@@ -1021,11 +1021,6 @@ def update_controls_and_graph(  # noqa
                 title=title,
                 nbins=n_bins,
             )
-            # if x_variable in non_numeric_columns:
-            #     fig.update_xaxes(categoryorder=sort_categories)
-            #     if color_variable in non_numeric_columns:
-            #         fig.update_coloraxes(categoryorder=sort_categories)
-            #     # fig.update_coloraxes
             if x_variable in numeric_columns and bar_mode != 'group':# and color_variable is None:
                 # Adjust the bar group gap
                 fig.update_layout(barmode=bar_mode, bargap=0.05)
@@ -1401,6 +1396,7 @@ def update_bar_mode_div_style(graph_type: str) -> dict:
 
 @app.callback(
     Output('sort_categories_div', 'style'),
+    Output('top_n_categories_div', 'style'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
     Input('color_variable_dropdown', 'value'),
@@ -1409,7 +1405,7 @@ def update_bar_mode_div_style(graph_type: str) -> dict:
     State('non_numeric_columns', 'data'),
     prevent_initial_call=True,
 )
-def update_sort_categories_div_style(
+def update_categorical_controls_div_style(
         x_variable: str | None,
         y_variable: str | None,
         color_variable: str | None,
@@ -1425,8 +1421,8 @@ def update_sort_categories_div_style(
         or size_variable in non_numeric_columns
         or facet_variable in non_numeric_columns
         ):
-        return {'display': 'block'}
-    return {'display': 'none'}
+        return {'display': 'block'}, {'display': 'block'}
+    return {'display': 'none'}, {'display': 'none'}
 
 
 
