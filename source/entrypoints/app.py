@@ -240,7 +240,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     hidden=False,
                                     multi=False,
                                     clearable=False,
-                                    value='scatter',
+                                    placeholder="Select a variable above.",
                                 ),
                                 # One of 'group', 'overlay' or 'relative'
                                 # In 'relative' mode, bars are stacked above zero for positive
