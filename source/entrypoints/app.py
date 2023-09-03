@@ -81,6 +81,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     dcc.Store(id='categorical_columns'),
     dcc.Store(id='string_columns'),
     dcc.Store(id='boolean_columns'),
+    dcc.Store(id='category_orders_cache', data={}),
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
             dcc.Loading(type="default", children=[
@@ -259,6 +260,20 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                         {'label': 'Overlay', 'value': 'overlay'},
                                     ],
                                     value='relative',
+                                ),
+                                create_dropdown_control(
+                                    label="Sort Categories By",
+                                    id='sort_categories',
+                                    hidden=True,
+                                    multi=False,
+                                    clearable=False,
+                                    options=[
+                                        {'label': 'Label Ascending', 'value': 'category ascending'},  # noqa
+                                        {'label': 'Label Descending', 'value': 'category descending'},  # noqa
+                                        {'label': 'Value Ascending', 'value': 'total ascending'},  # noqa
+                                        {'label': 'Value Descending', 'value': 'total descending'},  # noqa
+                                    ],
+                                    value='category ascending',
                                 ),
                                 create_slider_control(
                                     label="Top N Categories",
@@ -445,6 +460,49 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
         ]),
     ]),
 ])
+
+
+def cache_category_order(cache: dict,
+        variable: str,
+        order_type: str,
+        top_n_categories: int,
+        data: pd.DataFrame,
+    ) -> dict:
+    """
+    Updates and returns the cache containing the category order for a variable.
+
+    The cache is dependant on top_n_categories because the order is different if the user selects
+    1 category vs 10 categories and the <Other> category may or may not be included.
+
+    The order is based on the order_type, which can be one of:
+        - 'category ascending': Sort the categories in ascending order
+        - 'category descending': Sort the categories in descending order
+        - 'total ascending': Sort the categories by the total in ascending order
+        - 'total descending': Sort the categories by the total in descending order
+    """
+    # TODO: test
+    # can't use a tuple as the key because tuples aren't json serializable so dash complains
+    key = f"{variable}__{order_type}__{top_n_categories}"
+    if key in cache:
+        return cache
+
+    if 'category' in order_type:
+        reverse = 'ascending' not in order_type
+        categories = sorted(
+            data[variable].unique().tolist(),
+            reverse=reverse,
+            key=lambda x: str(x),
+        )
+        cache[key] = categories
+    elif 'total' in order_type:
+        cache[key] = data[variable].\
+            value_counts(sort=True, ascending='ascending' in order_type).\
+            index.\
+            tolist()
+    else:
+        raise ValueError(f"Unknown order_type: {order_type}")
+
+    return cache
 
 
 @app.callback(
@@ -652,6 +710,7 @@ def filter_data(
     Output('visualize_graph', 'figure'),
     Output('visualize_table', 'data'),
     Output('visualize_numeric_na_removal_markdown', 'children'),
+    Output('category_orders_cache', 'data'),
     # color variable
     Output('color_variable_div', 'style'),
     Output('color_variable_dropdown', 'options'),
@@ -685,6 +744,7 @@ def filter_data(
 
     Input('graph_type_dropdown', 'options'),
     Input('graph_type_dropdown', 'value'),
+    Input('sort_categories_dropdown', 'value'),
     Input('n_bins_slider', 'value'),
     Input('opacity_slider', 'value'),
     Input('top_n_categories_slider', 'value'),
@@ -699,6 +759,7 @@ def filter_data(
     State('categorical_columns', 'data'),
     State('string_columns', 'data'),
     State('boolean_columns', 'data'),
+    State('category_orders_cache', 'data'),
     prevent_initial_call=True,
 )
 def update_controls_and_graph(  # noqa
@@ -719,6 +780,7 @@ def update_controls_and_graph(  # noqa
 
             graph_types: list[dict],
             graph_type: str,
+            sort_categories: str,
             n_bins: int,
             opacity: float,
             top_n_categories: float,
@@ -726,13 +788,14 @@ def update_controls_and_graph(  # noqa
             log_x_y_axis: list[str],
             title_textbox: str,
             data: pd.DataFrame,
-            all_columns: list[str],
+            all_columns: list[str],  # noqa: ARG001
             numeric_columns: list[str],
             non_numeric_columns: list[str],  # noqa: ARG001
-            date_columns: list[str],  # noqa: ARG001
+            date_columns: list[str],
             categorical_columns: list[str],
             string_columns: list[str],
             boolean_columns: list[str],
+            category_orders_cache: dict,
         ) -> tuple[go.Figure, dict]:
     """
     Triggered when the user selects columns from the dropdown.
@@ -755,7 +818,10 @@ def update_controls_and_graph(  # noqa
     log_variable('log_x_y_axis', log_x_y_axis)
     log_variable('graph_types', graph_types)
     log_variable('graph_type', graph_type)
-    log_variable('type(n_bins)', type(n_bins))
+    log_variable('sort_categories', sort_categories)
+    log_variable('title_textbox', title_textbox)
+    log_variable('category_orders_cache', category_orders_cache)
+    
     # log_variable('type(data)', type(data))
     # log_variable('data', data)
 
@@ -807,7 +873,8 @@ def update_controls_and_graph(  # noqa
         ):
             graph_type = graph_types[0]
 
-        # we have to decide if we are setting graph types or using something that was already selected
+        # we have to decide if we are setting graph types or using something that was already
+        # selected
 
         # selected graph config
         graph_config = next(x for x in graph_type_configs if x['name'] == graph_type)
@@ -866,6 +933,30 @@ def update_controls_and_graph(  # noqa
             numeric_na_removal_markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / len(data):.1%}`) rows removed from automatic filtering\n"  # noqa
             numeric_na_removal_markdown += "---  \n"
 
+        selected_variables = [
+            x_variable,
+            y_variable,
+            color_variable,
+            size_variable,
+            facet_variable,
+        ]
+        # determine category orders
+        for variable in selected_variables:
+            if variable is not None and variable in non_numeric_columns:
+                category_orders_cache = cache_category_order(
+                    cache=category_orders_cache,
+                    variable=variable,
+                    order_type=sort_categories,
+                    top_n_categories=top_n_categories,
+                    data=graph_data,
+                )
+        log_variable('category_orders_cache', category_orders_cache)
+        category_orders = {
+            k.split('__')[0]:v for k, v in category_orders_cache.items()
+            if k in [f"{x}__{sort_categories}__{top_n_categories}" for x in selected_variables]
+        }
+        log_variable('category_orders', category_orders)
+
         # TODO: need to convert code to string and execute string
         log("creating fig")
         if graph_type == 'scatter':
@@ -878,6 +969,7 @@ def update_controls_and_graph(  # noqa
                 opacity=opacity,
                 facet_col=facet_variable,
                 facet_col_wrap=4,
+                category_orders=category_orders,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
                 title=title,
@@ -891,6 +983,7 @@ def update_controls_and_graph(  # noqa
                 # opacity=opacity,
                 facet_col=facet_variable,
                 facet_col_wrap=4,
+                category_orders=category_orders,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
                 title=title,
@@ -922,11 +1015,17 @@ def update_controls_and_graph(  # noqa
                 # log_y bool
                 facet_col=facet_variable,
                 facet_col_wrap=4,
+                category_orders=category_orders,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
                 title=title,
                 nbins=n_bins,
             )
+            # if x_variable in non_numeric_columns:
+            #     fig.update_xaxes(categoryorder=sort_categories)
+            #     if color_variable in non_numeric_columns:
+            #         fig.update_coloraxes(categoryorder=sort_categories)
+            #     # fig.update_coloraxes
             if x_variable in numeric_columns and bar_mode != 'group':# and color_variable is None:
                 # Adjust the bar group gap
                 fig.update_layout(barmode=bar_mode, bargap=0.05)
@@ -1003,6 +1102,7 @@ def update_controls_and_graph(  # noqa
         fig,
         graph_data.iloc[0:500].to_dict('records'),
         numeric_na_removal_markdown,
+        category_orders_cache,
         # color variable
         color_variable_div,
         color_variable_dropdown,
@@ -1297,6 +1397,37 @@ def update_bar_mode_div_style(graph_type: str) -> dict:
     if graph_type in ['histogram', 'bar']:
         return {'display': 'block'}
     return {'display': 'none'}
+
+
+@app.callback(
+    Output('sort_categories_div', 'style'),
+    Input('x_variable_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
+    Input('color_variable_dropdown', 'value'),
+    Input('size_variable_dropdown', 'value'),
+    Input('facet_variable_dropdown', 'value'),
+    State('non_numeric_columns', 'data'),
+    prevent_initial_call=True,
+)
+def update_sort_categories_div_style(
+        x_variable: str | None,
+        y_variable: str | None,
+        color_variable: str | None,
+        size_variable: str | None,
+        facet_variable: str | None,
+        non_numeric_columns: list[str],
+    ) -> dict:
+    """Toggle the sort-categories div."""
+    if (
+        x_variable in non_numeric_columns
+        or y_variable in non_numeric_columns
+        or color_variable in non_numeric_columns
+        or size_variable in non_numeric_columns
+        or facet_variable in non_numeric_columns
+        ):
+        return {'display': 'block'}
+    return {'display': 'none'}
+
 
 
 
