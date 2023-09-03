@@ -250,7 +250,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 create_dropdown_control(
                                     label="Bar Mode",
                                     id='bar_mode',
-                                    hidden=False,
+                                    hidden=True,
                                     multi=False,
                                     clearable=False,
                                     options=[
@@ -927,8 +927,9 @@ def update_controls_and_graph(  # noqa
                 title=title,
                 nbins=n_bins,
             )
-            # Adjust the bar group gap
-            fig.update_layout(barmode='overlay', bargap=0.05)
+            if x_variable in numeric_columns and bar_mode != 'group':# and color_variable is None:
+                # Adjust the bar group gap
+                fig.update_layout(barmode=bar_mode, bargap=0.05)
 
         elif graph_type == 'bar':
             fig = px.bar(
@@ -1286,16 +1287,16 @@ def cache_filter_columns(  # noqa: PLR0912
     return filter_columns_cache
 
 
-# @app.callback(
-#     Output('bar_mode_div', 'style'),
-#     Input('graph_type_dropdown', 'value'),
-#     prevent_initial_call=True,
-# )
-# def update_bar_mode_div_style(graph_type: str) -> dict:
-#     """Toggle the bar mode div."""
-#     if graph_type == 'bar':
-#         return {'display': 'block'}
-#     return {'display': 'none'}
+@app.callback(
+    Output('bar_mode_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_bar_mode_div_style(graph_type: str) -> dict:
+    """Toggle the bar mode div."""
+    if graph_type in ['histogram', 'bar']:
+        return {'display': 'block'}
+    return {'display': 'none'}
 
 
 
