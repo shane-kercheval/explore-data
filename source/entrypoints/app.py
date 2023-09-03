@@ -484,6 +484,15 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                 ],
             ),
         ]),
+        dbc.Tab(label="Correlations", children=[
+            html.Br(),
+            dcc.Graph(
+                id='correlations_graph',
+                config={'staticPlot': False, 'displayModeBar': False},
+                # 3/12 because the sidebar is 3/12 of the width
+                # style={'width': '100%', 'height': f'100vw'},  # noqa
+            ),
+        ]),
     ]),
 ])
 
@@ -529,6 +538,28 @@ def cache_category_order(cache: dict,
         raise ValueError(f"Unknown order_type: {order_type}")
 
     return cache
+
+@app.callback(
+    Output('correlations_graph', 'figure'),
+    Input('original_data', 'data'),
+)
+def update_correlations_graph(data: pd.DataFrame) -> go.Figure:
+    """Triggered when the user clicks on the Load button."""
+    log_function('update_correlations_graph')
+    if data is None:
+        return {}
+    # Calculate the correlation matrix
+    correlation_matrix = data.corr(numeric_only=True, min_periods=30).round(2)
+    return px.imshow(
+        correlation_matrix,
+        x=correlation_matrix.columns,
+        y=correlation_matrix.index,
+        text_auto=True,
+        color_continuous_scale='RdBu',
+        title='Correlation Heatmap of Numeric Columns',
+        width=1_000,
+        height=800,
+    )
 
 
 @app.callback(
