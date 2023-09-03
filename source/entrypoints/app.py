@@ -354,13 +354,13 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     label="X-Axis Label",
                                     id="x_axis_label",
                                     placeholder="X-axis label",
-                                    hidden=False,
+                                    hidden=True,
                                 ),
                                 create_input_control(
                                     label="Y-Axis Label",
                                     id="y_axis_label",
                                     placeholder="Y-axis label",
-                                    hidden=False,
+                                    hidden=True,
                                 ),
                             ]),
                         ]),
@@ -1545,6 +1545,28 @@ def update_log_x_y_axis_div_style(
         return {'display': 'block'}
     return {'display': 'none'}
 
+
+@app.callback(
+    Output('x_axis_label_div', 'style'),
+    Input('x_variable_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_x_axis_label_div_style(x_variable: str | None) -> dict:
+    """Toggle the 'log x/y axis' div."""
+    if x_variable:
+        return {'width': '100%', 'display': 'block'}
+    return {'display': 'none'}
+
+@app.callback(
+    Output('y_axis_label_div', 'style'),
+    Input('y_variable_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_y_axis_label_div_style(y_variable: str | None) -> dict:
+    """Toggle the 'log x/y axis' div."""
+    if y_variable:
+        return {'width': '100%', 'display': 'block'}
+    return {'display': 'none'}
 
 
 if __name__ == '__main__':
