@@ -268,10 +268,10 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     multi=False,
                                     clearable=False,
                                     options=[
-                                        {'label': 'Label Ascending', 'value': 'category ascending'},  # noqa
-                                        {'label': 'Label Descending', 'value': 'category descending'},  # noqa
-                                        {'label': 'Value Ascending', 'value': 'total ascending'},  # noqa
-                                        {'label': 'Value Descending', 'value': 'total descending'},  # noqa
+                                        {'label': 'Ascending  - Label', 'value': 'category ascending'},  # noqa
+                                        {'label': 'Descending - Label', 'value': 'category descending'},  # noqa
+                                        {'label': 'Ascending  - # of Records', 'value': 'total ascending'},  # noqa
+                                        {'label': 'Descending - # of Records', 'value': 'total descending'},  # noqa
                                     ],
                                     value='category ascending',
                                 ),

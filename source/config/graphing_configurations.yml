@@ -202,6 +202,22 @@ configurations:
               - boolean
               - string
               - categorical
+      - name: box
+        description: Shows the distribution of {{y_variable}} across each value of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
   - selected_variables:
       x_variable:
         - numeric
@@ -213,6 +229,22 @@ configurations:
     graph_types:
       - name: histogram
         description: Shows the sum of {{x_variable}} across each value of {{y_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: box
+        description: Shows the distribution of {{x_variable}} across each value of {{y_variable}}.
         optional_variables:
           color_variable:
             types:
