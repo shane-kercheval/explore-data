@@ -278,6 +278,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 create_slider_control(
                                     label="Top N Categories",
                                     id='top_n_categories',
+                                    hidden=True,
                                     value=6,
                                     step=1,
                                     min=0,
@@ -287,6 +288,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 create_slider_control(
                                     label="# of Bins",
                                     id='n_bins',
+                                    hidden=True,
                                     min=20,
                                     max=100,
                                     step=20,
@@ -295,6 +297,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 create_slider_control(
                                     label="Opacity",
                                     id='opacity',
+                                    hidden=True,
                                     min=0,
                                     max=1,
                                     step=0.1,
@@ -302,6 +305,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 ),
                                 create_checklist_control(
                                     id='log_x_y_axis',
+                                    hidden=True,
                                     options=['Log X-Axis', 'Log Y-Axis'],
                                     value=[],
                                 ),
@@ -1424,6 +1428,47 @@ def update_categorical_controls_div_style(
         return {'display': 'block'}, {'display': 'block'}
     return {'display': 'none'}, {'display': 'none'}
 
+
+@app.callback(
+    Output('n_bins_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_n_bins_div_style(graph_type: str) -> dict:
+    """Toggle the n-bins div."""
+    if graph_type == 'histogram':
+        return {'display': 'block'}
+    return {'display': 'none'}
+
+
+@app.callback(
+    Output('opacity_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_opacity_div_style(graph_type: str) -> dict:
+    """Toggle the bar mode div."""
+    if graph_type in ['histogram', 'scatter']:
+        return {'display': 'block'}
+    return {'display': 'none'}
+
+
+@app.callback(
+    Output('log_x_y_axis_div', 'style'),
+    Input('x_variable_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
+    State('numeric_columns', 'data'),
+    prevent_initial_call=True,
+)
+def update_log_x_y_axis_div_style(
+        x_variable: str | None,
+        y_variable: str | None,
+        numeric_columns: list[str],
+    ) -> dict:
+    """Toggle the 'log x/y axis' div."""
+    if (x_variable in numeric_columns or y_variable in numeric_columns):
+        return {'display': 'block'}
+    return {'display': 'none'}
 
 
 
