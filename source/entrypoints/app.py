@@ -321,6 +321,15 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     options=['Log X-Axis', 'Log Y-Axis'],
                                     value=[],
                                 ),
+                                create_slider_control(
+                                    label="# of Facet Columns",
+                                    id='num_facet_columns',
+                                    hidden=True,
+                                    min=1,
+                                    max=10,
+                                    step=1,
+                                    value=3,
+                                ),
                             ]),
                         ]),
                     ]),
@@ -366,6 +375,24 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     label="Y-Axis Label",
                                     id="y_axis_label",
                                     placeholder="Y-axis label",
+                                    hidden=True,
+                                ),
+                                create_input_control(
+                                    label="Color Label",
+                                    id="color_label",
+                                    placeholder="Color label",
+                                    hidden=True,
+                                ),
+                                create_input_control(
+                                    label="Size Label",
+                                    id="size_label",
+                                    placeholder="Size label",
+                                    hidden=True,
+                                ),
+                                create_input_control(
+                                    label="Facet Label",
+                                    id="facet_label",
+                                    placeholder="Facet label",
                                     hidden=True,
                                 ),
                             ]),
@@ -795,6 +822,7 @@ def filter_data(
     Input('top_n_categories_slider', 'value'),
     Input('bar_mode_dropdown', 'value'),
     Input('log_x_y_axis_checklist', 'value'),
+    Input('num_facet_columns_slider', 'value'),
     Input('filtered_data', 'data'),
     Input('labels-apply-button', 'n_clicks'),
     State('all_columns', 'data'),
@@ -809,6 +837,9 @@ def filter_data(
     State('subtitle_input', 'value'),
     State('x_axis_label_input', 'value'),
     State('y_axis_label_input', 'value'),
+    State('color_label_input', 'value'),
+    State('size_label_input', 'value'),
+    State('facet_label_input', 'value'),
     prevent_initial_call=True,
 )
 def update_controls_and_graph(  # noqa
@@ -836,6 +867,7 @@ def update_controls_and_graph(  # noqa
             top_n_categories: float,
             bar_mode: str,
             log_x_y_axis: list[str],
+            num_facet_columns: int,
 
             data: pd.DataFrame,
             labels_apply_button: int,  # noqa: ARG001
@@ -851,6 +883,9 @@ def update_controls_and_graph(  # noqa
             subtitle_input: str | None,
             x_axis_label_input: str | None,
             y_axis_label_input: str | None,
+            color_label_input: str | None,
+            size_label_input: str | None,
+            facet_label_input: str | None,
         ) -> tuple[go.Figure, dict]:
     """
     Triggered when the user selects columns from the dropdown.
@@ -872,6 +907,7 @@ def update_controls_and_graph(  # noqa
     log_variable('top_n_categories', top_n_categories)
     log_variable('bar_mode', bar_mode)
     log_variable('log_x_y_axis', log_x_y_axis)
+    log_variable('num_facet_columns', num_facet_columns)
     log_variable('graph_types', graph_types)
     log_variable('graph_type', graph_type)
     log_variable('sort_categories', sort_categories)
@@ -879,6 +915,9 @@ def update_controls_and_graph(  # noqa
     log_variable('subtitle_input', subtitle_input)
     log_variable('x_axis_label_input', x_axis_label_input)
     log_variable('y_axis_label_input', y_axis_label_input)
+    log_variable('color_label_input', color_label_input)
+    log_variable('size_label_input', size_label_input)
+    log_variable('facet_label_input', facet_label_input)
     log_variable('category_orders_cache', category_orders_cache)
     # log_variable('type(data)', type(data))
     # log_variable('data', data)
@@ -965,6 +1004,12 @@ def update_controls_and_graph(  # noqa
             graph_labels[x_variable] = x_axis_label_input
         if y_variable and y_axis_label_input:
             graph_labels[y_variable] = y_axis_label_input
+        if color_variable and color_label_input:
+            graph_labels[color_variable] = color_label_input
+        if size_variable and size_label_input:
+            graph_labels[size_variable] = size_label_input
+        if facet_variable and facet_label_input:
+            graph_labels[facet_variable] = facet_label_input
 
 
         columns = [x_variable, y_variable, z_variable, color_variable, size_variable, facet_variable]
@@ -1039,7 +1084,7 @@ def update_controls_and_graph(  # noqa
                 size=size_variable,
                 opacity=opacity,
                 facet_col=facet_variable,
-                facet_col_wrap=4,
+                facet_col_wrap=num_facet_columns,
                 category_orders=category_orders,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
@@ -1070,7 +1115,7 @@ def update_controls_and_graph(  # noqa
                 color=color_variable,
                 # opacity=opacity,
                 facet_col=facet_variable,
-                facet_col_wrap=4,
+                facet_col_wrap=num_facet_columns,
                 category_orders=category_orders,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
@@ -1085,7 +1130,7 @@ def update_controls_and_graph(  # noqa
                 color=color_variable,
                 # opacity=opacity,
                 facet_col=facet_variable,
-                facet_col_wrap=4,
+                facet_col_wrap=num_facet_columns,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
                 title=title,
@@ -1104,7 +1149,7 @@ def update_controls_and_graph(  # noqa
                 # log_x bool
                 # log_y bool
                 facet_col=facet_variable,
-                facet_col_wrap=4,
+                facet_col_wrap=num_facet_columns,
                 category_orders=category_orders,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
@@ -1125,7 +1170,7 @@ def update_controls_and_graph(  # noqa
                 # opacity=opacity,
                 barmode=bar_mode,
                 facet_col=facet_variable,
-                facet_col_wrap=4,
+                facet_col_wrap=num_facet_columns,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
                 title=title,
@@ -1631,6 +1676,17 @@ def update_log_x_y_axis_div_style(
         return {'display': 'block'}
     return {'display': 'none'}
 
+@app.callback(
+    Output('num_facet_columns_div', 'style'),
+    Input('facet_variable_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_num_facet_columns_div_style(facet_variable: str | None) -> dict:
+    """Toggle the 'log x/y axis' div."""
+    if facet_variable:
+        return {'display': 'block'}
+    return {'display': 'none'}
+
 
 @app.callback(
     Output('x_axis_label_div', 'style'),
@@ -1652,6 +1708,43 @@ def update_x_axis_label_div_style(x_variable: str | None) -> dict:
 def update_y_axis_label_div_style(y_variable: str | None) -> dict:
     """Toggle the 'log x/y axis' div."""
     if y_variable:
+        return {'width': '100%', 'display': 'block'}
+    return {'display': 'none'}
+
+
+@app.callback(
+    Output('color_label_div', 'style'),
+    Input('color_variable_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_color_label_div_style(color_variable: str | None) -> dict:
+    """Toggle the color label div."""
+    if color_variable:
+        return {'width': '100%', 'display': 'block'}
+    return {'display': 'none'}
+
+
+# there doesn't seem to be a legend for size
+# @app.callback(
+#     Output('size_label_div', 'style'),
+#     Input('size_variable_dropdown', 'value'),
+#     prevent_initial_call=True,
+# )
+# def update_size_label_div_style(size_variable: str | None) -> dict:
+#     """Toggle the size label div."""
+#     if size_variable:
+#         return {'width': '100%', 'display': 'block'}
+#     return {'display': 'none'}
+
+
+@app.callback(
+    Output('facet_label_div', 'style'),
+    Input('facet_variable_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_facet_label_div_style(facet_variable: str | None) -> dict:
+    """Toggle the facet label div."""
+    if facet_variable:
         return {'width': '100%', 'display': 'block'}
     return {'display': 'none'}
 
