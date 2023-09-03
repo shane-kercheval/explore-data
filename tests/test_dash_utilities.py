@@ -239,6 +239,23 @@ def test_get_graph_config__numeric(graphing_configurations):  # noqa
     assert 'description' in config['graph_types'][0]
     assert 'optional_variables' in config['graph_types'][0]
 
+    config = get_graph_config(
+        configurations=graphing_configurations,
+        x_variable=None,
+        y_variable='numeric',
+    )
+    assert isinstance(config, dict)
+    assert 'numeric' in config['selected_variables']['y_variable']
+    assert config['selected_variables']['x_variable'] is None
+
+    assert isinstance(config['graph_types'], list)
+    assert len(config['graph_types']) > 0
+    assert isinstance(config['graph_types'][0], dict)
+    assert 'name' in config['graph_types'][0]
+    assert config['graph_types'][0]['name'] == 'box'
+    assert 'description' in config['graph_types'][0]
+    assert 'optional_variables' in config['graph_types'][0]
+
 def test_get_graph_config__numeric_numeric(graphing_configurations):  # noqa
     config = get_graph_config(
         configurations=graphing_configurations,
@@ -277,6 +294,24 @@ def test_get_graph_config__nonnumeric(x_variable, graphing_configurations):  # n
     assert 'description' in config['graph_types'][0]
     assert 'optional_variables' in config['graph_types'][0]
 
+    config = get_graph_config(
+        configurations=graphing_configurations,
+        x_variable=None,
+        y_variable=x_variable,
+    )
+    # test variables
+    assert isinstance(config, dict)
+    assert x_variable in config['selected_variables']['y_variable']
+    assert config['selected_variables']['x_variable'] is None
+    # test graph types
+    assert isinstance(config['graph_types'], list)
+    assert len(config['graph_types']) > 0
+    assert isinstance(config['graph_types'][0], dict)
+    assert 'name' in config['graph_types'][0]
+    assert config['graph_types'][0]['name'] == 'histogram'
+    assert 'description' in config['graph_types'][0]
+    assert 'optional_variables' in config['graph_types'][0]
+
 @pytest.mark.parametrize('x_variable', ['date', 'boolean', 'string', 'categorical'])
 def test_get_graph_config__nonnumeric_numeric(x_variable, graphing_configurations):  # noqa
     config = get_graph_config(
@@ -294,5 +329,49 @@ def test_get_graph_config__nonnumeric_numeric(x_variable, graphing_configuration
     assert isinstance(config['graph_types'][0], dict)
     assert 'name' in config['graph_types'][0]
     assert config['graph_types'][0]['name'] == 'histogram'
+    assert 'description' in config['graph_types'][0]
+    assert 'optional_variables' in config['graph_types'][0]
+
+
+@pytest.mark.parametrize('x_variable', ['date', 'boolean', 'string', 'categorical'])
+@pytest.mark.parametrize('y_variable', ['date', 'boolean', 'string', 'categorical'])
+def test_get_graph_config__nonnumeric_nonnumeric(x_variable, y_variable, graphing_configurations):  # noqa
+    config = get_graph_config(
+        configurations=graphing_configurations,
+        x_variable=x_variable,
+        y_variable=y_variable,
+    )
+    # test variables
+    assert isinstance(config, dict)
+    assert x_variable in config['selected_variables']['x_variable']
+    assert y_variable in config['selected_variables']['y_variable']
+    # test graph types
+    assert isinstance(config['graph_types'], list)
+    assert len(config['graph_types']) > 0
+    assert isinstance(config['graph_types'][0], dict)
+    assert 'name' in config['graph_types'][0]
+    assert config['graph_types'][0]['name'] == 'heatmap'
+    assert 'description' in config['graph_types'][0]
+    assert 'optional_variables' in config['graph_types'][0]
+
+
+def test_get_graph_config__z_variable(graphing_configurations):  # noqa
+    config = get_graph_config(
+        configurations=graphing_configurations,
+        x_variable='numeric',
+        y_variable='numeric',
+        z_variable='numeric',
+    )
+    # test variables
+    assert isinstance(config, dict)
+    assert 'numeric' in config['selected_variables']['x_variable']
+    assert 'numeric' in config['selected_variables']['y_variable']
+    assert 'numeric' in config['selected_variables']['z_variable']
+    # test graph types
+    assert isinstance(config['graph_types'], list)
+    assert len(config['graph_types']) > 0
+    assert isinstance(config['graph_types'][0], dict)
+    assert 'name' in config['graph_types'][0]
+    assert config['graph_types'][0]['name'] == 'scatter-3d'
     assert 'description' in config['graph_types'][0]
     assert 'optional_variables' in config['graph_types'][0]

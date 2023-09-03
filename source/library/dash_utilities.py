@@ -148,7 +148,9 @@ def get_variable_type(variable: str | None, options: dict) -> str | None:
 def get_graph_config(
           configurations: list[dict],
           x_variable: str | None,
-          y_variable: str | None) -> dict:
+          y_variable: str | None,
+          z_variable: str | None = None,
+          ) -> dict:
     """
     Takes a list of configurations and returns the matching configuration based on the selected x,
     y, color, size, and facet variables. If no matching configuration is found, then an error is
@@ -174,6 +176,20 @@ def get_graph_config(
                 or (
                     selected_variables['y_variable']
                     and y_variable in selected_variables['y_variable']
+                )
+            )
+            and (
+                (
+                    z_variable is None
+                    and (
+                        'z_variable' not in selected_variables
+                        or selected_variables['z_variable'] is None
+                    )
+                )
+                or (
+                    'z_variable' in selected_variables
+                    and selected_variables['z_variable']
+                    and z_variable in selected_variables['z_variable']
                 )
             )
         ):

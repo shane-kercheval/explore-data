@@ -173,6 +173,12 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     placeholder="Select a variable",
                                 ),
                                 create_dropdown_control(
+                                    label="Z variable",
+                                    id="z_variable",
+                                    placeholder="Select a variable",
+                                    hidden=True,
+                                ),
+                                create_dropdown_control(
                                     label="Color variable",
                                     id="color_variable",
                                     placeholder="Select a variable",
@@ -539,32 +545,11 @@ def cache_category_order(cache: dict,
 
     return cache
 
-@app.callback(
-    Output('correlations_graph', 'figure'),
-    Input('original_data', 'data'),
-)
-def update_correlations_graph(data: pd.DataFrame) -> go.Figure:
-    """Triggered when the user clicks on the Load button."""
-    log_function('update_correlations_graph')
-    if data is None:
-        return {}
-    # Calculate the correlation matrix
-    correlation_matrix = data.corr(numeric_only=True, min_periods=30).round(2)
-    return px.imshow(
-        correlation_matrix,
-        x=correlation_matrix.columns,
-        y=correlation_matrix.index,
-        text_auto=True,
-        color_continuous_scale='RdBu',
-        title='Correlation Heatmap of Numeric Columns',
-        width=1_000,
-        height=800,
-    )
-
 
 @app.callback(
     Output('x_variable_dropdown', 'options'),
     Output('y_variable_dropdown', 'options'),
+    Output('z_variable_dropdown', 'options'),
     Output('filter_columns_dropdown', 'options'),
     Output('filter_columns_cache', 'data', allow_duplicate=True),
     Output('dynamic-filter-controls', 'children', allow_duplicate=True),
@@ -599,6 +584,7 @@ def load_data(  # noqa
     log_function('load_data')
     x_variable_dropdown = []
     y_variable_dropdown = []
+    z_variable_dropdown = []
     filter_columns_dropdown = []
     filter_columns_cache = None
     dynamic_filter_controls = None
@@ -700,10 +686,10 @@ def load_data(  # noqa
         else:
             non_numeric_summary = None
 
-        options = all_columns
-        x_variable_dropdown = options
-        y_variable_dropdown = options
-        filter_columns_dropdown = options
+        x_variable_dropdown = all_columns
+        y_variable_dropdown = all_columns
+        z_variable_dropdown = numeric_columns
+        filter_columns_dropdown = all_columns
         table_uploaded_data = [
             dcc.Markdown("#### Sample of Uploaded Data (first 500 rows):"),
             dash_table.DataTable(
@@ -721,6 +707,7 @@ def load_data(  # noqa
     return (
         x_variable_dropdown,
         y_variable_dropdown,
+        z_variable_dropdown,
         filter_columns_dropdown,
         filter_columns_cache,
         dynamic_filter_controls,
@@ -786,6 +773,7 @@ def filter_data(
     # INPUTS
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
+    Input('z_variable_dropdown', 'value'),
     # color variable
     Input('color_variable_div', 'style'),
     Input('color_variable_dropdown', 'options'),
@@ -826,6 +814,7 @@ def filter_data(
 def update_controls_and_graph(  # noqa
             x_variable: str | None,
             y_variable: str | None,
+            z_variable: str | None,
             # color variable
             color_variable_div: dict,
             color_variable_dropdown: list[str],
@@ -874,6 +863,7 @@ def update_controls_and_graph(  # noqa
     log_variable('triggered_id', ctx.triggered_id)
     log_variable('x_variable', x_variable)
     log_variable('y_variable', y_variable)
+    log_variable('z_variable', z_variable)
     log_variable('color_variable', color_variable)
     log_variable('size_variable', size_variable)
     log_variable('facet_variable', facet_variable)
@@ -927,6 +917,7 @@ def update_controls_and_graph(  # noqa
             configurations=GRAPH_CONFIGS['configurations'],
             x_variable=get_variable_type(variable=x_variable, options=columns_by_type),
             y_variable=get_variable_type(variable=y_variable, options=columns_by_type),
+            z_variable=get_variable_type(variable=z_variable, options=columns_by_type),
         )
         log_variable('graph_config', graph_config)
         graph_type_configs = graph_config['graph_types']
@@ -937,7 +928,7 @@ def update_controls_and_graph(  # noqa
          # selected
         if (
             graph_type not in graph_types
-            or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown']
+            or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown', 'z_variable_dropdown']  # noqa
         ):
             graph_type = graph_types[0]
 
@@ -961,6 +952,8 @@ def update_controls_and_graph(  # noqa
                 title = title.replace('{{x_variable}}', f"`{x_variable}`")
             if y_variable:
                 title = title.replace('{{y_variable}}', f"`{y_variable}`")
+            if z_variable:
+                title = title.replace('{{z_variable}}', f"`{z_variable}`")
             if color_variable:
                 title = title.replace('{{color_variable}}', f"`{color_variable}`")
             if size_variable:
@@ -974,7 +967,7 @@ def update_controls_and_graph(  # noqa
             graph_labels[y_variable] = y_axis_label_input
 
 
-        columns = [x_variable, y_variable, color_variable, size_variable, facet_variable]
+        columns = [x_variable, y_variable, z_variable, color_variable, size_variable, facet_variable]
         columns = [col for col in columns if col is not None]
         columns = list(set(columns))
         graph_data = data[columns].copy()
@@ -1013,6 +1006,7 @@ def update_controls_and_graph(  # noqa
         selected_variables = [
             x_variable,
             y_variable,
+            z_variable,
             color_variable,
             size_variable,
             facet_variable,
@@ -1049,6 +1043,21 @@ def update_controls_and_graph(  # noqa
                 category_orders=category_orders,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
+                title=title,
+                labels=graph_labels,
+            )
+        elif graph_type == 'scatter-3d':
+            fig = px.scatter_3d(
+                graph_data,
+                x=x_variable,
+                y=y_variable,
+                z=z_variable,
+                color=color_variable,
+                size=size_variable,
+                opacity=opacity,
+                log_x='Log X-Axis' in log_x_y_axis,
+                log_y='Log Y-Axis' in log_x_y_axis,
+                # TODO LOG_z
                 title=title,
                 labels=graph_labels,
             )
@@ -1199,6 +1208,31 @@ def update_controls_and_graph(  # noqa
 
 
 @app.callback(
+    Output('correlations_graph', 'figure'),
+    Input('original_data', 'data'),
+)
+def update_correlations_graph(data: pd.DataFrame) -> go.Figure:
+    """Triggered when the user clicks on the Load button."""
+    log_function('update_correlations_graph')
+    if data is None:
+        return {}
+    # Calculate the correlation matrix
+    correlation_matrix = data.corr(numeric_only=True, min_periods=30).round(2)
+    return px.imshow(
+        correlation_matrix,
+        x=correlation_matrix.columns,
+        y=correlation_matrix.index,
+        text_auto=True,
+        color_continuous_scale='RdBu_r',
+        zmin=-1,
+        zmax=1,
+        title='Correlation Heatmap of Numeric Columns',
+        width=1_000,
+        height=800,
+    )
+
+
+@app.callback(
     Output('x_variable_dropdown', 'value'),
     Output('y_variable_dropdown', 'value'),
     Input('clear-settings-button', 'n_clicks'),
@@ -1238,7 +1272,6 @@ def clear_labels(n_clicks: int) -> str:
     log_function('Clear Labels')
     log_variable('n_clicks', n_clicks)
     return '', '', '', ''
-
 
 
 @app.callback(
@@ -1505,6 +1538,27 @@ def update_bar_mode_div_style(graph_type: str) -> dict:
 
 
 @app.callback(
+    Output('z_variable_div', 'style'),
+    Output('z_variable_dropdown', 'value'),
+    Input('x_variable_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
+    State('numeric_columns', 'data'),
+    prevent_initial_call=True,
+)
+def update_z_variable_dropdown_style(
+        x_variable: str | None,
+        y_variable: str | None,
+        numeric_columns: list[str],
+    ) -> dict:
+    """Toggle the z-variable dropdown."""
+    log('asdfasfdasdfasdfasdfasdfasfsadf')
+    if x_variable in numeric_columns and y_variable in numeric_columns:
+        log('asdfasfdasdfasdfasdfasdfasfsadf')
+        return {'display': 'block'}, None
+    return {'display': 'none'}, None
+
+
+@app.callback(
     Output('sort_categories_div', 'style'),
     Output('top_n_categories_div', 'style'),
     Input('x_variable_dropdown', 'value'),
@@ -1587,6 +1641,7 @@ def update_x_axis_label_div_style(x_variable: str | None) -> dict:
     if x_variable:
         return {'width': '100%', 'display': 'block'}
     return {'display': 'none'}
+
 
 @app.callback(
     Output('y_axis_label_div', 'style'),

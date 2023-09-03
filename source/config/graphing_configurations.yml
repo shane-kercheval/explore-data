@@ -212,6 +212,27 @@ configurations:
               - categorical
   - selected_variables:
       x_variable:
+        - numeric
+      y_variable:
+        - numeric
+      z_variable:
+        - numeric
+    graph_types:
+      - name: scatter-3d
+        description: Shows the relationship between {{x_variable}}, {{y_variable}}, and {{z_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          size_variable:
+            types:
+              - numeric
+  - selected_variables:
+      x_variable:
         - date
         - boolean
         - string
