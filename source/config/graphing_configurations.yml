@@ -204,6 +204,31 @@ configurations:
               - categorical
   - selected_variables:
       x_variable:
+        - numeric
+      y_variable:
+        - date
+        - boolean
+        - string
+        - categorical
+    graph_types:
+      - name: histogram
+        description: Shows the sum of {{x_variable}} across each value of {{y_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+  - selected_variables:
+      x_variable:
         - date
         - boolean
         - string
@@ -214,6 +239,9 @@ configurations:
         - string
         - categorical
     graph_types:
+      - name: heatmap
+        description: heatmap of counts tbd
+        optional_variables:
       - name: histogram
         description: TBD...
         optional_variables:
