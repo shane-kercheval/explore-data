@@ -217,3 +217,31 @@ def create_date_range_control(
             style={'width': '100%'},
         ),
     )
+
+
+
+def create_input_control(
+        label: str,
+        id: str,  # noqa: A002
+        hidden: bool = False,
+        value: str | None = None,
+        placeholder: str | None = None,
+        component_id: dict | None = None,
+        ) -> html.Div:
+    """Create a dropdown control."""
+    if component_id is None:
+        component_id = f'{id}_input'
+    else:
+        assert isinstance(component_id, dict)
+
+    return create_control(
+        label=label,
+        id=id,
+        hidden=hidden,
+        component=dcc.Input(
+            id=component_id,
+            value=value,
+            placeholder=placeholder,
+            style={'width': '100%'},
+        ),
+    )

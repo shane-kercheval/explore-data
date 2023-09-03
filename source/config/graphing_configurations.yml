@@ -1,0 +1,442 @@
+# this file defines the different configurations for possible graphs based on the selected columns
+configurations:
+  # selected_variables: the variables that are selected by the user
+  # this is used to determine which graph types are possible
+  # variables can be of type: numeric, date, boolean, string, categorical
+  # variables are lists because some graphs can be made with multiple types of variables
+  # graph_types: the types of graphs that are possible with the selected variables
+  # each graph type has a description and a list of optional variables
+  # optional variables are variables that can be added to the graph and define the possible values
+  # for that the dropdown list will contain
+  - selected_variables:
+      x_variable:
+        - numeric
+      y_variable:
+    graph_types:
+      - name: box
+        description: Shows the distribution of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: histogram
+        description: Shows the distribution of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: scatter
+        description: Shows the relationship between {{x_variable}} and the index/order.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          size_variable:
+            types:
+              - numeric
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: line
+        description: Line graph of {{x_variable}} and the index/order.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          size_variable:
+            types:
+              - numeric
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+  - selected_variables:
+      x_variable:
+      y_variable:
+        - numeric
+    graph_types:
+      - name: box
+        description: Shows the distribution of {{y_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: histogram
+        description: Shows the distribution of {{y_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: scatter
+        description: Shows the relationship between {{y_variable}} and the index/order.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          size_variable:
+            types:
+              - numeric
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: line
+        description: Line graph of {{y_variable}} and the index/order.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          size_variable:
+            types:
+              - numeric
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+  - selected_variables:
+      x_variable:
+        - numeric
+      y_variable:
+        - numeric
+    graph_types:
+      - name: scatter
+        description: Shows the relationship between {{x_variable}} and {{y_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          size_variable:
+            types:
+              - numeric
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: box
+        description: Shows the distribution of {{y_variable}} values across {{x_variable}} values.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: histogram
+        description: Shows the distribution of the sum of {{y_variable}} values across {{x_variable}} values.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+              - numeric
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+  - selected_variables:
+      x_variable:
+        - numeric
+      y_variable:
+        - numeric
+      z_variable:
+        - numeric
+    graph_types:
+      - name: scatter-3d
+        description: Shows the relationship between {{x_variable}}, {{y_variable}}, and {{z_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          size_variable:
+            types:
+              - numeric
+  - selected_variables:
+      x_variable:
+        - date
+        - boolean
+        - string
+        - categorical
+      y_variable:
+    graph_types:
+      - name: histogram
+        description: Shows the counts of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: bar
+        description: Shows the counts of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+  - selected_variables:
+      x_variable:
+      y_variable:
+        - date
+        - boolean
+        - string
+        - categorical
+    graph_types:
+      - name: histogram
+        description: Shows the counts of {{y_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: bar
+        description: Shows the counts of {{y_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+  - selected_variables:
+      x_variable:
+        - date
+        - boolean
+        - string
+        - categorical
+      y_variable:
+        - numeric
+    graph_types:
+      - name: histogram
+        description: Shows the sum of {{y_variable}} across each value of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: box
+        description: Shows the distribution of {{y_variable}} across each value of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+  - selected_variables:
+      x_variable:
+        - numeric
+      y_variable:
+        - date
+        - boolean
+        - string
+        - categorical
+    graph_types:
+      - name: histogram
+        description: Shows the sum of {{x_variable}} across each value of {{y_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: box
+        description: Shows the distribution of {{x_variable}} across each value of {{y_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+  - selected_variables:
+      x_variable:
+        - date
+        - boolean
+        - string
+        - categorical
+      y_variable:
+        - date
+        - boolean
+        - string
+        - categorical
+    graph_types:
+      - name: heatmap
+        description: heatmap of counts tbd
+        optional_variables:
+      - name: histogram
+        description: TBD...
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: bar
+        description: TBD...
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical

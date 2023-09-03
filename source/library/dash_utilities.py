@@ -123,3 +123,81 @@ def filter_data_from_ui_control(  # noqa: PLR0915
     log(f"{len(filtered_data):,} rows remaining after filtering")
 
     return filtered_data, markdown_text, f"""```\n{code}\n```"""
+
+
+def get_variable_type(variable: str | None, options: dict) -> str | None:
+    """
+    Takes a variable name and returns the type of the variable based on the options.
+    The type will be one of 'numeric', 'date', 'categorical', 'string', or 'boolean', which will
+    be associated with the keys in `options`. The values in option are lists of column types that
+    match the key. For example, `options['numeric']` is a list of all numeric columns in the
+    dataset.
+    If the variable is None, then None is returned. If the variable is not found in the options,
+    then an error is raised.
+    """
+    if variable is None:
+        return None
+
+    for key, value in options.items():
+        if variable in value:
+            return key
+
+    raise ValueError(f"Unknown dtype for column `{variable}`")
+
+
+def get_graph_config(
+          configurations: list[dict],
+          x_variable: str | None,
+          y_variable: str | None,
+          z_variable: str | None = None,
+          ) -> dict:
+    """
+    Takes a list of configurations and returns the matching configuration based on the selected x,
+    y, color, size, and facet variables. If no matching configuration is found, then an error is
+    raised. If more than one matching configuration is found, then an error is raised.
+    """
+    if (x_variable is None and y_variable is None):
+        return []
+
+    matching_configs = []
+
+    for config in configurations:
+        selected_variables = config['selected_variables']
+        if (
+            (
+                (x_variable is None and selected_variables['x_variable'] is None)
+                or (
+                    selected_variables['x_variable']
+                    and x_variable in selected_variables['x_variable']
+                )
+            )
+            and (
+                (y_variable is None and selected_variables['y_variable'] is None)
+                or (
+                    selected_variables['y_variable']
+                    and y_variable in selected_variables['y_variable']
+                )
+            )
+            and (
+                (
+                    z_variable is None
+                    and (
+                        'z_variable' not in selected_variables
+                        or selected_variables['z_variable'] is None
+                    )
+                )
+                or (
+                    'z_variable' in selected_variables
+                    and selected_variables['z_variable']
+                    and z_variable in selected_variables['z_variable']
+                )
+            )
+        ):
+            matching_configs.append(config)
+
+    if len(matching_configs) == 0:
+        raise ValueError("No matching configurations found.")
+    if len(matching_configs) > 1:
+        raise ValueError("More than one matching configuration found.")
+
+    return matching_configs[0]

@@ -1,9 +1,14 @@
 """Test fixtures for the project."""
+import os
+from dotenv import load_dotenv
 import pytest
 import pandas as pd
 import numpy as np
 from datetime import datetime
 
+import yaml
+
+load_dotenv()
 
 @pytest.fixture()
 def mock_data1() -> pd.DataFrame:
@@ -25,7 +30,6 @@ def mock_data1() -> pd.DataFrame:
         'dates': [datetime(2023, 8, 1).date(), datetime(2023, 8, 15).date(), datetime(2023, 9, 1).date()],  # noqa
         'dates_with_missing': [pd.NaT, datetime(2023, 8, 15).date(), datetime(2023, 9, 1).date()],
     })
-
 
 @pytest.fixture()
 def mock_data2() -> pd.DataFrame:
@@ -53,3 +57,10 @@ def mock_data2() -> pd.DataFrame:
         'datetimes_with_missing': pd.to_datetime(['2023-01-01 01:01:01', '2023-01-02 02:02:02', np.nan, '2023-01-04 04:04:04', '2023-01-05 05:05:05']),  # noqa
         'datetimes_with_missing2': pd.to_datetime([None, '2023-01-02 02:02:02', np.nan, '2023-01-04 04:04:04', '2023-01-05 05:05:05']),  # noqa
     })
+
+@pytest.fixture()
+def graphing_configurations() -> dict:
+    """Load graphing configurations from yaml file."""
+    os.getcwd()
+    with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_configurations.yml')) as f:  # noqa
+        return yaml.safe_load(f)['configurations']
