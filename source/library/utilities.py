@@ -89,7 +89,7 @@ def create_random_dataframe(num_rows: int, sporadic_missing: bool = False) -> pd
         'DateTimes': date_times,
         'DateStrings': date_strings,
         'DateHomeStrings': date_home_strings,
-        'Categories': categories,
+        'Categories': pd.Categorical(categories, categories=['Category A', 'Category B', 'Category C']),  # noqa
         'Categories2': categories.copy(),
         'Booleans': booleans,
         'Booleans1': booleans.copy(),
