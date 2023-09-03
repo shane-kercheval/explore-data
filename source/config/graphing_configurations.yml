@@ -18,45 +18,69 @@ configurations:
         optional_variables:
           color_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
           facet_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
       - name: histogram
         description: Shows the distribution of {{x_variable}}.
         optional_variables:
           color_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
           facet_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
       - name: scatter
         description: Shows the relationship between {{x_variable}} and the index/order.
         optional_variables:
           color_variable:
             types:
               - numeric
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
           size_variable:
             types:
               - numeric
           facet_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
       - name: line
         description: Line graph of {{x_variable}} and the index/order.
         optional_variables:
           color_variable:
             types:
               - numeric
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
           size_variable:
             types:
               - numeric
           facet_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
   - selected_variables:
       x_variable:
         - numeric
@@ -69,32 +93,50 @@ configurations:
           color_variable:
             types:
               - numeric
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
           size_variable:
             types:
               - numeric
           facet_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
       - name: box
         description: Shows the distribution of {{y_variable}} values across {{x_variable}} values.
         optional_variables:
           color_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
           facet_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
       - name: histogram
         description: Shows the distribution of the sum of {{y_variable}} values across {{x_variable}} values.
         optional_variables:
           color_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
               - numeric
           facet_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
   - selected_variables:
       x_variable:
         - date
@@ -109,10 +151,16 @@ configurations:
           color_variable:
             types:
               - numeric
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
           facet_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
   - selected_variables:
       x_variable:
         - date
@@ -128,7 +176,13 @@ configurations:
           color_variable:
             types:
               - numeric
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical
           facet_variable:
             types:
-              - non_numeric
+              - date
+              - boolean
+              - string
+              - categorical

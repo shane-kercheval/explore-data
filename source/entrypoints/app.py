@@ -923,6 +923,7 @@ def update_controls_and_graph(  # noqa
                 color=color_variable,
                 opacity=opacity,
                 barmode=bar_mode,
+                # bargap=0.1,
                 # histnorm='percent',
                 # log_x bool
                 # log_y bool
@@ -933,6 +934,9 @@ def update_controls_and_graph(  # noqa
                 title=title,
                 nbins=n_bins,
             )
+            # Adjust the bar group gap
+            fig.update_layout(barmode='overlay', bargap=0.05)
+
         elif graph_type == 'bar':
             fig = px.bar(
                 graph_data,
@@ -956,9 +960,18 @@ def update_controls_and_graph(  # noqa
         optional_variables = graph_config['optional_variables']
         log_variable('optional_variables', optional_variables)
 
+
+        def get_columns_from_config(variable: str | None) -> list[str]:
+            allowed_types = optional_variables[variable]['types']
+            types = []
+            for allowed_type in allowed_types:
+                types.extend(type_options[allowed_type])
+            return types
+
+
         if 'color_variable' in optional_variables:
             color_variable_div = {'display': 'block'}
-            color_variable_dropdown = all_columns
+            color_variable_dropdown = get_columns_from_config('color_variable')
         else:
             color_variable_div = {'display': 'none'}
             color_variable_dropdown = []
@@ -966,7 +979,7 @@ def update_controls_and_graph(  # noqa
 
         if 'size_variable' in optional_variables:
             size_variable_div = {'display': 'block'}
-            size_variable_dropdown = all_columns
+            size_variable_dropdown = get_columns_from_config('size_variable')
         else:
             size_variable_div = {'display': 'none'}
             size_variable_dropdown = []
@@ -974,7 +987,7 @@ def update_controls_and_graph(  # noqa
 
         if 'facet_variable' in optional_variables:
             facet_variable_div = {'display': 'block'}
-            facet_variable_dropdown = non_numeric_columns
+            facet_variable_dropdown = get_columns_from_config('facet_variable')
         else:
             facet_variable_div = {'display': 'none'}
             facet_variable_dropdown = []
