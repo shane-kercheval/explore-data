@@ -772,7 +772,6 @@ def update_controls_and_graph(  # noqa
     if (
         (x_variable or y_variable)
         and data is not None and len(data) > 0
-        and graph_type
         and (not x_variable or x_variable in data.columns)
         and (not y_variable or y_variable in data.columns)
         and (not color_variable or color_variable in data.columns)
@@ -1020,6 +1019,7 @@ def update_controls_and_graph(  # noqa
         graph_type,
     )
 
+
 @app.callback(
     Output('x_variable_dropdown', 'value'),
     Output('y_variable_dropdown', 'value'),
@@ -1033,6 +1033,7 @@ def clear_settings(n_clicks: int, all_columns: list[str]) -> str:
     log_variable('n_clicks', n_clicks)
     log_variable('all_columns', all_columns)
     return None, None
+
 
 @app.callback(
     Output("collapse-variables", "is_open"),
@@ -1283,6 +1284,19 @@ def cache_filter_columns(  # noqa: PLR0912
 
     log(f"filter_columns_cache: {filter_columns_cache}")
     return filter_columns_cache
+
+
+# @app.callback(
+#     Output('bar_mode_div', 'style'),
+#     Input('graph_type_dropdown', 'value'),
+#     prevent_initial_call=True,
+# )
+# def update_bar_mode_div_style(graph_type: str) -> dict:
+#     """Toggle the bar mode div."""
+#     if graph_type == 'bar':
+#         return {'display': 'block'}
+#     return {'display': 'none'}
+
 
 
 if __name__ == '__main__':
