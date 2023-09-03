@@ -15,6 +15,7 @@ import dash_bootstrap_components as dbc
 from source.library.dash_ui import (
     create_dropdown_control,
     create_checklist_control,
+    create_input_control,
     create_slider_control,
     create_min_max_control,
     create_date_range_control,
@@ -327,24 +328,40 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         ),
                         dbc.Collapse(id="collapse-other-options", is_open=True, children=[
                             dbc.CardBody([
-                                html.Div(
-                                    id='title_div',
-                                    className=CLASS__GRAPH_PANEL_SECTION,
-                                    # style={'display': 'none'},
-                                    children=[
-                                        html.Label(
-                                            "Title:",
-                                            className=CLASS__GRAPH_PANEL_SECTION + '_label',
-                                        ),
-                                        dcc.Input(
-                                            id='title_textbox',
-                                            # multi=False,
-                                            value=None,
-                                            placeholder="Title",
-                                            style={'width': '100%'},
-                                        ),
-                                        html.Br(),
-                                ]),
+                                dbc.Button(
+                                    "Apply",
+                                    id="labels-apply-button",
+                                    style={'margin': '0 20px 20px 0'},
+                                ),
+                                dbc.Button(
+                                    "Clear",
+                                    id="labels-clear-button",
+                                    style={'margin': '0 20px 20px 0'},
+                                ),
+                                create_input_control(
+                                    label="Title",
+                                    id="title",
+                                    placeholder="Title",
+                                    hidden=False,
+                                ),
+                                create_input_control(
+                                    label="Subtitle",
+                                    id="subtitle",
+                                    placeholder="Subtitle",
+                                    hidden=False,
+                                ),
+                                create_input_control(
+                                    label="X-Axis Label",
+                                    id="x_axis_label",
+                                    placeholder="X-axis label",
+                                    hidden=False,
+                                ),
+                                create_input_control(
+                                    label="Y-Axis Label",
+                                    id="y_axis_label",
+                                    placeholder="Y-axis label",
+                                    hidden=False,
+                                ),
                             ]),
                         ]),
                     ]),
@@ -759,8 +776,8 @@ def filter_data(
     Input('top_n_categories_slider', 'value'),
     Input('bar_mode_dropdown', 'value'),
     Input('log_x_y_axis_checklist', 'value'),
-    Input('title_textbox', 'value'),
     Input('filtered_data', 'data'),
+    Input('labels-apply-button', 'n_clicks'),
     State('all_columns', 'data'),
     State('numeric_columns', 'data'),
     State('non_numeric_columns', 'data'),
@@ -769,6 +786,10 @@ def filter_data(
     State('string_columns', 'data'),
     State('boolean_columns', 'data'),
     State('category_orders_cache', 'data'),
+    State('title_input', 'value'),
+    State('subtitle_input', 'value'),
+    State('x_axis_label_input', 'value'),
+    State('y_axis_label_input', 'value'),
     prevent_initial_call=True,
 )
 def update_controls_and_graph(  # noqa
@@ -795,16 +816,21 @@ def update_controls_and_graph(  # noqa
             top_n_categories: float,
             bar_mode: str,
             log_x_y_axis: list[str],
-            title_textbox: str,
+
             data: pd.DataFrame,
+            labels_apply_button: int,  # noqa: ARG001
             all_columns: list[str],  # noqa: ARG001
             numeric_columns: list[str],
-            non_numeric_columns: list[str],  # noqa: ARG001
+            non_numeric_columns: list[str],
             date_columns: list[str],
             categorical_columns: list[str],
             string_columns: list[str],
             boolean_columns: list[str],
             category_orders_cache: dict,
+            title_input: str | None,
+            subtitle_input: str | None,
+            x_axis_label_input: str | None,
+            y_axis_label_input: str | None,
         ) -> tuple[go.Figure, dict]:
     """
     Triggered when the user selects columns from the dropdown.
@@ -828,7 +854,10 @@ def update_controls_and_graph(  # noqa
     log_variable('graph_types', graph_types)
     log_variable('graph_type', graph_type)
     log_variable('sort_categories', sort_categories)
-    log_variable('title_textbox', title_textbox)
+    log_variable('title_input', title_input)
+    log_variable('subtitle_input', subtitle_input)
+    log_variable('x_axis_label_input', x_axis_label_input)
+    log_variable('y_axis_label_input', y_axis_label_input)
     log_variable('category_orders_cache', category_orders_cache)
     # log_variable('type(data)', type(data))
     # log_variable('data', data)
@@ -890,8 +919,11 @@ def update_controls_and_graph(  # noqa
         ####
         # create graph
         ####
-        if title_textbox:
-            title = title_textbox
+        # create labels
+        if title_input or subtitle_input:
+            title = title_input or ''
+            if subtitle_input:
+                title += f"<br><sub>{subtitle_input}</sub>"
         else:
             title = f"<br><sub>{graph_config['description']}</sub>"
             if x_variable:
@@ -902,8 +934,14 @@ def update_controls_and_graph(  # noqa
                 title = title.replace('{{color_variable}}', f"`{color_variable}`")
             if size_variable:
                 title = title.replace('{{size_variable}}', f"`{size_variable}`")
-            if x_variable:
-                title = title.replace('{{size_variable}}', f"`{facet_variable}`")
+            if facet_variable:
+                title = title.replace('{{facet_variable}}', f"`{facet_variable}`")
+        graph_labels = {}
+        if x_variable and x_axis_label_input:
+            graph_labels[x_variable] = x_axis_label_input
+        if y_variable and y_axis_label_input:
+            graph_labels[y_variable] = y_axis_label_input
+
 
         columns = [x_variable, y_variable, color_variable, size_variable, facet_variable]
         columns = [col for col in columns if col is not None]
@@ -981,6 +1019,7 @@ def update_controls_and_graph(  # noqa
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
                 title=title,
+                labels=graph_labels,
             )
         elif graph_type == 'box':
             fig = px.box(
@@ -995,6 +1034,7 @@ def update_controls_and_graph(  # noqa
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
                 title=title,
+                labels=graph_labels,
             )
         elif graph_type == 'line':
             fig = px.line(
@@ -1008,6 +1048,7 @@ def update_controls_and_graph(  # noqa
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
                 title=title,
+                labels=graph_labels,
             )
         elif graph_type == 'histogram':
             fig = px.histogram(
@@ -1027,6 +1068,7 @@ def update_controls_and_graph(  # noqa
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
                 title=title,
+                labels=graph_labels,
                 nbins=n_bins,
             )
             if x_variable in numeric_columns and bar_mode != 'group':# and color_variable is None:
@@ -1046,6 +1088,7 @@ def update_controls_and_graph(  # noqa
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
                 title=title,
+                labels=graph_labels,
             )
         else:
             raise ValueError(f"Unknown graph type: {graph_type}")
@@ -1150,6 +1193,21 @@ def swap_x_y_variables(n_clicks: int, x_variable: str | None, y_variable: str | 
     log_function('Swap X/Y Variables')
     log_variable('n_clicks', n_clicks)
     return y_variable, x_variable
+
+@app.callback(
+    Output('title_input', 'value'),
+    Output('subtitle_input', 'value'),
+    Output('x_axis_label_input', 'value'),
+    Output('y_axis_label_input', 'value'),
+    Input('labels-clear-button', 'n_clicks'),
+    prevent_initial_call=True,
+)
+def clear_labels(n_clicks: int) -> str:
+    """Triggered when the user clicks on the Clear button."""
+    log_function('Clear Labels')
+    log_variable('n_clicks', n_clicks)
+    return '', '', '', ''
+
 
 
 @app.callback(
