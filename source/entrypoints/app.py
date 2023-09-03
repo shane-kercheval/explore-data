@@ -1061,6 +1061,7 @@ def update_controls_and_graph(  # noqa
                 title=title,
                 labels=graph_labels,
             )
+            fig.update_layout(margin={'l': 0, 'r': 0, 'b': 0, 't': 20})
         elif graph_type == 'box':
             fig = px.box(
                 graph_data,
@@ -1608,7 +1609,7 @@ def update_n_bins_div_style(graph_type: str) -> dict:
 )
 def update_opacity_div_style(graph_type: str) -> dict:
     """Toggle the bar mode div."""
-    if graph_type in ['histogram', 'scatter']:
+    if graph_type in ['histogram', 'scatter', 'scatter-3d']:
         return {'display': 'block'}
     return {'display': 'none'}
 
