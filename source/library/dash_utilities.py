@@ -145,7 +145,6 @@ def get_variable_type(variable: str | None, options: dict) -> str | None:
     raise ValueError(f"Unknown dtype for column `{variable}`")
 
 
-
 def get_graph_config(
           configurations: list[dict],
           x_variable: str | None,

@@ -4,6 +4,7 @@ import os
 from dotenv import load_dotenv
 import base64
 import io
+import yaml
 from dash import ctx, callback_context, dash_table
 from dash.dependencies import ALL
 import plotly.express as px
@@ -20,11 +21,13 @@ from source.library.dash_ui import (
     CLASS__GRAPH_PANEL_SECTION,
 )
 from source.library.dash_utilities import (
+    filter_data_from_ui_control,
+    get_variable_type,
+    get_graph_config,
     log,
     log_error,
     log_function,
     log_variable,
-    filter_data_from_ui_control,
 )
 from source.library.utilities import (
     series_to_datetime,
@@ -53,6 +56,8 @@ top_n_categories_lookup = {
     9: '40',
     10: '50',
 }
+with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_configurations.yml')) as f:  # noqa
+    GRAPH_CONFIGS = yaml.safe_load(f)
 
 
 app = DashProxy(
@@ -666,6 +671,8 @@ def filter_data(
     Output('facet_variable_div', 'style'),
     Output('facet_variable_dropdown', 'options'),
     Output('facet_variable_dropdown', 'value'),
+    Output('graph_type_dropdown', 'options'),
+    Output('graph_type_dropdown', 'value'),
 
     # INPUTS
     Input('x_variable_dropdown', 'value'),
@@ -683,6 +690,7 @@ def filter_data(
     Input('facet_variable_dropdown', 'options'),
     Input('facet_variable_dropdown', 'value'),
 
+    Input('graph_type_dropdown', 'options'),
     Input('graph_type_dropdown', 'value'),
     Input('n_bins_slider', 'value'),
     Input('opacity_slider', 'value'),
@@ -701,21 +709,22 @@ def filter_data(
     prevent_initial_call=True,
 )
 def update_controls_and_graph(  # noqa
-            x_variable: str,
-            y_variable: str,
+            x_variable: str | None,
+            y_variable: str | None,
             # color variable
             color_variable_div: dict,
             color_variable_dropdown: list[str],
-            color_variable: str,
+            color_variable: str | None,
             # size variable
             size_variable_div: dict,
             size_variable_dropdown: list[str],
-            size_variable: str,
+            size_variable: str | None,
             # facet variable
             facet_variable_div: dict,
             facet_variable_dropdown: list[str],
-            facet_variable: str,
+            facet_variable: str | None,
 
+            graph_types: list[str],
             graph_type: str,
             n_bins: int,
             opacity: float,
@@ -751,6 +760,7 @@ def update_controls_and_graph(  # noqa
     log_variable('top_n_categories', top_n_categories)
     log_variable('bar_mode', bar_mode)
     log_variable('log_x_y_axis', log_x_y_axis)
+    log_variable('graph_types', graph_types)
     log_variable('graph_type', graph_type)
     log_variable('type(n_bins)', type(n_bins))
     # log_variable('type(data)', type(data))
@@ -759,34 +769,10 @@ def update_controls_and_graph(  # noqa
     ####
     # update variables
     ####
-    if ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown']:
-        log("Updating variable options")
-        log_function('facet_variable_div')
-        if x_variable or y_variable:
-            color_variable_div = {'display': 'block'}
-            color_variable_dropdown = all_columns
-
-            size_variable_div = {'display': 'block'}
-            size_variable_dropdown = all_columns
-
-            facet_variable_div = {'display': 'block'}
-            facet_variable_dropdown = non_numeric_columns
-
-        else:
-            color_variable_div = {'display': 'none'}
-            color_variable_dropdown = []
-            color_variable = None
-
-            size_variable_div = {'display': 'none'}
-            size_variable_dropdown = []
-            size_variable = None
-
-            facet_variable_div = {'display': 'none'}
-            facet_variable_dropdown = []
-            facet_variable = None
 
     fig = {}
     graph_data = pd.DataFrame()
+    graph_config = None
     numeric_na_removal_markdown = ''
     if (
         (x_variable or y_variable)
@@ -798,6 +784,63 @@ def update_controls_and_graph(  # noqa
         and (not size_variable or size_variable in data.columns)
         and (not facet_variable or facet_variable in data.columns)
         ):
+        ####
+        # update graph options
+        ####
+        # get current configuration based on graph_options.yml (selected_variables)
+        type_options = {
+            'numeric': numeric_columns,
+            'date': date_columns,
+            'string': string_columns,
+            'categorical': categorical_columns,
+            'boolean': boolean_columns,
+        }
+        graph_config = get_graph_config(
+            configurations=GRAPH_CONFIGS['configurations'],
+            x_variable=get_variable_type(variable=x_variable, options=type_options),
+            y_variable=get_variable_type(variable=y_variable, options=type_options),
+            color_variable=get_variable_type(variable=color_variable, options=type_options),
+            size_variable=get_variable_type(variable=size_variable, options=type_options),
+            facet_variable=get_variable_type(variable=facet_variable, options=type_options),
+        )
+        log_variable('graph_config', graph_config)
+        graph_type_configs = graph_config['graph_types']
+        # update graph options based on graph type
+        graph_types = [x['name'] for x in graph_type_configs]
+
+
+         # update graph_type if it's not valid (not in list) or if a new x/y variable has been
+         # selected
+        if (
+            graph_type not in graph_types
+            or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown']
+        ):
+            graph_type = graph_types[0]
+
+        # we have to decide if we are setting graph types or using something that was already selected
+        
+
+        # selected graph config
+        graph_config = next(x for x in graph_type_configs if x['name'] == graph_type)
+
+        ####
+        # create graph
+        ####
+        if title_textbox:
+            title = title_textbox
+        else:
+            title = f"<br><sub>{graph_config['description']}</sub>"
+            if x_variable:
+                title = title.replace('{{x_variable}}', f"`{x_variable}`")
+            if y_variable:
+                title = title.replace('{{y_variable}}', f"`{y_variable}`")
+            if color_variable:
+                title = title.replace('{{color_variable}}', f"`{color_variable}`")
+            if size_variable:
+                title = title.replace('{{size_variable}}', f"`{size_variable}`")
+            if x_variable:
+                title = title.replace('{{size_variable}}', f"`{facet_variable}`")
+
         columns = [x_variable, y_variable, color_variable, size_variable, facet_variable]
         columns = [col for col in columns if col is not None]
         columns = list(set(columns))
@@ -848,7 +891,7 @@ def update_controls_and_graph(  # noqa
                 facet_col_wrap=4,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
-                title=title_textbox,
+                title=title,
             )
         elif graph_type == 'box':
             fig = px.box(
@@ -861,7 +904,7 @@ def update_controls_and_graph(  # noqa
                 facet_col_wrap=4,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
-                title=title_textbox,
+                title=title,
             )
         elif graph_type == 'line':
             fig = px.line(
@@ -874,7 +917,7 @@ def update_controls_and_graph(  # noqa
                 facet_col_wrap=4,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
-                title=title_textbox,
+                title=title,
             )
         elif graph_type == 'histogram':
             fig = px.histogram(
@@ -891,7 +934,7 @@ def update_controls_and_graph(  # noqa
                 facet_col_wrap=4,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
-                title=title_textbox,
+                title=title,
                 nbins=n_bins,
             )
         elif graph_type == 'bar':
@@ -906,10 +949,83 @@ def update_controls_and_graph(  # noqa
                 facet_col_wrap=4,
                 log_x='Log X-Axis' in log_x_y_axis,
                 log_y='Log Y-Axis' in log_x_y_axis,
-                title=title_textbox,
+                title=title,
             )
         else:
             raise ValueError(f"Unknown graph type: {graph_type}")
+
+
+    if graph_config:
+        # update color/size/facet variable options based on graph type
+        log_variable('graph_config', graph_config)
+        optional_variables = graph_config['optional_variables']
+        log_variable('optional_variables', optional_variables)
+
+        if 'color_variable' in optional_variables:
+            color_variable_div = {'display': 'block'}
+            color_variable_dropdown = all_columns
+        else:
+            color_variable_div = {'display': 'none'}
+            color_variable_dropdown = []
+            color_variable = None
+
+        if 'size_variable' in optional_variables:
+            size_variable_div = {'display': 'block'}
+            size_variable_dropdown = all_columns
+        else:
+            size_variable_div = {'display': 'none'}
+            size_variable_dropdown = []
+            size_variable = None
+
+        if 'facet_variable' in optional_variables:
+            facet_variable_div = {'display': 'block'}
+            facet_variable_dropdown = non_numeric_columns
+        else:
+            facet_variable_div = {'display': 'none'}
+            facet_variable_dropdown = []
+            facet_variable = None
+    else:
+        color_variable_div = {'display': 'none'}
+        color_variable_dropdown = []
+        color_variable = None
+
+        size_variable_div = {'display': 'none'}
+        size_variable_dropdown = []
+        size_variable = None
+
+        facet_variable_div = {'display': 'none'}
+        facet_variable_dropdown = []
+        facet_variable = None
+
+
+    # if ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown']:
+    #     log("Updating variable options")
+    #     log_function('facet_variable_div')
+    #     if x_variable or y_variable:
+    #         color_variable_div = {'display': 'block'}
+    #         color_variable_dropdown = all_columns
+
+    #         size_variable_div = {'display': 'block'}
+    #         size_variable_dropdown = all_columns
+
+    #         facet_variable_div = {'display': 'block'}
+    #         facet_variable_dropdown = non_numeric_columns
+
+    #     else:
+    #         color_variable_div = {'display': 'none'}
+    #         color_variable_dropdown = []
+    #         color_variable = None
+
+    #         size_variable_div = {'display': 'none'}
+    #         size_variable_dropdown = []
+    #         size_variable = None
+
+    #         facet_variable_div = {'display': 'none'}
+    #         facet_variable_dropdown = []
+    #         facet_variable = None
+
+
+
     log("returning fig")
     return (
         fig,
@@ -927,7 +1043,9 @@ def update_controls_and_graph(  # noqa
         facet_variable_div,
         facet_variable_dropdown,
         facet_variable,
-
+        # graphing options
+        graph_types,
+        graph_type,
     )
 
 @app.callback(

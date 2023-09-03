@@ -17,7 +17,7 @@ configurations:
       facet_variable:
     graph_types:
       - name: box
-        description: Shows the distribution of {x_variable}.
+        description: Shows the distribution of {{x_variable}}.
         optional_variables:
           color_variable:
             types:
@@ -26,7 +26,7 @@ configurations:
             types:
               - non_numeric
       - name: histogram
-        description: Shows the distribution of {x_variable}.
+        description: Shows the distribution of {{x_variable}}.
         optional_variables:
           color_variable:
             types:
@@ -35,7 +35,7 @@ configurations:
             types:
               - non_numeric
       - name: scatter
-        description: Shows the relationship between {x_variable} and the index/order.
+        description: Shows the relationship between {{x_variable}} and the index/order.
         optional_variables:
           color_variable:
             types:
@@ -48,7 +48,7 @@ configurations:
             types:
               - non_numeric
       - name: line
-        description: Line graph of {x_variable} and the index/order.
+        description: Line graph of {{x_variable}} and the index/order.
         optional_variables:
           color_variable:
             types:
@@ -70,7 +70,7 @@ configurations:
       facet_variable:
     graph_types:
       - name: scatter
-        description: Shows the relationship between {x_variable} and {y_variable}.
+        description: Shows the relationship between {{x_variable}} and {{y_variable}}.
         optional_variables:
           color_variable:
             types:
@@ -83,7 +83,7 @@ configurations:
             types:
               - non_numeric
       - name: box
-        description: Shows the distribution of {y_variable} values across {x_variable} values.
+        description: Shows the distribution of {{y_variable}} values across {{x_variable}} values.
         optional_variables:
           color_variable:
             types:
@@ -92,7 +92,7 @@ configurations:
             types:
               - non_numeric
       - name: histogram
-        description: Shows the distribution of the sum of {y_variable} values across {x_variable} values.
+        description: Shows the distribution of the sum of {{y_variable}} values across {{x_variable}} values.
         optional_variables:
           color_variable:
             types:
@@ -113,7 +113,7 @@ configurations:
       facet_variable:
     graph_types:
       - name: histogram
-        description: Shows the counts of {x_variable}.
+        description: Shows the counts of {{x_variable}}.
         optional_variables:
           color_variable:
             types:
@@ -135,7 +135,7 @@ configurations:
       facet_variable:
     graph_types:
       - name: histogram
-        description: Shows the sum of {y_variable} across each value of {x_variable}.
+        description: Shows the sum of {{y_variable}} across each value of {{x_variable}}.
         optional_variables:
           color_variable:
             types:
