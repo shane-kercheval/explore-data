@@ -83,6 +83,79 @@ configurations:
               - categorical
   - selected_variables:
       x_variable:
+      y_variable:
+        - numeric
+    graph_types:
+      - name: box
+        description: Shows the distribution of {{y_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: histogram
+        description: Shows the distribution of {{y_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: scatter
+        description: Shows the relationship between {{y_variable}} and the index/order.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          size_variable:
+            types:
+              - numeric
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: line
+        description: Line graph of {{y_variable}} and the index/order.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          size_variable:
+            types:
+              - numeric
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+  - selected_variables:
+      x_variable:
         - numeric
       y_variable:
         - numeric
@@ -163,6 +236,46 @@ configurations:
               - categorical
       - name: bar
         description: Shows the counts of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+  - selected_variables:
+      x_variable:
+      y_variable:
+        - date
+        - boolean
+        - string
+        - categorical
+    graph_types:
+      - name: histogram
+        description: Shows the counts of {{y_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: bar
+        description: Shows the counts of {{y_variable}}.
         optional_variables:
           color_variable:
             types:

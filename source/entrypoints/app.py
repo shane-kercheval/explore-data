@@ -194,6 +194,11 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     id="clear-settings-button",
                                     style={'margin': '0 20px 20px 0'},
                                 ),
+                                dbc.Button(
+                                    "Swap X & Y",
+                                    id="swap-x-y-button",
+                                    style={'margin': '0 20px 20px 0'},
+                                ),
                             ]),
                         ]),
                     ]),
@@ -825,7 +830,6 @@ def update_controls_and_graph(  # noqa
     log_variable('sort_categories', sort_categories)
     log_variable('title_textbox', title_textbox)
     log_variable('category_orders_cache', category_orders_cache)
-    
     # log_variable('type(data)', type(data))
     # log_variable('data', data)
 
@@ -1124,15 +1128,28 @@ def update_controls_and_graph(  # noqa
     Output('x_variable_dropdown', 'value'),
     Output('y_variable_dropdown', 'value'),
     Input('clear-settings-button', 'n_clicks'),
-    State('all_columns', 'data'),
     prevent_initial_call=True,
 )
-def clear_settings(n_clicks: int, all_columns: list[str]) -> str:
+def clear_settings(n_clicks: int) -> str:
     """Triggered when the user clicks on the Clear button."""
     log_function('clear_settings')
     log_variable('n_clicks', n_clicks)
-    log_variable('all_columns', all_columns)
     return None, None
+
+
+@app.callback(
+    Output('x_variable_dropdown', 'value', allow_duplicate=True),
+    Output('y_variable_dropdown', 'value', allow_duplicate=True),
+    Input('swap-x-y-button', 'n_clicks'),
+    State('x_variable_dropdown', 'value'),
+    State('y_variable_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def swap_x_y_variables(n_clicks: int, x_variable: str | None, y_variable: str | None) -> str:
+    """Triggered when the user clicks on the Clear button."""
+    log_function('Swap X/Y Variables')
+    log_variable('n_clicks', n_clicks)
+    return y_variable, x_variable
 
 
 @app.callback(
