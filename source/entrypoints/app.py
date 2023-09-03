@@ -240,13 +240,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     hidden=False,
                                     multi=False,
                                     clearable=False,
-                                    options=[
-                                        {'label': 'Scatter', 'value': 'scatter'},
-                                        {'label': 'Histogram', 'value': 'histogram'},
-                                        {'label': 'Box', 'value': 'box'},
-                                        {'label': 'Line', 'value': 'line'},
-                                        {'label': 'Bar', 'value': 'bar'},
-                                    ],
                                     value='scatter',
                                 ),
                                 # One of 'group', 'overlay' or 'relative'
@@ -724,7 +717,7 @@ def update_controls_and_graph(  # noqa
             facet_variable_dropdown: list[str],
             facet_variable: str | None,
 
-            graph_types: list[str],
+            graph_types: list[dict],
             graph_type: str,
             n_bins: int,
             opacity: float,
@@ -766,6 +759,8 @@ def update_controls_and_graph(  # noqa
     # log_variable('type(data)', type(data))
     # log_variable('data', data)
 
+    graph_types = [x['value'] for x in graph_types]
+
     ####
     # update variables
     ####
@@ -802,9 +797,8 @@ def update_controls_and_graph(  # noqa
         )
         log_variable('graph_config', graph_config)
         graph_type_configs = graph_config['graph_types']
-        # update graph options based on graph type
+        # update graph options based on graph config
         graph_types = [x['name'] for x in graph_type_configs]
-
 
          # update graph_type if it's not valid (not in list) or if a new x/y variable has been
          # selected
@@ -1022,7 +1016,7 @@ def update_controls_and_graph(  # noqa
         facet_variable_dropdown,
         facet_variable,
         # graphing options
-        graph_types,
+        [{'label': x.capitalize(), 'value': x} for x in graph_types],
         graph_type,
     )
 
