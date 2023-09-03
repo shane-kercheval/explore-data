@@ -326,7 +326,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 className="panel_toggle_button",
                             ),
                         ),
-                        dbc.Collapse(id="collapse-other-options", is_open=True, children=[
+                        dbc.Collapse(id="collapse-other-options", is_open=False, children=[
                             dbc.CardBody([
                                 dbc.Button(
                                     "Apply",
