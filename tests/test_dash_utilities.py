@@ -7,6 +7,7 @@ from source.library.dash_utilities import (
     convert_to_graph_data,
     filter_data_from_ui_control,
     generate_graph,
+    get_category_orders,
     get_columns_from_config,
     get_graph_config,
     get_variable_type,
@@ -693,7 +694,7 @@ def test_generate_graph__all_configurations(  # noqa
         size_variable=None,
         facet_variable=None,
         num_facet_columns=None,
-        category_orders=None,
+        selected_category_order=None,
         bar_mode=None,
         opacity=None,
         n_bins=None,
@@ -746,7 +747,7 @@ def test_generate_graph__all_configurations(  # noqa
                     size_variable=None,
                     facet_variable=None,
                     num_facet_columns=4,
-                    category_orders={'var': ['a', 'b', 'c']},
+                    selected_category_order='category ascending',
                     bar_mode='relative',
                     opacity=0.6,
                     n_bins=30,
@@ -789,7 +790,7 @@ def test_generate_graph__all_configurations(  # noqa
                         size_variable=type_to_column_lookup[size_var] if size_var else None,
                         facet_variable=type_to_column_lookup[facet_var] if facet_var else None,
                         num_facet_columns=None,
-                        category_orders=None,
+                        selected_category_order=None,
                         bar_mode=None,
                         opacity=None,
                         n_bins=None,
@@ -838,7 +839,7 @@ def test_generate_graph__error(  # noqa
         size_variable=None,
         facet_variable='categories',
         num_facet_columns=4,
-        category_orders=None,
+        selected_category_order=None,
         bar_mode=None,
         opacity=None,
         n_bins=None,
@@ -867,7 +868,7 @@ def test_generate_graph__error(  # noqa
         size_variable=None,
         facet_variable=None,
         num_facet_columns=4,
-        category_orders=None,
+        selected_category_order=None,
         bar_mode=None,
         opacity=None,
         n_bins=None,
@@ -884,3 +885,105 @@ def test_generate_graph__error(  # noqa
     assert isinstance(fig, go.Figure)
     assert code is not None
     assert 'px.histogram' in code
+
+@pytest.mark.parametrize('order_type,expected_output', [  # noqa
+    ('category ascending', {'category_1': ['x', 'y', 'z'], 'category_2': ['x', 'y', 'z']}),
+    ('category descending', {'category_1': ['z', 'y', 'x'], 'category_2': ['z', 'y', 'x']}),
+    ('total ascending',  {'category_1': ['z', 'x', 'y'], 'category_2': ['z', 'x', 'y']}),
+    ('total descending',   {'category_1': ['y', 'x', 'z'], 'category_2': ['y', 'x', 'z']}),
+])
+def test_category_orders__strings_categories(order_type, expected_output):  # noqa
+    category_order_data = pd.DataFrame({
+        'numeric': [1, 2, 3, 4, 5, 6],
+        'category_1': ['x', 'y', 'y', 'x', 'z', 'y'],
+        'category_2': pd.Categorical(['x', 'y', 'y', 'x', 'z', 'y'], categories=['x', 'y', 'z']),
+    })
+    result = get_category_orders(
+        data=category_order_data,
+        selected_variables=['numeric', 'category_1', 'category_2'],
+        selected_category_order=order_type,
+        non_numeric_columns=['category_1', 'category_2'],
+    )
+    assert result == expected_output
+
+@pytest.mark.parametrize('order_type,expected_output', [  # noqa
+    ('category ascending', {'date': [pd.to_datetime('2021-01-01'), pd.to_datetime('2021-01-02'), pd.to_datetime('2021-01-03')]}),  # noqa
+    ('category descending', {'date': [pd.to_datetime('2021-01-03'), pd.to_datetime('2021-01-02'), pd.to_datetime('2021-01-01')]}),  # noqa
+    ('total ascending',  {'date': [pd.to_datetime('2021-01-03'), pd.to_datetime('2021-01-01'), pd.to_datetime('2021-01-02')]}),  # noqa
+    ('total descending',   {'date': [pd.to_datetime('2021-01-02'), pd.to_datetime('2021-01-01'), pd.to_datetime('2021-01-03')]}),  # noqa
+])
+def test_category_orders__dates(order_type, expected_output):  # noqa
+    category_order_data = pd.DataFrame({
+        'numeric': [1, 2, 3, 4, 5, 6],
+        'date': pd.to_datetime([
+            '2021-01-01', '2021-01-02', '2021-01-02', '2021-01-01', '2021-01-03', '2021-01-02',
+        ]),
+    })
+    result = get_category_orders(
+        data=category_order_data,
+        selected_variables=['numeric', 'date'],
+        selected_category_order=order_type,
+        non_numeric_columns=['date'],
+    )
+    assert result == expected_output
+
+@pytest.mark.parametrize('order_type,expected_output', [  # noqa
+    ('category ascending', {'boolean': [False, True]}),
+    ('category descending', {'boolean': [True, False]}),
+    ('total ascending',  {'boolean': [True, False]}),
+    ('total descending',   {'boolean': [False, True]}),
+])
+def test_category_orders__boolean(order_type, expected_output):  # noqa
+    category_order_data = pd.DataFrame({
+        'numeric': [1, 2, 3, 4, 5],
+        'boolean': [True, False, False, True, False],
+    })
+    result = get_category_orders(
+        data=category_order_data,
+        selected_variables=['numeric', 'boolean'],
+        selected_category_order=order_type,
+        non_numeric_columns=['boolean'],
+    )
+    assert result == expected_output
+
+def test_no_selected_order():  # noqa
+    category_order_data = pd.DataFrame({
+        'numeric': [1, 2, 3, 4, 5, 6],
+        'category_1': ['x', 'y', 'y', 'x', 'z', 'y'],
+        'category_2': pd.Categorical(['x', 'y', 'y', 'x', 'z', 'y'], categories=['x', 'y', 'z']),
+    })
+    result = get_category_orders(
+        data=category_order_data,
+        selected_variables=['category_1', 'category_2'],
+        selected_category_order=None,
+        non_numeric_columns=['category_1', 'category_2'],
+    )
+    assert result == {}
+
+def test_unknown_order_type_raises_exception():  # noqa
+    category_order_data = pd.DataFrame({
+        'numeric': [1, 2, 3, 4, 5, 6],
+        'category_1': ['x', 'y', 'y', 'x', 'z', 'y'],
+        'category_2': pd.Categorical(['x', 'y', 'y', 'x', 'z', 'y'], categories=['x', 'y', 'z']),
+    })
+    with pytest.raises(ValueError, match=r"Unknown selected_category_order"):
+        get_category_orders(
+            data=category_order_data,
+            selected_variables=['category_1', 'category_2'],
+            selected_category_order='unknown_order_type',
+            non_numeric_columns=['category_1', 'category_2'],
+        )
+
+def test_duplicates_in_selected_variables():  # noqa
+    category_order_data = pd.DataFrame({
+        'numeric': [1, 2, 3, 4, 5, 6],
+        'category_1': ['x', 'y', 'y', 'x', 'z', 'y'],
+        'category_2': pd.Categorical(['x', 'y', 'y', 'x', 'z', 'y'], categories=['x', 'y', 'z']),
+    })
+    with pytest.raises(AssertionError):
+        get_category_orders(
+            data=category_order_data,
+            selected_variables=['category_1', 'category_1'],
+            selected_category_order='unknown_order_type',
+            non_numeric_columns=['category_1', 'category_2'],
+        )

@@ -87,7 +87,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     dcc.Store(id='categorical_columns'),
     dcc.Store(id='string_columns'),
     dcc.Store(id='boolean_columns'),
-    dcc.Store(id='category_orders_cache', data={}),
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
             dcc.Loading(type="default", children=[
@@ -535,49 +534,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
 ])
 
 
-def cache_category_order(cache: dict,
-        variable: str,
-        order_type: str,
-        top_n_categories: int,
-        data: pd.DataFrame,
-    ) -> dict:
-    """
-    Updates and returns the cache containing the category order for a variable.
-
-    The cache is dependant on top_n_categories because the order is different if the user selects
-    1 category vs 10 categories and the <Other> category may or may not be included.
-
-    The order is based on the order_type, which can be one of:
-        - 'category ascending': Sort the categories in ascending order
-        - 'category descending': Sort the categories in descending order
-        - 'total ascending': Sort the categories by the total in ascending order
-        - 'total descending': Sort the categories by the total in descending order
-    """
-    # TODO: test
-    # can't use a tuple as the key because tuples aren't json serializable so dash complains
-    key = f"{variable}__{order_type}__{top_n_categories}"
-    if key in cache:
-        return cache
-
-    if 'category' in order_type:
-        reverse = 'ascending' not in order_type
-        categories = sorted(
-            data[variable].unique().tolist(),
-            reverse=reverse,
-            key=lambda x: str(x),
-        )
-        cache[key] = categories
-    elif 'total' in order_type:
-        cache[key] = data[variable].\
-            value_counts(sort=True, ascending='ascending' in order_type).\
-            index.\
-            tolist()
-    else:
-        raise ValueError(f"Unknown order_type: {order_type}")
-
-    return cache
-
-
 @app.callback(
     Output('x_variable_dropdown', 'options'),
     Output('y_variable_dropdown', 'options'),
@@ -787,7 +743,6 @@ def filter_data(
     Output('visualize_table', 'data'),
     Output('visualize_numeric_na_removal_markdown', 'children'),
     Output('generated_code', 'children'),
-    Output('category_orders_cache', 'data'),
     # color variable
     Output('color_variable_div', 'style'),
     Output('color_variable_dropdown', 'options'),
@@ -839,7 +794,6 @@ def filter_data(
     State('categorical_columns', 'data'),
     State('string_columns', 'data'),
     State('boolean_columns', 'data'),
-    State('category_orders_cache', 'data'),
     State('title_input', 'value'),
     State('subtitle_input', 'value'),
     State('x_axis_label_input', 'value'),
@@ -881,12 +835,11 @@ def update_controls_and_graph(  # noqa
             generated_filter_code: str,
             all_columns: list[str],
             numeric_columns: list[str],
-            non_numeric_columns: list[str],
+            non_numeric_columns: list[str],  # noqa: ARG001
             date_columns: list[str],
             categorical_columns: list[str],
             string_columns: list[str],
             boolean_columns: list[str],
-            category_orders_cache: dict,
             title_input: str | None,
             subtitle_input: str | None,
             x_axis_label_input: str | None,
@@ -924,7 +877,6 @@ def update_controls_and_graph(  # noqa
     log_variable('color_label_input', color_label_input)
     log_variable('size_label_input', size_label_input)
     log_variable('facet_label_input', facet_label_input)
-    log_variable('category_orders_cache', category_orders_cache)
 
     graph_types = [x['value'] for x in graph_types]
 
@@ -1027,22 +979,6 @@ def update_controls_and_graph(  # noqa
             generated_code += "\n"
             generated_code += code
 
-        # for each selected variable, update the category order cache
-        for variable in selected_variables:
-            if variable in non_numeric_columns:
-                category_orders_cache = cache_category_order(
-                    cache=category_orders_cache,
-                    variable=variable,
-                    order_type=sort_categories,
-                    top_n_categories=top_n_categories,
-                    data=graph_data,
-                )
-        log_variable('category_orders_cache', category_orders_cache)
-        category_orders = {
-            k.split('__')[0]:v for k, v in category_orders_cache.items()
-            if k in [f"{x}__{sort_categories}__{top_n_categories}" for x in selected_variables]
-        }
-        log_variable('category_orders', category_orders)
         fig, graph_code = generate_graph(
             data=graph_data,
             graph_type=graph_type,
@@ -1053,7 +989,7 @@ def update_controls_and_graph(  # noqa
             size_variable=size_variable,
             facet_variable=facet_variable,
             num_facet_columns=num_facet_columns,
-            category_orders=category_orders,
+            selected_category_order=sort_categories,
             bar_mode=bar_mode,
             opacity=opacity,
             n_bins=n_bins,
@@ -1129,7 +1065,6 @@ def update_controls_and_graph(  # noqa
         graph_data.iloc[0:500].to_dict('records'),
         numeric_na_removal_markdown,
         f"""```python\n{generated_code}\n```""",
-        category_orders_cache,
         # color variable
         color_variable_div,
         color_variable_dropdown,

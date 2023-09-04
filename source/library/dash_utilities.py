@@ -339,6 +339,49 @@ def convert_to_graph_data(
     return data, markdown, code
 
 
+def get_category_orders(
+        data: pd.DataFrame,
+        selected_variables: list[str],
+        selected_category_order: str | None,
+        non_numeric_columns: list[str],
+    ) -> dict:
+    """
+    Returns a dictionary of category orders for each categorical column. The dictionary keys are
+    the categorical columns, and the values are lists of categories in the order they should be
+    displayed in the graph.
+    """
+    assert isinstance(selected_variables, list)
+    assert len(selected_variables) == len(set(selected_variables))  # no duplicates
+
+    # The order is based on the order_type, which can be one of:
+    #     - 'category ascending': Sort the categories in ascending order
+    #     - 'category descending': Sort the categories in descending order
+    #     - 'total ascending': Sort the categories by the total in ascending order
+    #     - 'total descending': Sort the categories by the total in descending order
+    category_orders = {}
+    if selected_category_order:
+        for variable in selected_variables:
+            if variable in non_numeric_columns:
+                if 'category' in selected_category_order:
+                    reverse = 'ascending' not in selected_category_order
+                    categories = sorted(
+                        data[variable].unique().tolist(),
+                        reverse=reverse,
+                        key=lambda x: str(x),
+                    )
+                    category_orders[variable] = categories
+                elif 'total' in selected_category_order:
+                    category_orders[variable] = data[variable].\
+                        value_counts(sort=True, ascending='ascending' in selected_category_order).\
+                        index.\
+                        tolist()
+                else:
+                    raise ValueError(f"Unknown selected_category_order: {selected_category_order}")
+
+    return category_orders
+
+
+
 def generate_graph(
         data: pd.DataFrame,
         graph_type: str,
@@ -349,7 +392,7 @@ def generate_graph(
         size_variable: str | None,
         facet_variable: str | None,
         num_facet_columns: int | None,
-        category_orders: dict | None,
+        selected_category_order: str | None,
         bar_mode: str | None,
         opacity: float | None,
         n_bins: int | None,
@@ -371,6 +414,14 @@ def generate_graph(
     fig = None
     graph_data = data
     graph_code = ''
+
+    category_orders = get_category_orders(
+        data=data,
+        selected_variables = list({x_variable, y_variable, z_variable, color_variable, size_variable, facet_variable}),  # noqa
+        selected_category_order=selected_category_order,
+        # TODO: dates?
+        non_numeric_columns=string_columns + categorical_columns + boolean_columns,
+    )
 
     def remove_unused_categories(variable: str) -> str:
         """Remove unused categories from the categorical columns."""
@@ -517,9 +568,14 @@ def generate_graph(
     else:
         raise ValueError(f"Unknown graph type: {graph_type}")
 
+
     log_variable('graph_code', graph_code)
+    if 'Timestamp' in graph_code:
+        log("Timestamp found in graph_code")
+        raise ValueError(f"Timestamp found in graph_code {graph_code}")
     local_vars = locals()
     global_vars = globals()
     exec(graph_code, global_vars, local_vars)
     fig = local_vars['fig']
     return fig, graph_code
+
