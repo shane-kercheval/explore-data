@@ -201,3 +201,16 @@ def get_graph_config(
         raise ValueError("More than one matching configuration found.")
 
     return matching_configs[0]
+
+
+def get_columns_from_config(
+        allowed_types: list[str],
+        columns_by_type: dict,
+        all_columns: list[str],
+    ) -> list[str]:
+    """Get the columns that match the variable type allowed by the configuration."""
+    allowed_columns = []
+    for allowed_type in allowed_types:
+        allowed_columns.extend(columns_by_type[allowed_type])
+    # return the same order as the all_columns list
+    return [c for c in all_columns if c in allowed_columns]

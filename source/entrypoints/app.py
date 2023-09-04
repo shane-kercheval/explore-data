@@ -25,6 +25,7 @@ from source.library.dash_utilities import (
     filter_data_from_ui_control,
     get_variable_type,
     get_graph_config,
+    get_columns_from_config,
     log,
     log_error,
     log_function,
@@ -1178,17 +1179,13 @@ def update_controls_and_graph(  # noqa
         optional_variables = selected_graph_config['optional_variables']
         log_variable('optional_variables', optional_variables)
 
-
-        def get_columns_from_config(variable: str | None) -> list[str]:
-            allowed_types = optional_variables[variable]['types']
-            types = []
-            for allowed_type in allowed_types:
-                types.extend(columns_by_type[allowed_type])
-            return types
-
         if 'color_variable' in optional_variables:
             color_variable_div = {'display': 'block'}
-            color_variable_dropdown = get_columns_from_config('color_variable')
+            color_variable_dropdown = get_columns_from_config(
+                allowed_types=optional_variables['color_variable']['types'],
+                columns_by_type=columns_by_type,
+                all_columns=all_columns,
+            )
         else:
             color_variable_div = {'display': 'none'}
             color_variable_dropdown = []
@@ -1196,7 +1193,11 @@ def update_controls_and_graph(  # noqa
 
         if 'size_variable' in optional_variables:
             size_variable_div = {'display': 'block'}
-            size_variable_dropdown = get_columns_from_config('size_variable')
+            size_variable_dropdown = get_columns_from_config(
+                allowed_types=optional_variables['size_variable']['types'],
+                columns_by_type=columns_by_type,
+                all_columns=all_columns,
+            )
         else:
             size_variable_div = {'display': 'none'}
             size_variable_dropdown = []
@@ -1204,7 +1205,11 @@ def update_controls_and_graph(  # noqa
 
         if 'facet_variable' in optional_variables:
             facet_variable_div = {'display': 'block'}
-            facet_variable_dropdown = get_columns_from_config('facet_variable')
+            facet_variable_dropdown = get_columns_from_config(
+                allowed_types=optional_variables['facet_variable']['types'],
+                columns_by_type=columns_by_type,
+                all_columns=all_columns,
+            )
         else:
             facet_variable_div = {'display': 'none'}
             facet_variable_dropdown = []

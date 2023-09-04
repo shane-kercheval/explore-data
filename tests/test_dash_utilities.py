@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from source.library.dash_utilities import (
     filter_data_from_ui_control,
+    get_columns_from_config,
     get_graph_config,
     get_variable_type,
     log,
@@ -375,3 +376,51 @@ def test_get_graph_config__z_variable(graphing_configurations):  # noqa
     assert config['graph_types'][0]['name'] == 'scatter-3d'
     assert 'description' in config['graph_types'][0]
     assert 'optional_variables' in config['graph_types'][0]
+
+
+def test_get_columns_from_config():  # noqa
+    all_columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
+    columns_by_type = {
+        'numeric': ['a', 'b'],
+        'date': ['c', 'd'],
+        'categorical': ['e', 'f'],
+        'string': ['g', 'h'],
+        'boolean': ['i', 'j'],
+    }
+    results = get_columns_from_config(
+        allowed_types=['numeric', 'date', 'categorical', 'string', 'boolean'],
+        columns_by_type=columns_by_type,
+        all_columns=all_columns,
+    )
+    assert results == all_columns
+
+    results = get_columns_from_config(
+        allowed_types=['date'],
+        columns_by_type=columns_by_type,
+        all_columns=all_columns,
+    )
+    assert results == ['c', 'd']
+
+    results = get_columns_from_config(
+        allowed_types=['date', 'boolean'],
+        columns_by_type=columns_by_type,
+        all_columns=all_columns,
+    )
+    assert results == ['c', 'd', 'i', 'j']
+
+    results = get_columns_from_config(
+        allowed_types=reversed(['numeric', 'date', 'categorical', 'string', 'boolean']),
+        columns_by_type=columns_by_type,
+        all_columns=all_columns,
+    )
+    assert results == all_columns
+
+    results = get_columns_from_config(
+        allowed_types=reversed(['date', 'boolean']),
+        columns_by_type=columns_by_type,
+        all_columns=all_columns,
+    )
+    assert results == ['c', 'd', 'i', 'j']
+
+
+
