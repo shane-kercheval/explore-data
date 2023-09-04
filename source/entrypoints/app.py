@@ -22,6 +22,7 @@ from source.library.dash_ui import (
     CLASS__GRAPH_PANEL_SECTION,
 )
 from source.library.dash_utilities import (
+    create_title_and_labels,
     filter_data_from_ui_control,
     get_variable_type,
     get_graph_config,
@@ -961,7 +962,6 @@ def update_controls_and_graph(  # noqa
         possible_graph_types = matching_graph_config['graph_types']
         # update graph options based on graph config
         graph_types = [x['name'] for x in possible_graph_types]
-
         # update graph_type if it's not valid (not in list) or if a new x/y variable has been
         # selected
         if (
@@ -976,35 +976,23 @@ def update_controls_and_graph(  # noqa
         # create graph
         ####
         # create labels
-        if title_input or subtitle_input:
-            title = title_input or ''
-            if subtitle_input:
-                title += f"<br><sub>{subtitle_input}</sub>"
-        else:
-            title = f"<br><sub>{selected_graph_config['description']}</sub>"
-            if x_variable:
-                title = title.replace('{{x_variable}}', f"`{x_variable}`")
-            if y_variable:
-                title = title.replace('{{y_variable}}', f"`{y_variable}`")
-            if z_variable:
-                title = title.replace('{{z_variable}}', f"`{z_variable}`")
-            if color_variable:
-                title = title.replace('{{color_variable}}', f"`{color_variable}`")
-            if size_variable:
-                title = title.replace('{{size_variable}}', f"`{size_variable}`")
-            if facet_variable:
-                title = title.replace('{{facet_variable}}', f"`{facet_variable}`")
-        graph_labels = {}
-        if x_variable and x_axis_label_input:
-            graph_labels[x_variable] = x_axis_label_input
-        if y_variable and y_axis_label_input:
-            graph_labels[y_variable] = y_axis_label_input
-        if color_variable and color_label_input:
-            graph_labels[color_variable] = color_label_input
-        if size_variable and size_label_input:
-            graph_labels[size_variable] = size_label_input
-        if facet_variable and facet_label_input:
-            graph_labels[facet_variable] = facet_label_input
+        config_description = selected_graph_config['description']
+        title, graph_labels = create_title_and_labels(
+            title_input=title_input,
+            subtitle_input=subtitle_input,
+            config_description=config_description,
+            x_variable=x_variable,
+            y_variable=y_variable,
+            z_variable=z_variable,
+            color_variable=color_variable,
+            size_variable=size_variable,
+            facet_variable=facet_variable,
+            x_axis_label_input=x_axis_label_input,
+            y_axis_label_input=y_axis_label_input,
+            color_label_input=color_label_input,
+            size_label_input=size_label_input,
+            facet_label_input=facet_label_input,
+        )
 
         possible_variables = [
             x_variable,
@@ -1308,6 +1296,9 @@ def swap_x_y_variables(n_clicks: int, x_variable: str | None, y_variable: str | 
     Output('subtitle_input', 'value'),
     Output('x_axis_label_input', 'value'),
     Output('y_axis_label_input', 'value'),
+    Output('color_label_input', 'value'),
+    Output('size_label_input', 'value'),
+    Output('facet_label_input', 'value'),
     Input('labels-clear-button', 'n_clicks'),
     prevent_initial_call=True,
 )
@@ -1315,7 +1306,7 @@ def clear_labels(n_clicks: int) -> str:
     """Triggered when the user clicks on the Clear button."""
     log_function('Clear Labels')
     log_variable('n_clicks', n_clicks)
-    return '', '', '', ''
+    return '', '', '', '', '', '', ''
 
 
 @app.callback(

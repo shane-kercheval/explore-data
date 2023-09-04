@@ -214,3 +214,53 @@ def get_columns_from_config(
         allowed_columns.extend(columns_by_type[allowed_type])
     # return the same order as the all_columns list
     return [c for c in all_columns if c in allowed_columns]
+
+
+def create_title_and_labels(  # noqa
+        title_input: str | None,
+        subtitle_input: str | None,
+        config_description: str,
+        x_variable: str | None,
+        y_variable: str | None,
+        z_variable: str | None,
+        color_variable: str | None,
+        size_variable: str | None,
+        facet_variable: str | None,
+        x_axis_label_input: str | None,
+        y_axis_label_input: str | None,
+        color_label_input: str | None,
+        size_label_input: str | None,
+        facet_label_input: str | None,
+    ):
+    """Create the title and labels for the graph."""
+    if title_input or subtitle_input:
+        title = title_input or ''
+        if subtitle_input:
+            title += f"<br><sub>{subtitle_input}</sub>"
+    else:
+        title = f"<br><sub>{config_description}</sub>"
+        if x_variable:
+            title = title.replace('{{x_variable}}', f"`{x_variable}`")
+        if y_variable:
+            title = title.replace('{{y_variable}}', f"`{y_variable}`")
+        if z_variable:
+            title = title.replace('{{z_variable}}', f"`{z_variable}`")
+        if color_variable:
+            title = title.replace('{{color_variable}}', f"`{color_variable}`")
+        if size_variable:
+            title = title.replace('{{size_variable}}', f"`{size_variable}`")
+        if facet_variable:
+            title = title.replace('{{facet_variable}}', f"`{facet_variable}`")
+    graph_labels = {}
+    if x_variable and x_axis_label_input:
+        graph_labels[x_variable] = x_axis_label_input
+    if y_variable and y_axis_label_input:
+        graph_labels[y_variable] = y_axis_label_input
+    if color_variable and color_label_input:
+        graph_labels[color_variable] = color_label_input
+    if size_variable and size_label_input:
+        graph_labels[size_variable] = size_label_input
+    if facet_variable and facet_label_input:
+        graph_labels[facet_variable] = facet_label_input
+
+    return title, graph_labels
