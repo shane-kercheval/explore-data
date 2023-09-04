@@ -919,8 +919,6 @@ def update_controls_and_graph(  # noqa
     log_variable('size_label_input', size_label_input)
     log_variable('facet_label_input', facet_label_input)
     log_variable('category_orders_cache', category_orders_cache)
-    # log_variable('type(data)', type(data))
-    # log_variable('data', data)
 
     graph_types = [x['value'] for x in graph_types]
 
@@ -963,18 +961,14 @@ def update_controls_and_graph(  # noqa
         # update graph options based on graph config
         graph_types = [x['name'] for x in possible_graph_types]
 
-         # update graph_type if it's not valid (not in list) or if a new x/y variable has been
-         # selected
+        # update graph_type if it's not valid (not in list) or if a new x/y variable has been
+        # selected
         if (
             graph_type not in graph_types
             or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown', 'z_variable_dropdown']  # noqa
         ):
             graph_type = graph_types[0]
 
-        # we have to decide if we are setting graph types or using something that was already
-        # selected
-
-        # selected graph config
         selected_graph_config = next(x for x in possible_graph_types if x['name'] == graph_type)
 
         ####
@@ -1010,7 +1004,6 @@ def update_controls_and_graph(  # noqa
             graph_labels[size_variable] = size_label_input
         if facet_variable and facet_label_input:
             graph_labels[facet_variable] = facet_label_input
-
 
         columns = [x_variable, y_variable, z_variable, color_variable, size_variable, facet_variable]
         columns = [col for col in columns if col is not None]
