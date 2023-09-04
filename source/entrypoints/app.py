@@ -1751,4 +1751,3 @@ def update_facet_label_div_style(facet_variable: str | None) -> dict:
 
 if __name__ == '__main__':
     app.run_server(host=HOST, debug=DEBUG, port=PORT)
-
