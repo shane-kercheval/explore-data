@@ -1047,21 +1047,6 @@ def update_controls_and_graph(  # noqa
         # TODO: need to convert code to string and execute string
         log("creating fig")
         if graph_type == 'scatter':
-            # fig = px.scatter(
-            #     graph_data,
-            #     x=x_variable,
-            #     y=y_variable,
-            #     color=color_variable,
-            #     size=size_variable,
-            #     opacity=opacity,
-            #     facet_col=facet_variable,
-            #     facet_col_wrap=num_facet_columns,
-            #     category_orders=category_orders,
-            #     log_x='Log X-Axis' in log_x_y_axis,
-            #     log_y='Log Y-Axis' in log_x_y_axis,
-            #     title=title,
-            #     labels=graph_labels,
-            # )
             graph_code = textwrap.dedent(f"""
             fig = px.scatter(
                 graph_data,
@@ -1081,21 +1066,6 @@ def update_controls_and_graph(  # noqa
             fig
             """)
         elif graph_type == 'scatter-3d':
-            # fig = px.scatter_3d(
-            #     graph_data,
-            #     x=x_variable,
-            #     y=y_variable,
-            #     z=z_variable,
-            #     color=color_variable,
-            #     size=size_variable,
-            #     opacity=opacity,
-            #     log_x='Log X-Axis' in log_x_y_axis,
-            #     log_y='Log Y-Axis' in log_x_y_axis,
-            #     # TODO LOG_z
-            #     title=title,
-            #     labels=graph_labels,
-            # )
-            # fig.update_layout(margin={'l': 0, 'r': 0, 'b': 0, 't': 20})
             graph_code = textwrap.dedent(f"""
             fig = px.scatter_3d(
                 graph_data,
@@ -1115,81 +1085,88 @@ def update_controls_and_graph(  # noqa
             fig
             """)
         elif graph_type == 'box':
+            graph_code = textwrap.dedent(f"""
             fig = px.box(
                 graph_data,
-                x=x_variable,
-                y=y_variable,
-                color=color_variable,
-                # opacity=opacity,
-                facet_col=facet_variable,
-                facet_col_wrap=num_facet_columns,
-                category_orders=category_orders,
-                log_x='Log X-Axis' in log_x_y_axis,
-                log_y='Log Y-Axis' in log_x_y_axis,
-                title=title,
-                labels=graph_labels,
+                x={f"'{x_variable}'" if x_variable else None},
+                y={f"'{y_variable}'" if y_variable else None},
+                color={f"'{color_variable}'" if color_variable else None},
+                facet_col={f"'{facet_variable}'" if facet_variable else None},
+                facet_col_wrap={num_facet_columns},
+                category_orders={category_orders},
+                log_x={'Log X-Axis' in log_x_y_axis},
+                log_y={'Log Y-Axis' in log_x_y_axis},
+                title="{title}",
+                labels={graph_labels},
             )
+            fig
+            """)
         elif graph_type == 'line':
+            graph_code = textwrap.dedent(f"""
             fig = px.line(
                 graph_data,
-                x=x_variable,
-                y=y_variable,
-                color=color_variable,
-                # opacity=opacity,
-                facet_col=facet_variable,
-                facet_col_wrap=num_facet_columns,
-                log_x='Log X-Axis' in log_x_y_axis,
-                log_y='Log Y-Axis' in log_x_y_axis,
-                title=title,
-                labels=graph_labels,
+                x={f"'{x_variable}'" if x_variable else None},
+                y={f"'{y_variable}'" if y_variable else None},
+                color={f"'{color_variable}'" if color_variable else None},
+                facet_col={f"'{facet_variable}'" if facet_variable else None},
+                facet_col_wrap={num_facet_columns},
+                category_orders={category_orders},
+                log_x={'Log X-Axis' in log_x_y_axis},
+                log_y={'Log Y-Axis' in log_x_y_axis},
+                title="{title}",
+                labels={graph_labels},
             )
+            fig
+            """)
         elif graph_type == 'histogram':
+            graph_code = textwrap.dedent(f"""
             fig = px.histogram(
                 graph_data,
-                x=x_variable,
-                y=y_variable,
-                color=color_variable,
-                opacity=opacity,
-                barmode=bar_mode,
-                # bargap=0.1,
-                # histnorm='percent',
-                # log_x bool
-                # log_y bool
-                facet_col=facet_variable,
-                facet_col_wrap=num_facet_columns,
-                category_orders=category_orders,
-                log_x='Log X-Axis' in log_x_y_axis,
-                log_y='Log Y-Axis' in log_x_y_axis,
-                title=title,
-                labels=graph_labels,
-                nbins=n_bins,
+                x={f"'{x_variable}'" if x_variable else None},
+                y={f"'{y_variable}'" if y_variable else None},
+                color={f"'{color_variable}'" if color_variable else None},
+                opacity={opacity},
+                nbins={n_bins},
+                barmode={f"'{bar_mode}'" if bar_mode else None},
+                facet_col={f"'{facet_variable}'" if facet_variable else None},
+                facet_col_wrap={num_facet_columns},
+                category_orders={category_orders},
+                log_x={'Log X-Axis' in log_x_y_axis},
+                log_y={'Log Y-Axis' in log_x_y_axis},
+                title="{title}",
+                labels={graph_labels},
             )
-            if x_variable in numeric_columns and bar_mode != 'group':# and color_variable is None:
+            """)
+            if x_variable in numeric_columns and bar_mode and bar_mode != 'group':
                 # Adjust the bar group gap
-                fig.update_layout(barmode=bar_mode, bargap=0.05)
-
+                graph_code += f"fig.update_layout(barmode='{bar_mode}', bargap=0.05)\n"
+            graph_code += "fig\n"
         elif graph_type == 'bar':
+            graph_code = textwrap.dedent(f"""
             fig = px.bar(
                 graph_data,
-                x=x_variable,
-                y=y_variable,
-                color=color_variable,
-                # opacity=opacity,
-                barmode=bar_mode,
-                facet_col=facet_variable,
-                facet_col_wrap=num_facet_columns,
-                log_x='Log X-Axis' in log_x_y_axis,
-                log_y='Log Y-Axis' in log_x_y_axis,
-                title=title,
-                labels=graph_labels,
+                x={f"'{x_variable}'" if x_variable else None},
+                y={f"'{y_variable}'" if y_variable else None},
+                color={f"'{color_variable}'" if color_variable else None},
+                barmode={f"'{bar_mode}'" if bar_mode else None},
+                facet_col={f"'{facet_variable}'" if facet_variable else None},
+                facet_col_wrap={num_facet_columns},
+                category_orders={category_orders},
+                log_x={'Log X-Axis' in log_x_y_axis},
+                log_y={'Log Y-Axis' in log_x_y_axis},
+                title="{title}",
+                labels={graph_labels},
             )
+            """)
         else:
             raise ValueError(f"Unknown graph type: {graph_type}")
 
-        local_vars = locals()
-        exec(graph_code, globals(), local_vars)
-        fig = local_vars['fig']
-        generated_code += graph_code
+        if graph_code:
+            log_variable('graph_code', graph_code)
+            local_vars = locals()
+            exec(graph_code, globals(), local_vars)
+            fig = local_vars['fig']
+            generated_code += graph_code
 
     if selected_graph_config:
         # update color/size/facet variable options based on graph type
