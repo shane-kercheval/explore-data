@@ -523,7 +523,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                 id='correlations_graph',
                 config={'staticPlot': False, 'displayModeBar': False},
                 # 3/12 because the sidebar is 3/12 of the width
-                # style={'width': '100%', 'height': f'100vw'},  # noqa
+                # style={'width': '100%', 'height': f'100vw'},
             ),
         ]),
     ]),
@@ -1005,16 +1005,23 @@ def update_controls_and_graph(  # noqa
         if facet_variable and facet_label_input:
             graph_labels[facet_variable] = facet_label_input
 
-        columns = [x_variable, y_variable, z_variable, color_variable, size_variable, facet_variable]
-        columns = [col for col in columns if col is not None]
-        columns = list(set(columns))
-        graph_data = data[columns].copy()
+        possible_variables = [
+            x_variable,
+            y_variable,
+            z_variable,
+            color_variable,
+            size_variable,
+            facet_variable,
+        ]
+        selected_variables = [col for col in possible_variables if col is not None]
+        selected_variables = list(set(selected_variables))  # remove duplicates
+        graph_data = data[selected_variables].copy()
 
         # TODO: need to convert code to string and execute string
-        if any(x in numeric_columns for x in columns):
+        if any(x in numeric_columns for x in selected_variables):
             numeric_na_removal_markdown = "##### Automatic filters applied:  \n"
 
-        for column in columns:
+        for column in selected_variables:
             if column in string_columns or column in categorical_columns or column in boolean_columns:  # noqa
                 log(f"filling na for {column}")
                 graph_data[column] = hp.fill_na(
@@ -1035,23 +1042,16 @@ def update_controls_and_graph(  # noqa
                     numeric_na_removal_markdown += f"- `{num_values_removed:,}` missing values have been removed from `{column}`  \n"  # noqa
                 graph_data = graph_data[graph_data[column].notna()]
 
-        if any(x in numeric_columns for x in columns):
+        if any(x in numeric_columns for x in selected_variables):
             rows_remaining = len(graph_data)
             rows_removed = len(data) - rows_remaining
             numeric_na_removal_markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / len(data):.1%}`) rows removed from automatic filtering\n"  # noqa
             numeric_na_removal_markdown += "---  \n"
 
-        selected_variables = [
-            x_variable,
-            y_variable,
-            z_variable,
-            color_variable,
-            size_variable,
-            facet_variable,
-        ]
+
         # determine category orders
         for variable in selected_variables:
-            if variable is not None and variable in non_numeric_columns:
+            if variable in non_numeric_columns:
                 category_orders_cache = cache_category_order(
                     cache=category_orders_cache,
                     variable=variable,
