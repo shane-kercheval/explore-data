@@ -433,7 +433,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     categorical_columns = ['categories', 'categories_with_missing', 'categories_with_missing2']
     boolean_columns = ['booleans', 'booleans_with_missing', 'booleans_with_missing2']
     selected_variables = ['integers', 'strings', 'categories', 'booleans']
-    new_data, markdown = convert_to_graph_data(
+    new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
         numeric_columns=numeric_columns,
         string_columns=string_columns,
@@ -444,6 +444,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
+    assert code is not None
     assert markdown is not None
     assert '`5` rows remaining' in markdown
     assert '`0` (`0.0%`) rows removed' in markdown
@@ -453,7 +454,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     assert new_data['booleans'].tolist() == [True, False, True, False, True]
 
     # top_n_categories with 3 shouldn't change anything
-    new_data, markdown = convert_to_graph_data(
+    new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
         numeric_columns=numeric_columns,
         string_columns=string_columns,
@@ -464,6 +465,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
+    assert code is not None
     assert markdown is not None
     assert '`5` rows remaining' in markdown
     assert '`0` (`0.0%`) rows removed' in markdown
@@ -473,7 +475,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     assert new_data['booleans'].tolist() == [True, False, True, False, True]
 
     # top_n_categories with 3 shouldn't change anything
-    new_data, markdown = convert_to_graph_data(
+    new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
         numeric_columns=numeric_columns,
         string_columns=string_columns,
@@ -484,6 +486,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
+    assert code is not None
     assert markdown is not None
     assert '`5` rows remaining' in markdown
     assert '`0` (`0.0%`) rows removed' in markdown
@@ -494,7 +497,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
 
 
     # top_n_categories with 3 shouldn't change anything
-    new_data, markdown = convert_to_graph_data(
+    new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
         numeric_columns=numeric_columns,
         string_columns=string_columns,
@@ -505,6 +508,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
+    assert code is not None
     assert markdown is not None
     assert '`5` rows remaining' in markdown
     assert '`0` (`0.0%`) rows removed' in markdown
@@ -516,7 +520,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     selected_variables = [
         'integers_with_missing', 'strings', 'categories_with_missing2', 'booleans_with_missing',
     ]
-    new_data, markdown = convert_to_graph_data(
+    new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
         numeric_columns=numeric_columns,
         string_columns=string_columns,
@@ -527,6 +531,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
+    assert code is not None
     assert markdown is not None
     assert '`4` rows remaining' in markdown
     assert '`1` (`20.0%`) rows removed' in markdown
@@ -538,7 +543,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     selected_variables = [
         'integers_with_missing', 'strings_with_missing2', 'categories', 'booleans_with_missing2',
     ]
-    new_data, markdown = convert_to_graph_data(
+    new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
         numeric_columns=numeric_columns,
         string_columns=string_columns,
@@ -549,6 +554,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
+    assert code is not None
     assert markdown is not None
     assert '`4` rows remaining' in markdown
     assert '`1` (`20.0%`) rows removed' in markdown
@@ -560,7 +566,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     selected_variables = [
         'integers_with_missing', 'strings_with_missing2', 'categories', 'booleans_with_missing2',
     ]
-    new_data, markdown = convert_to_graph_data(
+    new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
         numeric_columns=numeric_columns,
         string_columns=string_columns,
@@ -571,6 +577,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
+    assert code is not None
     assert markdown is not None
     assert '`4` rows remaining' in markdown
     assert '`1` (`20.0%`) rows removed' in markdown

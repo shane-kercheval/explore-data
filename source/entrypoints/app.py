@@ -78,6 +78,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     dcc.Store(id='original_data'),
     dcc.Store(id='filtered_data'),
     dcc.Store(id='filter_columns_cache'),
+    dcc.Store(id='generated_filter_code'),
     dcc.Store(id='all_columns'),
     dcc.Store(id='numeric_columns'),
     dcc.Store(id='non_numeric_columns'),
@@ -420,7 +421,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             ]),
                             dbc.Tab(label="Code", children=[
                                 html.Br(),
-                                dcc.Markdown(id="visualize_filter_code", children="Select columns to graph."),  # noqa
+                                dcc.Markdown(id="generated_code", children="Select columns to graph."),  # noqa
                             ]),
                             dbc.Tab(label="Data", children=[
                                 html.Br(),
@@ -761,7 +762,7 @@ def load_data(  # noqa
 @app.callback(
     Output('filtered_data', 'data'),
     Output('visualize_filter_info', 'children'),
-    Output('visualize_filter_code', 'children'),
+    Output('generated_filter_code', 'data'),
     Input('filter-apply-button', 'n_clicks'),
     State('filter_columns_cache', 'data'),
     State('original_data', 'data'),
@@ -784,6 +785,7 @@ def filter_data(
     Output('visualize_graph', 'figure'),
     Output('visualize_table', 'data'),
     Output('visualize_numeric_na_removal_markdown', 'children'),
+    Output('generated_code', 'children'),
     Output('category_orders_cache', 'data'),
     # color variable
     Output('color_variable_div', 'style'),
@@ -828,6 +830,7 @@ def filter_data(
     Input('num_facet_columns_slider', 'value'),
     Input('filtered_data', 'data'),
     Input('labels-apply-button', 'n_clicks'),
+    State('generated_filter_code', 'data'),
     State('all_columns', 'data'),
     State('numeric_columns', 'data'),
     State('non_numeric_columns', 'data'),
@@ -874,7 +877,8 @@ def update_controls_and_graph(  # noqa
 
             data: pd.DataFrame,
             labels_apply_button: int,  # noqa: ARG001
-            all_columns: list[str],  # noqa: ARG001
+            generated_filter_code: str,
+            all_columns: list[str],
             numeric_columns: list[str],
             non_numeric_columns: list[str],
             date_columns: list[str],
@@ -931,6 +935,7 @@ def update_controls_and_graph(  # noqa
     graph_data = pd.DataFrame()
     selected_graph_config = None
     numeric_na_removal_markdown = ''
+    generated_code = generated_filter_code or ''
     if (
         (x_variable or y_variable)
         and data is not None and len(data) > 0
@@ -1008,7 +1013,7 @@ def update_controls_and_graph(  # noqa
         # TODO: need to convert code to string and execute string
         top_n_categories = top_n_categories_lookup[top_n_categories]
         top_n_categories = None if top_n_categories == 'None' else int(top_n_categories)
-        graph_data, numeric_na_removal_markdown = convert_to_graph_data(
+        graph_data, numeric_na_removal_markdown, code = convert_to_graph_data(
             data=data,
             numeric_columns=numeric_columns,
             string_columns=string_columns,
@@ -1017,6 +1022,9 @@ def update_controls_and_graph(  # noqa
             selected_variables=selected_variables,
             top_n_categories=top_n_categories,
         )
+        if code:
+            generated_code += "\n"
+            generated_code += code
 
         # for each selected variable, update the category order cache
         for variable in selected_variables:
@@ -1200,6 +1208,7 @@ def update_controls_and_graph(  # noqa
         fig,
         graph_data.iloc[0:500].to_dict('records'),
         numeric_na_removal_markdown,
+        f"""```python\n{generated_code}\n```""",
         category_orders_cache,
         # color variable
         color_variable_div,

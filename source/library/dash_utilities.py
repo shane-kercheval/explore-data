@@ -4,6 +4,14 @@ import pandas as pd
 from source.library.utilities import filter_dataframe, series_to_datetime, to_date
 import helpsk.pandas as hp
 
+
+TOP_N_CATEGORIES_CODE = """
+def top_n_categories(series: pd.Series, n: int):
+    top_n_values = series.value_counts().nlargest(n).index
+    return series.where(series.isin(top_n_values), '<Other>')
+
+"""
+
 def log(value: str) -> None:
     """Log value."""
     print(value, flush=True)
@@ -58,7 +66,7 @@ def filter_data_from_ui_control(  # noqa: PLR0915
 
     if not filters:
         log("No filters applied.")
-        return data.copy(), "No filters applied.", "No filters applied."
+        return data.copy(), "No filters applied.", ""
 
     converted_filters = {}
     markdown_text = "##### Manual filters applied:  \n"
@@ -122,7 +130,7 @@ def filter_data_from_ui_control(  # noqa: PLR0915
     log(f"{len(data):,} rows before after filtering")
     log(f"{len(filtered_data):,} rows remaining after filtering")
 
-    return filtered_data, markdown_text, f"""```\n{code}\n```"""
+    return filtered_data, markdown_text, code
 
 
 def get_variable_type(variable: str | None, options: dict) -> str | None:
@@ -274,7 +282,7 @@ def convert_to_graph_data(
         boolean_columns: list[str],
         selected_variables: list[str],
         top_n_categories: int,
-    ) -> tuple[pd.DataFrame, str]:
+    ) -> tuple[pd.DataFrame, str, str]:
     """
     Numeric columns are filtered by removing missing values.
     Missing values in non_numeric columns are replaced with '<Missing>'.
@@ -283,6 +291,7 @@ def convert_to_graph_data(
     """
     original_num_rows = len(data)
 
+    code = ""
     data = data[selected_variables].copy()
     # TODO: need to convert code to string and execute string
     if any(x in numeric_columns for x in selected_variables):
@@ -293,11 +302,17 @@ def convert_to_graph_data(
     for variable in selected_variables:
         if variable in string_columns or variable in categorical_columns or variable in boolean_columns:  # noqa
             log(f"filling na for {variable}")
+            if variable in categorical_columns:
+                code += f"graph_data['{variable}'] = graph_data['{variable}'].astype(str)\n"
             data[variable] = hp.fill_na(
                 series=data[variable],
                 missing_value_replacement='<Missing>',
             )
+            code += f"graph_data['{variable}'] = graph_data['{variable}'].fillna('<Missing>')\n"  # noqa
             if top_n_categories:
+                if 'top_n_categories' not in code:
+                    code += TOP_N_CATEGORIES_CODE
+                code += f"graph_data['{variable}'] = top_n_categories(graph_data['{variable}'], n={top_n_categories})\n"  # noqa
                 data[variable] = hp.top_n_categories(
                     categorical=data[variable],
                     top_n=top_n_categories,
@@ -308,6 +323,7 @@ def convert_to_graph_data(
             num_values_removed = data[variable].isna().sum()
             if num_values_removed > 0:
                 markdown += f"- `{num_values_removed:,}` missing values have been removed from `{variable}`  \n"  # noqa
+            code += f"graph_data = graph_data[graph_data['{variable}'].notna()].copy()\n"
             data = data[data[variable].notna()]
 
     if any(x in numeric_columns for x in selected_variables):
@@ -316,4 +332,4 @@ def convert_to_graph_data(
         markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / original_num_rows:.1%}`) rows removed from automatic filtering\n"  # noqa
         markdown += "---  \n"
 
-    return data, markdown
+    return data, markdown, code

@@ -156,9 +156,9 @@ def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataF
     if not filters:
         return data.copy(), ''
 
-    # filtered_data = data.copy()
+    # graph_data = data.copy()
     code = 'def filter_data(data: pd.DataFrame) -> pd.DataFrame:\n'
-    code += '    filtered_data = data.copy()\n'
+    code += '    graph_data = data.copy()\n'
 
     for column, values in filters.items():
         assert column in data.columns, f"Column `{column}` not found in `data`"
@@ -167,10 +167,10 @@ def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataF
         series, converted_to_datetime = series_to_datetime(data[column].copy())
         if converted_to_datetime:
             assert isinstance(values, tuple)
-            code += f"    series = pd.to_datetime(filtered_data['{column}']).dt.date\n"
+            code += f"    series = pd.to_datetime(graph_data['{column}']).dt.date\n"
             code += f"    start_date = pd.to_datetime('{values[0]}').date()\n"
             code += f"    end_date = pd.to_datetime('{values[1]}').date() + pd.Timedelta(days=1)\n"
-            code += f"    filtered_data = filtered_data[(series >= start_date) & (series < end_date)]\n"  # noqa
+            code += "    graph_data = graph_data[(series >= start_date) & (series < end_date)]\n"
         elif (
             hp.is_series_bool(series)
             or series.dtype == 'object'
@@ -180,16 +180,16 @@ def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataF
             # np.nan values are converted to 'nan' strings, but we need 'np.nan' string for the
             # code to work
             values = str(values).replace('nan', 'np.nan')  # noqa
-            code += f"    filtered_data = filtered_data[filtered_data['{column}'].isin({values})]\n"  # noqa
+            code += f"    graph_data = graph_data[graph_data['{column}'].isin({values})]\n"
         elif pd.api.types.is_numeric_dtype(series):
             assert isinstance(values, tuple)
-            code += f"    filtered_data = filtered_data[filtered_data['{column}'].between({values[0]}, {values[1]})]\n"  # noqa
+            code += f"    graph_data = graph_data[graph_data['{column}'].between({values[0]}, {values[1]})]\n"  # noqa
         else:
             raise ValueError(f"Unknown dtype for column `{column}`: {data[column].dtype}")
 
-    code += '    return filtered_data\n\n'
-    code += "filtered_data = filter_data(data)"
+    code += '    return graph_data\n\n'
+    code += "graph_data = filter_data(data)"
 
     local_vars = locals()
     exec(code, globals(), local_vars)
-    return local_vars['filtered_data'], code
+    return local_vars['graph_data'], code
