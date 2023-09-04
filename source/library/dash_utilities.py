@@ -7,13 +7,6 @@ import helpsk.pandas as hp
 import plotly.graph_objs as go
 
 
-TOP_N_CATEGORIES_CODE = """
-def top_n_categories(series: pd.Series, n: int):
-    top_n_values = series.value_counts().nlargest(n).index
-    return series.where(series.isin(top_n_values), '<Other>')
-
-"""
-
 def log(value: str) -> None:
     """Log value."""
     print(value, flush=True)
@@ -291,6 +284,14 @@ def convert_to_graph_data(
     The values non-numeric columns are updated to the top n categories. Other values are replaced
     with '<Other>'.
     """
+    top_n_categories_code = textwrap.dedent("""
+    def top_n_categories(series: pd.Series, n: int):
+        top_n_values = series.value_counts().nlargest(n).index
+        return series.where(series.isin(top_n_values), '<Other>')
+
+    """)
+    assert isinstance(selected_variables, list)
+    assert len(selected_variables) == len(set(selected_variables))  # no duplicates
     original_num_rows = len(data)
 
     code = ""
@@ -304,16 +305,17 @@ def convert_to_graph_data(
     for variable in selected_variables:
         if variable in string_columns or variable in categorical_columns or variable in boolean_columns:  # noqa
             log(f"filling na for {variable}")
-            if variable in categorical_columns:
-                code += f"graph_data['{variable}'] = graph_data['{variable}'].astype(str)\n"
-            data[variable] = hp.fill_na(
-                series=data[variable],
-                missing_value_replacement='<Missing>',
-            )
-            code += f"graph_data['{variable}'] = graph_data['{variable}'].fillna('<Missing>')\n"  # noqa
+            if data[variable].dtype.name == 'category':
+                if data[variable].isna().any():
+                    data[variable] = data[variable].cat.add_categories('<Missing>').fillna('<Missing>')  # noqa
+                    code += f"graph_data['{variable}'] = graph_data['{variable}'].cat.add_categories('<Missing>').fillna('<Missing>')\n"  # noqa
+            else:
+                data[variable] = data[variable].fillna('<Missing>')
+                code += f"graph_data['{variable}'] = graph_data['{variable}'].fillna('<Missing>')\n"  # noqa
+
             if top_n_categories:
                 if 'top_n_categories' not in code:
-                    code += TOP_N_CATEGORIES_CODE
+                    code += top_n_categories_code
                 code += f"graph_data['{variable}'] = top_n_categories(graph_data['{variable}'], n={top_n_categories})\n"  # noqa
                 data[variable] = hp.top_n_categories(
                     categorical=data[variable],
@@ -368,8 +370,34 @@ def generate_graph(
     log("creating fig")
     fig = None
     graph_data = data
+    graph_code = ''
+
+    def remove_unused_categories(variable: str) -> str:
+        """Remove unused categories from the categorical columns."""
+        values = graph_data[variable].unique().tolist()
+        if data[variable].unique().tolist() != data[variable].cat.categories.tolist():
+            code = "# plotly complains if the categories are missing\n"
+            code += f"unique_values = {values}\n"
+            code += "# preserve categories in same order as original categories\n"
+            code += "new_categories = [\n"
+            code += f"    x for x in graph_data['{variable}'].cat.categories\n"
+            code += f"     if x in {values}\n"
+            code += "]\n"
+            code += f"graph_data['{variable}'] = pd.Categorical(graph_data['{variable}'], categories=new_categories)\n\n"  # noqa
+            return code
+        return ""
+
+    for variable in list({color_variable, size_variable, facet_variable}):
+        # plotly express complains if you try to use a categorical series where the categories are
+        # not in the data.
+        # In graph_data we removed unused categories for color, size, or facet variable
+        # (for some reason plotly express doesn't complain about using a categorical column as x
+        # or y variable)
+        if variable and data[variable].dtype.name == 'category':
+            graph_code += remove_unused_categories(variable)
+
     if graph_type == 'scatter':
-        graph_code = textwrap.dedent(f"""
+        graph_code += textwrap.dedent(f"""
         import plotly.express as px
         fig = px.scatter(
             graph_data,
@@ -389,7 +417,7 @@ def generate_graph(
         fig
         """)
     elif graph_type == 'scatter-3d':
-        graph_code = textwrap.dedent(f"""
+        graph_code += textwrap.dedent(f"""
         import plotly.express as px
         fig = px.scatter_3d(
             graph_data,
@@ -409,7 +437,7 @@ def generate_graph(
         fig
         """)
     elif graph_type == 'box':
-        graph_code = textwrap.dedent(f"""
+        graph_code += textwrap.dedent(f"""
         import plotly.express as px
         fig = px.box(
             graph_data,
@@ -427,7 +455,7 @@ def generate_graph(
         fig
         """)
     elif graph_type == 'line':
-        graph_code = textwrap.dedent(f"""
+        graph_code += textwrap.dedent(f"""
         import plotly.express as px
         fig = px.line(
             graph_data,
@@ -445,7 +473,7 @@ def generate_graph(
         fig
         """)
     elif graph_type == 'histogram':
-        graph_code = textwrap.dedent(f"""
+        graph_code += textwrap.dedent(f"""
         import plotly.express as px
         fig = px.histogram(
             graph_data,
@@ -469,7 +497,7 @@ def generate_graph(
             graph_code += f"fig.update_layout(barmode='{bar_mode}', bargap=0.05)\n"
         graph_code += "fig\n"
     elif graph_type == 'bar':
-        graph_code = textwrap.dedent(f"""
+        graph_code += textwrap.dedent(f"""
         import plotly.express as px
         fig = px.bar(
             graph_data,
@@ -491,6 +519,7 @@ def generate_graph(
 
     log_variable('graph_code', graph_code)
     local_vars = locals()
-    exec(graph_code, globals(), local_vars)
+    global_vars = globals()
+    exec(graph_code, global_vars, local_vars)
     fig = local_vars['fig']
     return fig, graph_code
