@@ -1021,26 +1021,26 @@ def update_controls_and_graph(  # noqa
         if any(x in numeric_columns for x in selected_variables):
             numeric_na_removal_markdown = "##### Automatic filters applied:  \n"
 
-        for column in selected_variables:
-            if column in string_columns or column in categorical_columns or column in boolean_columns:  # noqa
-                log(f"filling na for {column}")
-                graph_data[column] = hp.fill_na(
-                    series=graph_data[column],
+        for variable in selected_variables:
+            if variable in string_columns or variable in categorical_columns or variable in boolean_columns:  # noqa
+                log(f"filling na for {variable}")
+                graph_data[variable] = hp.fill_na(
+                    series=graph_data[variable],
                     missing_value_replacement='<Missing>',
                 )
                 if top_n_categories:
                     log(f"top_n_categories_lookup[{top_n_categories}]: {top_n_categories_lookup[top_n_categories]}")  # noqa
-                    graph_data[column] = hp.top_n_categories(
-                        categorical=graph_data[column],
+                    graph_data[variable] = hp.top_n_categories(
+                        categorical=graph_data[variable],
                         top_n=int(top_n_categories_lookup[top_n_categories]),
                         other_category='<Other>',
                     )
-            if column in numeric_columns:
-                log(f"removing missing values for {column}")
-                num_values_removed = graph_data[column].isna().sum()
+            if variable in numeric_columns:
+                log(f"removing missing values for {variable}")
+                num_values_removed = graph_data[variable].isna().sum()
                 if num_values_removed > 0:
-                    numeric_na_removal_markdown += f"- `{num_values_removed:,}` missing values have been removed from `{column}`  \n"  # noqa
-                graph_data = graph_data[graph_data[column].notna()]
+                    numeric_na_removal_markdown += f"- `{num_values_removed:,}` missing values have been removed from `{variable}`  \n"  # noqa
+                graph_data = graph_data[graph_data[variable].notna()]
 
         if any(x in numeric_columns for x in selected_variables):
             rows_remaining = len(graph_data)
