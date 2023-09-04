@@ -199,12 +199,12 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 dbc.Button(
                                     "Clear",
                                     id="clear-settings-button",
-                                    style={'margin': '0 20px 20px 0'},
+                                    style={'margin': '10px 20px 0 0'},
                                 ),
                                 dbc.Button(
                                     "Swap X & Y",
                                     id="swap-x-y-button",
-                                    style={'margin': '0 20px 20px 0'},
+                                    style={'margin': '10px 20px 0 0'},
                                 ),
                             ]),
                         ]),
