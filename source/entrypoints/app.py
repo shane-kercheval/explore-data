@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 import base64
 import io
 import yaml
+import textwrap
 from dash import ctx, callback_context, dash_table
 from dash.dependencies import ALL
 import plotly.express as px
@@ -1046,37 +1047,73 @@ def update_controls_and_graph(  # noqa
         # TODO: need to convert code to string and execute string
         log("creating fig")
         if graph_type == 'scatter':
+            # fig = px.scatter(
+            #     graph_data,
+            #     x=x_variable,
+            #     y=y_variable,
+            #     color=color_variable,
+            #     size=size_variable,
+            #     opacity=opacity,
+            #     facet_col=facet_variable,
+            #     facet_col_wrap=num_facet_columns,
+            #     category_orders=category_orders,
+            #     log_x='Log X-Axis' in log_x_y_axis,
+            #     log_y='Log Y-Axis' in log_x_y_axis,
+            #     title=title,
+            #     labels=graph_labels,
+            # )
+            graph_code = textwrap.dedent(f"""
             fig = px.scatter(
                 graph_data,
-                x=x_variable,
-                y=y_variable,
-                color=color_variable,
-                size=size_variable,
-                opacity=opacity,
-                facet_col=facet_variable,
-                facet_col_wrap=num_facet_columns,
-                category_orders=category_orders,
-                log_x='Log X-Axis' in log_x_y_axis,
-                log_y='Log Y-Axis' in log_x_y_axis,
-                title=title,
-                labels=graph_labels,
+                x='{x_variable}',
+                y='{y_variable}',
+                color={f"'{color_variable}'" if color_variable else None},
+                size={f"'{size_variable}'" if size_variable else None},
+                opacity={opacity},
+                facet_col={f"'{facet_variable}'" if facet_variable else None},
+                facet_col_wrap={num_facet_columns},
+                category_orders={category_orders},
+                log_x={'Log X-Axis' in log_x_y_axis},
+                log_y={'Log Y-Axis' in log_x_y_axis},
+                title="{title}",
+                labels={graph_labels},
             )
+            fig
+            """)
         elif graph_type == 'scatter-3d':
+            # fig = px.scatter_3d(
+            #     graph_data,
+            #     x=x_variable,
+            #     y=y_variable,
+            #     z=z_variable,
+            #     color=color_variable,
+            #     size=size_variable,
+            #     opacity=opacity,
+            #     log_x='Log X-Axis' in log_x_y_axis,
+            #     log_y='Log Y-Axis' in log_x_y_axis,
+            #     # TODO LOG_z
+            #     title=title,
+            #     labels=graph_labels,
+            # )
+            # fig.update_layout(margin={'l': 0, 'r': 0, 'b': 0, 't': 20})
+            graph_code = textwrap.dedent(f"""
             fig = px.scatter_3d(
                 graph_data,
-                x=x_variable,
-                y=y_variable,
-                z=z_variable,
-                color=color_variable,
-                size=size_variable,
-                opacity=opacity,
-                log_x='Log X-Axis' in log_x_y_axis,
-                log_y='Log Y-Axis' in log_x_y_axis,
-                # TODO LOG_z
-                title=title,
-                labels=graph_labels,
+                x='{x_variable}',
+                y='{y_variable}',
+                z='{z_variable}',
+                color={f"'{color_variable}'" if color_variable else None},
+                size={f"'{size_variable}'" if size_variable else None},
+                opacity={opacity},
+                category_orders={category_orders},
+                log_x={'Log X-Axis' in log_x_y_axis},
+                log_y={'Log Y-Axis' in log_x_y_axis},
+                title="{title}",
+                labels={graph_labels},
             )
-            fig.update_layout(margin={'l': 0, 'r': 0, 'b': 0, 't': 20})
+            fig.update_layout(margin={{'l': 0, 'r': 0, 'b': 0, 't': 20}})
+            fig
+            """)
         elif graph_type == 'box':
             fig = px.box(
                 graph_data,
@@ -1148,6 +1185,11 @@ def update_controls_and_graph(  # noqa
             )
         else:
             raise ValueError(f"Unknown graph type: {graph_type}")
+
+        local_vars = locals()
+        exec(graph_code, globals(), local_vars)
+        fig = local_vars['fig']
+        generated_code += graph_code
 
     if selected_graph_config:
         # update color/size/facet variable options based on graph type
