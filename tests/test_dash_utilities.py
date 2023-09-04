@@ -611,6 +611,8 @@ def test_generate_graph__scatter(  # noqa
         mock_data2_boolean_columns: list[str],
         mock_data2_date_columns: list[str],
         ):
+    # this function tests all combinations found in graphing_configurations.yml
+    # it tests all selected-variable, grpah-type, and optional-variable combinations
     fig, code = generate_graph(
         data=mock_data2,
         graph_type='scatter',
