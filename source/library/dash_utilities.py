@@ -383,7 +383,7 @@ def generate_graph(
             category_orders={category_orders},
             log_x={log_x_axis},
             log_y={log_y_axis},
-            title={f"{title}" if title else None},
+            title={f'"{title}"' if title else None},
             labels={graph_labels},
         )
         fig
@@ -402,7 +402,7 @@ def generate_graph(
             category_orders={category_orders},
             log_x={log_x_axis},
             log_y={log_y_axis},
-            title={f"{title}" if title else None},
+            title={f'"{title}"' if title else None},
             labels={graph_labels},
         )
         fig.update_layout(margin={{'l': 0, 'r': 0, 'b': 0, 't': 20}})
@@ -421,7 +421,7 @@ def generate_graph(
             category_orders={category_orders},
             log_x={log_x_axis},
             log_y={log_y_axis},
-            title={f"{title}" if title else None},
+            title={f'"{title}"' if title else None},
             labels={graph_labels},
         )
         fig
@@ -439,7 +439,7 @@ def generate_graph(
             category_orders={category_orders},
             log_x={log_x_axis},
             log_y={log_y_axis},
-            title={f"{title}" if title else None},
+            title={f'"{title}"' if title else None},
             labels={graph_labels},
         )
         fig
@@ -460,7 +460,7 @@ def generate_graph(
             category_orders={category_orders},
             log_x={log_x_axis},
             log_y={log_y_axis},
-            title={f"{title}" if title else None},
+            title={f'"{title}"' if title else None},
             labels={graph_labels},
         )
         """)
@@ -482,7 +482,7 @@ def generate_graph(
             category_orders={category_orders},
             log_x={log_x_axis},
             log_y={log_y_axis},
-            title={f"{title}" if title else None},
+            title={f'"{title}"' if title else None},
             labels={graph_labels},
         )
         """)
