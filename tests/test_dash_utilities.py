@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import pytest
 from source.library.dash_utilities import (
+    convert_to_graph_data,
     filter_data_from_ui_control,
     get_columns_from_config,
     get_graph_config,
@@ -422,5 +423,137 @@ def test_get_columns_from_config():  # noqa
     )
     assert results == ['c', 'd', 'i', 'j']
 
+def test_convert_to_graph_data(capsys, mock_data2):  # noqa
+    data_copy = mock_data2.copy()
+    numeric_columns = [
+        'integers', 'integers_with_missing', 'integers_with_missing2',
+        'floats', 'floats_with_missing', 'floats_with_missing2',
+    ]
+    string_columns = ['strings', 'strings_with_missing', 'strings_with_missing2']
+    categorical_columns = ['categories', 'categories_with_missing', 'categories_with_missing2']
+    boolean_columns = ['booleans', 'booleans_with_missing', 'booleans_with_missing2']
+    selected_variables = ['integers', 'strings', 'categories', 'booleans']
+    new_data, markdown = convert_to_graph_data(
+        data=data_copy,
+        numeric_columns=numeric_columns,
+        string_columns=string_columns,
+        categorical_columns=categorical_columns,
+        boolean_columns=boolean_columns,
+        selected_variables=selected_variables,
+        top_n_categories=10,
+    )
+    assert new_data.columns.tolist() == selected_variables
+    assert mock_data2 is not new_data
+    assert markdown is not None
+    assert '`5` rows remaining' in markdown
+    assert '`0` (`0.0%`) rows removed' in markdown
+    assert new_data['integers'].tolist() == [1, 2, 3, 4, 5]
+    assert new_data['strings'].tolist() == ['a', 'b', 'c', 'a', 'b']
+    assert new_data['categories'].tolist() == ['a', 'b', 'c', 'a', 'b']
+    assert new_data['booleans'].tolist() == [True, False, True, False, True]
 
+    # top_n_categories with 3 shouldn't change anything
+    new_data, markdown = convert_to_graph_data(
+        data=data_copy,
+        numeric_columns=numeric_columns,
+        string_columns=string_columns,
+        categorical_columns=categorical_columns,
+        boolean_columns=boolean_columns,
+        selected_variables=selected_variables,
+        top_n_categories=3,
+    )
+    assert new_data.columns.tolist() == selected_variables
+    assert mock_data2 is not new_data
+    assert markdown is not None
+    assert '`5` rows remaining' in markdown
+    assert '`0` (`0.0%`) rows removed' in markdown
+    assert new_data['integers'].tolist() == [1, 2, 3, 4, 5]
+    assert new_data['strings'].tolist() == ['a', 'b', 'c', 'a', 'b']
+    assert new_data['categories'].tolist() == ['a', 'b', 'c', 'a', 'b']
+    assert new_data['booleans'].tolist() == [True, False, True, False, True]
 
+    # top_n_categories with 3 shouldn't change anything
+    new_data, markdown = convert_to_graph_data(
+        data=data_copy,
+        numeric_columns=numeric_columns,
+        string_columns=string_columns,
+        categorical_columns=categorical_columns,
+        boolean_columns=boolean_columns,
+        selected_variables=selected_variables,
+        top_n_categories=2,
+    )
+    assert new_data.columns.tolist() == selected_variables
+    assert mock_data2 is not new_data
+    assert markdown is not None
+    assert '`5` rows remaining' in markdown
+    assert '`0` (`0.0%`) rows removed' in markdown
+    assert new_data['integers'].tolist() == [1, 2, 3, 4, 5]
+    assert new_data['strings'].tolist() == ['a', 'b', '<Other>', 'a', 'b']
+    assert new_data['categories'].tolist() == ['a', 'b', '<Other>', 'a', 'b']
+    assert new_data['booleans'].tolist() == [True, False, True, False, True]
+
+    selected_variables = [
+        'integers_with_missing', 'strings', 'categories_with_missing2', 'booleans_with_missing',
+    ]
+    new_data, markdown = convert_to_graph_data(
+        data=data_copy,
+        numeric_columns=numeric_columns,
+        string_columns=string_columns,
+        categorical_columns=categorical_columns,
+        boolean_columns=boolean_columns,
+        selected_variables=selected_variables,
+        top_n_categories=2,
+    )
+    assert new_data.columns.tolist() == selected_variables
+    assert mock_data2 is not new_data
+    assert markdown is not None
+    assert '`4` rows remaining' in markdown
+    assert '`1` (`20.0%`) rows removed' in markdown
+    assert new_data['integers_with_missing'].tolist() == [1, 2, 4, 5]
+    assert new_data['strings'].tolist() == ['a', 'b', 'a', 'b']
+    assert new_data['categories_with_missing2'].tolist() == ['<Other>', 'b', 'a', 'b']
+    assert new_data['booleans_with_missing'].tolist() == [True, False, False, True]
+
+    selected_variables = [
+        'integers_with_missing', 'strings_with_missing2', 'categories', 'booleans_with_missing2',
+    ]
+    new_data, markdown = convert_to_graph_data(
+        data=data_copy,
+        numeric_columns=numeric_columns,
+        string_columns=string_columns,
+        categorical_columns=categorical_columns,
+        boolean_columns=boolean_columns,
+        selected_variables=selected_variables,
+        top_n_categories=2,
+    )
+    assert new_data.columns.tolist() == selected_variables
+    assert mock_data2 is not new_data
+    assert markdown is not None
+    assert '`4` rows remaining' in markdown
+    assert '`1` (`20.0%`) rows removed' in markdown
+    assert new_data['integers_with_missing'].tolist() == [1, 2, 4, 5]
+    assert new_data['strings_with_missing2'].tolist() == ['<Missing>', 'b', '<Other>', 'b']
+    assert new_data['categories'].tolist() == ['a', 'b', 'a', 'b']
+    assert new_data['booleans_with_missing2'].tolist() == ['<Missing>', False, False, '<Other>']
+
+    selected_variables = [
+        'integers_with_missing', 'strings_with_missing2', 'categories', 'booleans_with_missing2',
+    ]
+    new_data, markdown = convert_to_graph_data(
+        data=data_copy,
+        numeric_columns=numeric_columns,
+        string_columns=string_columns,
+        categorical_columns=categorical_columns,
+        boolean_columns=boolean_columns,
+        selected_variables=selected_variables,
+        top_n_categories=1,
+    )
+    assert new_data.columns.tolist() == selected_variables
+    assert mock_data2 is not new_data
+    assert markdown is not None
+    assert '`4` rows remaining' in markdown
+    assert '`1` (`20.0%`) rows removed' in markdown
+    assert new_data['integers_with_missing'].tolist() == [1, 2, 4, 5]
+    assert new_data['strings_with_missing2'].tolist() == ['<Other>', 'b', '<Other>', 'b']
+    assert new_data['categories'].tolist() == ['a', '<Other>', 'a', '<Other>']
+    assert new_data['booleans_with_missing2'].tolist() == ['<Other>', False, False, '<Other>']

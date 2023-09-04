@@ -22,6 +22,7 @@ from source.library.dash_ui import (
     CLASS__GRAPH_PANEL_SECTION,
 )
 from source.library.dash_utilities import (
+    convert_to_graph_data,
     create_title_and_labels,
     filter_data_from_ui_control,
     get_variable_type,
@@ -894,8 +895,6 @@ def update_controls_and_graph(  # noqa
 
     This function should *not* modify the data. It should only return a figure.
     """
-    # TODO: refactor and unit test
-
     log_function('update_graph')
     log_variable('triggered_id', ctx.triggered_id)
     log_variable('x_variable', x_variable)
@@ -1004,41 +1003,20 @@ def update_controls_and_graph(  # noqa
         ]
         selected_variables = [col for col in possible_variables if col is not None]
         selected_variables = list(set(selected_variables))  # remove duplicates
-        graph_data = data[selected_variables].copy()
 
+        log(f"top_n_categories_lookup[{top_n_categories}]: {top_n_categories_lookup[top_n_categories]}")  # noqa
         # TODO: need to convert code to string and execute string
-        if any(x in numeric_columns for x in selected_variables):
-            numeric_na_removal_markdown = "##### Automatic filters applied:  \n"
+        graph_data, numeric_na_removal_markdown = convert_to_graph_data(
+            data=data,
+            numeric_columns=numeric_columns,
+            string_columns=string_columns,
+            categorical_columns=categorical_columns,
+            boolean_columns=boolean_columns,
+            selected_variables=selected_variables,
+            top_n_categories=int(top_n_categories_lookup[top_n_categories]),
+        )
 
-        for variable in selected_variables:
-            if variable in string_columns or variable in categorical_columns or variable in boolean_columns:  # noqa
-                log(f"filling na for {variable}")
-                graph_data[variable] = hp.fill_na(
-                    series=graph_data[variable],
-                    missing_value_replacement='<Missing>',
-                )
-                if top_n_categories:
-                    log(f"top_n_categories_lookup[{top_n_categories}]: {top_n_categories_lookup[top_n_categories]}")  # noqa
-                    graph_data[variable] = hp.top_n_categories(
-                        categorical=graph_data[variable],
-                        top_n=int(top_n_categories_lookup[top_n_categories]),
-                        other_category='<Other>',
-                    )
-            if variable in numeric_columns:
-                log(f"removing missing values for {variable}")
-                num_values_removed = graph_data[variable].isna().sum()
-                if num_values_removed > 0:
-                    numeric_na_removal_markdown += f"- `{num_values_removed:,}` missing values have been removed from `{variable}`  \n"  # noqa
-                graph_data = graph_data[graph_data[variable].notna()]
-
-        if any(x in numeric_columns for x in selected_variables):
-            rows_remaining = len(graph_data)
-            rows_removed = len(data) - rows_remaining
-            numeric_na_removal_markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / len(data):.1%}`) rows removed from automatic filtering\n"  # noqa
-            numeric_na_removal_markdown += "---  \n"
-
-
-        # determine category orders
+        # for each selected variable, update the category order cache
         for variable in selected_variables:
             if variable in non_numeric_columns:
                 category_orders_cache = cache_category_order(

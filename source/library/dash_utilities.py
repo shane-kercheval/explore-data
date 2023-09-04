@@ -264,3 +264,54 @@ def create_title_and_labels(  # noqa
         graph_labels[facet_variable] = facet_label_input
 
     return title, graph_labels
+
+
+def convert_to_graph_data(
+        data: pd.DataFrame,
+        numeric_columns: list[str],
+        string_columns: list[str],
+        categorical_columns: list[str],
+        boolean_columns: list[str],
+        selected_variables: list[str],
+        top_n_categories: int,
+    ) -> tuple[pd.DataFrame, str]:
+    """
+    Numeric columns are filtered by removing missing values.
+    Missing values in non_numeric columns are replaced with '<Missing>'.
+    The values non-numeric columns are updated to the top n categories. Other values are replaced
+    with '<Other>'.
+    """
+    original_num_rows = len(data)
+
+    data = data[selected_variables].copy()
+    # TODO: need to convert code to string and execute string
+    if any(x in numeric_columns for x in selected_variables):
+        numeric_na_removal_markdown = "##### Automatic filters applied:  \n"
+
+    for variable in selected_variables:
+        if variable in string_columns or variable in categorical_columns or variable in boolean_columns:  # noqa
+            log(f"filling na for {variable}")
+            data[variable] = hp.fill_na(
+                series=data[variable],
+                missing_value_replacement='<Missing>',
+            )
+            if top_n_categories:
+                data[variable] = hp.top_n_categories(
+                    categorical=data[variable],
+                    top_n=top_n_categories,
+                    other_category='<Other>',
+                )
+        if variable in numeric_columns:
+            log(f"removing missing values for {variable}")
+            num_values_removed = data[variable].isna().sum()
+            if num_values_removed > 0:
+                numeric_na_removal_markdown += f"- `{num_values_removed:,}` missing values have been removed from `{variable}`  \n"  # noqa
+            data = data[data[variable].notna()]
+
+    if any(x in numeric_columns for x in selected_variables):
+        rows_remaining = len(data)
+        rows_removed = original_num_rows - rows_remaining
+        numeric_na_removal_markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / original_num_rows:.1%}`) rows removed from automatic filtering\n"  # noqa
+        numeric_na_removal_markdown += "---  \n"
+
+    return data, numeric_na_removal_markdown
