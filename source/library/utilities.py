@@ -119,7 +119,9 @@ def create_random_dataframe(num_rows: int, sporadic_missing: bool = False) -> pd
 
         missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
         fake_df.loc[missing_indices, 'Categories'] = np.nan
+        fake_df['Categories'] = pd.Categorical(fake_df['Categories'], categories=['Category A', 'Category B', 'Category C'])  # noqa
         fake_df.loc[missing_indices, 'Categories2'] = None
+        fake_df['Categories2'] = pd.Categorical(fake_df['Categories2'], categories=['Category A', 'Category B', 'Category C'])  # noqa
 
         missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
         fake_df.loc[missing_indices, 'Booleans1'] = np.nan
