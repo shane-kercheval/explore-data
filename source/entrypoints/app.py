@@ -151,7 +151,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
         ]),
         dbc.Tab(label="Visualize", children=[
             dbc.Row([
-                dbc.Col(width=3, children=[
+                dbc.Col(sm=4, md=4, lg=4, xl=3, xxl=2, children=[
                     dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
                         dbc.CardHeader(
                             dbc.Button(
@@ -399,7 +399,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         ]),
                     ]),
                 ]),
-                dbc.Col(width=9, children=[
+                dbc.Col(sm=8, md=8, lg=8, xl=9, xxl= 10, children=[
                     dcc.Loading(type="default", children=[
                         dcc.Graph(
                             id='visualize_graph',
