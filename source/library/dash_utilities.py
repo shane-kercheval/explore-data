@@ -1,8 +1,10 @@
 """Utility functions for dash app."""
+import textwrap
 import numpy as np
 import pandas as pd
 from source.library.utilities import filter_dataframe, series_to_datetime, to_date
 import helpsk.pandas as hp
+import plotly.graph_objs as go
 
 
 TOP_N_CATEGORIES_CODE = """
@@ -333,3 +335,162 @@ def convert_to_graph_data(
         markdown += "---  \n"
 
     return data, markdown, code
+
+
+def generate_graph(
+        data: pd.DataFrame,
+        graph_type: str,
+        x_variable: str | None,
+        y_variable: str | None,
+        z_variable: str | None,
+        color_variable: str | None,
+        size_variable: str | None,
+        facet_variable: str | None,
+        num_facet_columns: int | None,
+        category_orders: dict | None,
+        bar_mode: str | None,
+        opacity: float | None,
+        n_bins: int | None,
+        log_x_axis: bool | None,
+        log_y_axis: bool | None,
+        title: str | None,
+        graph_labels: dict | None,
+        numeric_columns: list[str],
+        string_columns: list[str],
+        categorical_columns: list[str],
+        boolean_columns: list[str],
+        date_columns: list[str],
+    ) -> tuple[go.Figure, str]:
+    """
+    Generate a graph based on the selected variables. Returns the graph and the code.
+    The code is a string that can be used to recreate the graph.
+    """
+    log("creating fig")
+    fig = None
+    graph_data = data
+    if graph_type == 'scatter':
+        graph_code = textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.scatter(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            color={f"'{color_variable}'" if color_variable else None},
+            size={f"'{size_variable}'" if size_variable else None},
+            opacity={opacity},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            title={f"{title}" if title else None},
+            labels={graph_labels},
+        )
+        fig
+        """)
+    elif graph_type == 'scatter-3d':
+        graph_code = textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.scatter_3d(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            z={f"'{z_variable}'" if z_variable else None},
+            color={f"'{color_variable}'" if color_variable else None},
+            size={f"'{size_variable}'" if size_variable else None},
+            opacity={opacity},
+            category_orders={category_orders},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            title={f"{title}" if title else None},
+            labels={graph_labels},
+        )
+        fig.update_layout(margin={{'l': 0, 'r': 0, 'b': 0, 't': 20}})
+        fig
+        """)
+    elif graph_type == 'box':
+        graph_code = textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.box(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            color={f"'{color_variable}'" if color_variable else None},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            title={f"{title}" if title else None},
+            labels={graph_labels},
+        )
+        fig
+        """)
+    elif graph_type == 'line':
+        graph_code = textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.line(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            color={f"'{color_variable}'" if color_variable else None},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            title={f"{title}" if title else None},
+            labels={graph_labels},
+        )
+        fig
+        """)
+    elif graph_type == 'histogram':
+        graph_code = textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.histogram(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            color={f"'{color_variable}'" if color_variable else None},
+            opacity={opacity},
+            nbins={n_bins},
+            barmode={f"'{bar_mode}'" if bar_mode else None},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            title={f"{title}" if title else None},
+            labels={graph_labels},
+        )
+        """)
+        if x_variable in numeric_columns and bar_mode and bar_mode != 'group':
+            # Adjust the bar group gap
+            graph_code += f"fig.update_layout(barmode='{bar_mode}', bargap=0.05)\n"
+        graph_code += "fig\n"
+    elif graph_type == 'bar':
+        graph_code = textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.bar(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            color={f"'{color_variable}'" if color_variable else None},
+            barmode={f"'{bar_mode}'" if bar_mode else None},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            title={f"{title}" if title else None},
+            labels={graph_labels},
+        )
+        """)
+    else:
+        raise ValueError(f"Unknown graph type: {graph_type}")
+
+    log_variable('graph_code', graph_code)
+    local_vars = locals()
+    exec(graph_code, globals(), local_vars)
+    fig = local_vars['fig']
+    return fig, graph_code

@@ -2,9 +2,11 @@
 import pandas as pd
 import numpy as np
 import pytest
+from tests.conftest import generate_combinations
 from source.library.dash_utilities import (
     convert_to_graph_data,
     filter_data_from_ui_control,
+    generate_graph,
     get_columns_from_config,
     get_graph_config,
     get_variable_type,
@@ -15,6 +17,7 @@ from source.library.dash_utilities import (
     values_to_dropdown_options,
 )
 import helpsk.pandas as hp
+import plotly.graph_objs as go
 
 
 def test_log(capsys):  # noqa
@@ -585,3 +588,152 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     assert new_data['strings_with_missing2'].tolist() == ['<Other>', 'b', '<Other>', 'b']
     assert new_data['categories'].tolist() == ['a', '<Other>', 'a', '<Other>']
     assert new_data['booleans_with_missing2'].tolist() == ['<Other>', False, False, '<Other>']
+
+
+def test_get_combinations():  # noqa
+    assert generate_combinations([[None], ['a', 'b'], [None]]) == [(None, 'a', None), (None, 'b', None)]  # noqa
+    assert generate_combinations([[None], ['a', 'b']]) == [(None, 'a'), (None, 'b')]
+    assert generate_combinations([[1], ['a', 'b']]) == [(1, 'a'), (1, 'b')]
+    assert generate_combinations([[1, 2], ['a', 'b']]) == [(1, 'a'), (1, 'b'), (2, 'a'), (2, 'b')]
+    assert generate_combinations([[1, 2], ['a', 'b'], [True, False]]) == [
+        (1, 'a', True), (1, 'a', False), (1, 'b', True), (1, 'b', False),
+        (2, 'a', True), (2, 'a', False), (2, 'b', True), (2, 'b', False),
+    ]
+
+
+def test_generate_graph__scatter(  # noqa
+        capsys,  # noqa
+        mock_data2: list[str],
+        graphing_configurations: dict,
+        mock_data2_numeric_columns: list[str],
+        mock_data2_string_columns: list[str],
+        mock_data2_categorical_columns: list[str],
+        mock_data2_boolean_columns: list[str],
+        mock_data2_date_columns: list[str],
+        ):
+    fig, code = generate_graph(
+        data=mock_data2,
+        graph_type='scatter',
+        x_variable='integers',
+        y_variable='floats',
+        z_variable=None,
+        color_variable=None,
+        size_variable=None,
+        facet_variable=None,
+        num_facet_columns=None,
+        category_orders=None,
+        bar_mode=None,
+        opacity=None,
+        n_bins=None,
+        log_x_axis=None,
+        log_y_axis=None,
+        title=None,
+        graph_labels=None,
+        numeric_columns=mock_data2_numeric_columns,
+        string_columns=mock_data2_string_columns,
+        categorical_columns=mock_data2_categorical_columns,
+        boolean_columns=mock_data2_boolean_columns,
+        date_columns=mock_data2_date_columns,
+    )
+    assert isinstance(fig, go.Figure)
+    assert code is not None
+    assert 'px.scatter' in code
+
+    type_to_column_lookup = {
+        'numeric': 'integers',
+        'date': 'dates',
+        'string': 'strings',
+        'categorical': 'categories',
+        'boolean': 'booleans',
+    }
+
+    for config in graphing_configurations:
+        # config = graphing_configurations[6]
+        selected_variables = config['selected_variables']
+        x_variable = selected_variables['x_variable'] if 'x_variable' in selected_variables else None  # noqa
+        y_variable = selected_variables['y_variable'] if 'y_variable' in selected_variables else None  # noqa
+        z_variable = selected_variables['z_variable'] if 'z_variable' in selected_variables else None  # noqa
+        variable_combinations = generate_combinations([
+            x_variable or [None],
+            y_variable or [None],
+            z_variable or [None],
+        ])
+        graph_types = config['graph_types']
+        for graph_type in graph_types:
+            # graph_type = graph_types[0]
+            for x_var, y_var, z_var in variable_combinations:
+                # x_var, y_var, z_var = variable_combinations[0]
+                # test with no parameters
+                fig, code = generate_graph(
+                    data=mock_data2,
+                    graph_type=graph_type['name'],
+                    x_variable=type_to_column_lookup[x_var] if x_var else None,
+                    y_variable=type_to_column_lookup[y_var] if y_var else None,
+                    z_variable=type_to_column_lookup[z_var] if z_var else None,
+                    color_variable=None,
+                    size_variable=None,
+                    facet_variable=None,
+                    num_facet_columns=4,
+                    category_orders={'var': ['a', 'b', 'c']},
+                    bar_mode='relative',
+                    opacity=0.6,
+                    n_bins=30,
+                    log_x_axis=None,
+                    log_y_axis=None,
+                    title=None,
+                    graph_labels=None,
+                    numeric_columns=mock_data2_numeric_columns,
+                    string_columns=mock_data2_string_columns,
+                    categorical_columns=mock_data2_categorical_columns,
+                    boolean_columns=mock_data2_boolean_columns,
+                    date_columns=mock_data2_date_columns,
+                )
+                assert isinstance(fig, go.Figure)
+                assert code is not None
+                if graph_type['name'] == 'scatter-3d':
+                    assert 'px.scatter_3d' in code
+                else:
+                    assert graph_type['name'] in code
+
+                # test with optional parameters
+                optional_variables = graph_type['optional_variables']
+                color_variable = optional_variables['color_variable']['types'] if 'color_variable' in optional_variables else None  # noqa
+                size_variable = optional_variables['size_variable']['types'] if 'size_variable' in optional_variables else None  # noqa
+                facet_variable = optional_variables['facet_variable']['types'] if 'facet_variable' in optional_variables else None  # noqa
+
+                optional_combinations = generate_combinations([
+                    color_variable or [None],
+                    size_variable or [None],
+                    facet_variable or [None],
+                ])
+                for color_var, size_var, facet_var in optional_combinations:
+                    fig, code = generate_graph(
+                        data=mock_data2,
+                        graph_type=graph_type['name'],
+                        x_variable=type_to_column_lookup[x_var] if x_var else None,
+                        y_variable=type_to_column_lookup[y_var] if y_var else None,
+                        z_variable=type_to_column_lookup[z_var] if z_var else None,
+                        color_variable=type_to_column_lookup[color_var] if color_var else None,
+                        size_variable=type_to_column_lookup[size_var] if size_var else None,
+                        facet_variable=type_to_column_lookup[facet_var] if facet_var else None,
+                        num_facet_columns=None,
+                        category_orders=None,
+                        bar_mode=None,
+                        opacity=None,
+                        n_bins=None,
+                        log_x_axis=True,
+                        log_y_axis=False,
+                        title=None,
+                        graph_labels=None,
+                        numeric_columns=mock_data2_numeric_columns,
+                        string_columns=mock_data2_string_columns,
+                        categorical_columns=mock_data2_categorical_columns,
+                        boolean_columns=mock_data2_boolean_columns,
+                        date_columns=mock_data2_date_columns,
+                    )
+                    assert isinstance(fig, go.Figure)
+                    assert code is not None
+                    if graph_type['name'] == 'scatter-3d':
+                        assert 'px.scatter_3d' in code
+                    else:
+                        assert graph_type['name'] in code
