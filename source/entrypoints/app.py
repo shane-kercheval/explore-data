@@ -930,7 +930,7 @@ def update_controls_and_graph(  # noqa
 
     fig = {}
     graph_data = pd.DataFrame()
-    graph_config = None
+    selected_graph_config = None
     numeric_na_removal_markdown = ''
     if (
         (x_variable or y_variable)
@@ -952,16 +952,16 @@ def update_controls_and_graph(  # noqa
             'categorical': categorical_columns,
             'boolean': boolean_columns,
         }
-        graph_config = get_graph_config(
+        matching_graph_config = get_graph_config(
             configurations=GRAPH_CONFIGS['configurations'],
             x_variable=get_variable_type(variable=x_variable, options=columns_by_type),
             y_variable=get_variable_type(variable=y_variable, options=columns_by_type),
             z_variable=get_variable_type(variable=z_variable, options=columns_by_type),
         )
-        log_variable('graph_config', graph_config)
-        graph_type_configs = graph_config['graph_types']
+        log_variable('matching_graph_config', matching_graph_config)
+        possible_graph_types = matching_graph_config['graph_types']
         # update graph options based on graph config
-        graph_types = [x['name'] for x in graph_type_configs]
+        graph_types = [x['name'] for x in possible_graph_types]
 
          # update graph_type if it's not valid (not in list) or if a new x/y variable has been
          # selected
@@ -975,7 +975,7 @@ def update_controls_and_graph(  # noqa
         # selected
 
         # selected graph config
-        graph_config = next(x for x in graph_type_configs if x['name'] == graph_type)
+        selected_graph_config = next(x for x in possible_graph_types if x['name'] == graph_type)
 
         ####
         # create graph
@@ -986,7 +986,7 @@ def update_controls_and_graph(  # noqa
             if subtitle_input:
                 title += f"<br><sub>{subtitle_input}</sub>"
         else:
-            title = f"<br><sub>{graph_config['description']}</sub>"
+            title = f"<br><sub>{selected_graph_config['description']}</sub>"
             if x_variable:
                 title = title.replace('{{x_variable}}', f"`{x_variable}`")
             if y_variable:
@@ -1179,10 +1179,10 @@ def update_controls_and_graph(  # noqa
         else:
             raise ValueError(f"Unknown graph type: {graph_type}")
 
-    if graph_config:
+    if selected_graph_config:
         # update color/size/facet variable options based on graph type
-        log_variable('graph_config', graph_config)
-        optional_variables = graph_config['optional_variables']
+        log_variable('graph_config', selected_graph_config)
+        optional_variables = selected_graph_config['optional_variables']
         log_variable('optional_variables', optional_variables)
 
 
