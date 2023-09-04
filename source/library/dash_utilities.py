@@ -286,7 +286,9 @@ def convert_to_graph_data(
     data = data[selected_variables].copy()
     # TODO: need to convert code to string and execute string
     if any(x in numeric_columns for x in selected_variables):
-        numeric_na_removal_markdown = "##### Automatic filters applied:  \n"
+        markdown = "##### Automatic filters applied:  \n"
+    else:
+        markdown = ""
 
     for variable in selected_variables:
         if variable in string_columns or variable in categorical_columns or variable in boolean_columns:  # noqa
@@ -305,13 +307,13 @@ def convert_to_graph_data(
             log(f"removing missing values for {variable}")
             num_values_removed = data[variable].isna().sum()
             if num_values_removed > 0:
-                numeric_na_removal_markdown += f"- `{num_values_removed:,}` missing values have been removed from `{variable}`  \n"  # noqa
+                markdown += f"- `{num_values_removed:,}` missing values have been removed from `{variable}`  \n"  # noqa
             data = data[data[variable].notna()]
 
     if any(x in numeric_columns for x in selected_variables):
         rows_remaining = len(data)
         rows_removed = original_num_rows - rows_remaining
-        numeric_na_removal_markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / original_num_rows:.1%}`) rows removed from automatic filtering\n"  # noqa
-        numeric_na_removal_markdown += "---  \n"
+        markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / original_num_rows:.1%}`) rows removed from automatic filtering\n"  # noqa
+        markdown += "---  \n"
 
-    return data, numeric_na_removal_markdown
+    return data, markdown

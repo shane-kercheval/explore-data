@@ -1006,6 +1006,8 @@ def update_controls_and_graph(  # noqa
 
         log(f"top_n_categories_lookup[{top_n_categories}]: {top_n_categories_lookup[top_n_categories]}")  # noqa
         # TODO: need to convert code to string and execute string
+        top_n_categories = top_n_categories_lookup[top_n_categories]
+        top_n_categories = None if top_n_categories == 'None' else int(top_n_categories)
         graph_data, numeric_na_removal_markdown = convert_to_graph_data(
             data=data,
             numeric_columns=numeric_columns,
@@ -1013,7 +1015,7 @@ def update_controls_and_graph(  # noqa
             categorical_columns=categorical_columns,
             boolean_columns=boolean_columns,
             selected_variables=selected_variables,
-            top_n_categories=int(top_n_categories_lookup[top_n_categories]),
+            top_n_categories=top_n_categories,
         )
 
         # for each selected variable, update the category order cache

@@ -480,6 +480,27 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         categorical_columns=categorical_columns,
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
+        top_n_categories=None,
+    )
+    assert new_data.columns.tolist() == selected_variables
+    assert mock_data2 is not new_data
+    assert markdown is not None
+    assert '`5` rows remaining' in markdown
+    assert '`0` (`0.0%`) rows removed' in markdown
+    assert new_data['integers'].tolist() == [1, 2, 3, 4, 5]
+    assert new_data['strings'].tolist() == ['a', 'b', 'c', 'a', 'b']
+    assert new_data['categories'].tolist() == ['a', 'b', 'c', 'a', 'b']
+    assert new_data['booleans'].tolist() == [True, False, True, False, True]
+
+
+    # top_n_categories with 3 shouldn't change anything
+    new_data, markdown = convert_to_graph_data(
+        data=data_copy,
+        numeric_columns=numeric_columns,
+        string_columns=string_columns,
+        categorical_columns=categorical_columns,
+        boolean_columns=boolean_columns,
+        selected_variables=selected_variables,
         top_n_categories=2,
     )
     assert new_data.columns.tolist() == selected_variables
