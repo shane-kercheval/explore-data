@@ -386,8 +386,7 @@ def get_category_orders(
     return category_orders
 
 
-
-def generate_graph(
+def generate_graph(  # noqa: PLR0912
         data: pd.DataFrame,
         graph_type: str,
         x_variable: str | None,
@@ -398,6 +397,7 @@ def generate_graph(
         facet_variable: str | None,
         num_facet_columns: int | None,
         selected_category_order: str | None,
+        hist_func_agg: str | None,
         bar_mode: str | None,
         opacity: float | None,
         n_bins: int | None,
@@ -529,6 +529,12 @@ def generate_graph(
         fig
         """)
     elif graph_type == 'histogram':
+
+        if y_variable and y_variable in numeric_columns:
+            hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
+        else:
+            hist_func_agg = None
+
         graph_code += textwrap.dedent(f"""
         import plotly.express as px
         fig = px.histogram(
@@ -538,6 +544,7 @@ def generate_graph(
             color={f"'{color_variable}'" if color_variable else None},
             opacity={opacity},
             nbins={n_bins},
+            histfunc={hist_func_agg},
             barmode={f"'{bar_mode}'" if bar_mode else None},
             facet_col={f"'{facet_variable}'" if facet_variable else None},
             facet_col_wrap={num_facet_columns},

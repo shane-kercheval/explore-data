@@ -262,6 +262,20 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     clearable=False,
                                     placeholder="Select a variable above.",
                                 ),
+                                create_dropdown_control(
+                                    label="Aggregation",
+                                    id='hist_func_agg',
+                                    hidden=False,
+                                    multi=False,
+                                    clearable=False,
+                                    options=[
+                                        {'label': 'Sum', 'value': 'sum'},
+                                        {'label': 'Average', 'value': 'avg'},
+                                        {'label': 'Min', 'value': 'min'},
+                                        {'label': 'Max', 'value': 'max'},
+                                    ],
+                                    value='sum',
+                                ),
                                 # One of 'group', 'overlay' or 'relative'
                                 # In 'relative' mode, bars are stacked above zero for positive
                                 # values and below zero for negative values.
@@ -788,6 +802,7 @@ def filter_data(
     Input('n_bins_slider', 'value'),
     Input('opacity_slider', 'value'),
     Input('top_n_categories_slider', 'value'),
+    Input('hist_func_agg_dropdown', 'value'),
     Input('bar_mode_dropdown', 'value'),
     Input('log_x_y_axis_checklist', 'value'),
     Input('num_facet_columns_slider', 'value'),
@@ -833,6 +848,7 @@ def update_controls_and_graph(  # noqa
             n_bins: int,
             opacity: float,
             top_n_categories: float,
+            hist_func_agg: str,
             bar_mode: str,
             log_x_y_axis: list[str],
             num_facet_columns: int,
@@ -871,6 +887,7 @@ def update_controls_and_graph(  # noqa
     log_variable('n_bins', n_bins)
     log_variable('opacity', opacity)
     log_variable('top_n_categories', top_n_categories)
+    log_variable('hist_func_agg', hist_func_agg)
     log_variable('bar_mode', bar_mode)
     log_variable('log_x_y_axis', log_x_y_axis)
     log_variable('num_facet_columns', num_facet_columns)
@@ -1002,6 +1019,7 @@ def update_controls_and_graph(  # noqa
                 facet_variable=facet_variable,
                 num_facet_columns=num_facet_columns,
                 selected_category_order=sort_categories,
+                hist_func_agg=hist_func_agg,
                 bar_mode=bar_mode,
                 opacity=opacity,
                 n_bins=n_bins,
@@ -1422,13 +1440,31 @@ def cache_filter_columns(  # noqa: PLR0912
 
 
 @app.callback(
-    Output('bar_mode_div', 'style'),
+    Output('hist_func_agg_div', 'style'),
     Input('graph_type_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
+    State('numeric_columns', 'data'),
     prevent_initial_call=True,
 )
-def update_bar_mode_div_style(graph_type: str) -> dict:
+def update_hist_func_agg_div_style(
+        graph_type: str,
+        y_variable: str | None,
+        numeric_columns: list[str]) -> dict:
     """Toggle the bar mode div."""
-    if graph_type in ['histogram', 'bar']:
+    if y_variable and y_variable in numeric_columns and graph_type == 'histogram':
+        return {'display': 'block'}
+    return {'display': 'none'}
+
+
+@app.callback(
+    Output('bar_mode_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    Input('color_variable_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_bar_mode_div_style(graph_type: str, color_variable: str | None) -> dict:
+    """Toggle the bar mode div."""
+    if color_variable and graph_type in ['histogram', 'bar']:
         return {'display': 'block'}
     return {'display': 'none'}
 
