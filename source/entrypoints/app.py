@@ -408,7 +408,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                 ]),
                 dbc.Col(sm=8, md=8, lg=8, xl=9, xxl= 10, children=[
                     dbc.Alert(
-                        "Not a valid selection.",
+                        "Unsupported selection.",
                         color="danger",
                         id="invalid_configuration_alert",
                         dismissable=True,
