@@ -358,6 +358,12 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     options=['Log X-Axis', 'Log Y-Axis'],
                                     value=[],
                                 ),
+                                create_checklist_control(
+                                    id='free_x_y_axis',
+                                    hidden=True,
+                                    options=['Free X-Axis', 'Free Y-Axis'],
+                                    value=[],
+                                ),
                                 create_slider_control(
                                     label="# of Facet Columns",
                                     id='num_facet_columns',
@@ -822,6 +828,7 @@ def filter_data(
     Input('hist_func_agg_dropdown', 'value'),
     Input('bar_mode_dropdown', 'value'),
     Input('log_x_y_axis_checklist', 'value'),
+    Input('free_x_y_axis_checklist', 'value'),
     Input('num_facet_columns_slider', 'value'),
     Input('filtered_data', 'data'),
     Input('labels-apply-button', 'n_clicks'),
@@ -869,6 +876,7 @@ def update_controls_and_graph(  # noqa
             hist_func_agg: str,
             bar_mode: str,
             log_x_y_axis: list[str],
+            free_x_y_axis: list[str],
             num_facet_columns: int,
 
             data: pd.DataFrame,
@@ -909,6 +917,7 @@ def update_controls_and_graph(  # noqa
     log_variable('hist_func_agg', hist_func_agg)
     log_variable('bar_mode', bar_mode)
     log_variable('log_x_y_axis', log_x_y_axis)
+    log_variable('free_x_y_axis', free_x_y_axis)
     log_variable('num_facet_columns', num_facet_columns)
     log_variable('graph_types', graph_types)
     log_variable('graph_type', graph_type)
@@ -1045,6 +1054,8 @@ def update_controls_and_graph(  # noqa
                 n_bins=n_bins,
                 log_x_axis='Log X-Axis' in log_x_y_axis,
                 log_y_axis='Log Y-Axis' in log_x_y_axis,
+                free_x_axis='Free X-Axis' in free_x_y_axis,
+                free_y_axis='Free Y-Axis' in free_x_y_axis,
                 title=title,
                 graph_labels=graph_labels,
                 numeric_columns=numeric_columns,
@@ -1603,6 +1614,18 @@ def update_log_x_y_axis_div_style(
     if (x_variable in numeric_columns or y_variable in numeric_columns):
         return {'display': 'block'}
     return {'display': 'none'}
+
+@app.callback(
+    Output('free_x_y_axis_div', 'style'),
+    Input('facet_variable_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_free_x_y_axis_div_style(facet_variable: str | None) -> dict:
+    """Toggle the 'free x/y axis' div."""
+    if facet_variable:
+        return {'display': 'block'}
+    return {'display': 'none'}
+
 
 @app.callback(
     Output('num_facet_columns_div', 'style'),

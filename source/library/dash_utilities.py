@@ -404,6 +404,8 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         n_bins: int | None,
         log_x_axis: bool | None,
         log_y_axis: bool | None,
+        free_x_axis: bool | None,
+        free_y_axis: bool | None,
         title: str | None,
         graph_labels: dict | None,
         numeric_columns: list[str],
@@ -598,6 +600,13 @@ def generate_graph(  # noqa: PLR0912, PLR0915
     else:
         raise ValueError(f"Unknown graph type: {graph_type}")
 
+    if free_x_axis:
+        graph_code += "fig.update_xaxes(matches=None)\n"
+        graph_code += "fig.for_each_xaxis(lambda xaxis: xaxis.update(showticklabels=True))\n"
+
+    if free_y_axis:
+        graph_code += "fig.update_yaxes(matches=None)\n"
+        graph_code += "fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))\n"
 
     # TODO: add range slider
     # graph_code += "fig.update_xaxes(rangeslider_visible=True)\n"
