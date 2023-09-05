@@ -1497,6 +1497,7 @@ def update_z_variable_dropdown_style(
     Input('size_variable_dropdown', 'value'),
     Input('facet_variable_dropdown', 'value'),
     State('non_numeric_columns', 'data'),
+    State('date_columns', 'data'),
     prevent_initial_call=True,
 )
 def update_categorical_controls_div_style(
@@ -1506,8 +1507,10 @@ def update_categorical_controls_div_style(
         size_variable: str | None,
         facet_variable: str | None,
         non_numeric_columns: list[str],
+        date_columns: list[str],
     ) -> dict:
     """Toggle the sort-categories div."""
+    non_numeric_columns = set(non_numeric_columns) - set(date_columns)
     if (
         x_variable in non_numeric_columns
         or y_variable in non_numeric_columns
