@@ -543,7 +543,10 @@ def generate_graph(
             labels={graph_labels},
         )
         """)
-        if x_variable in numeric_columns and bar_mode and bar_mode != 'group':
+        if (
+            (x_variable in numeric_columns or x_variable in date_columns)
+            and bar_mode and bar_mode != 'group'
+        ):
             # Adjust the bar group gap
             graph_code += f"fig.update_layout(barmode='{bar_mode}', bargap=0.05)\n"
         graph_code += "fig\n"

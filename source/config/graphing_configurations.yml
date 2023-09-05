@@ -8,6 +8,8 @@ configurations:
   # each graph type has a description and a list of optional variables
   # optional variables are variables that can be added to the graph and define the possible values
   # for that the dropdown list will contain
+
+  # numeric / none
   - selected_variables:
       x_variable:
         - numeric
@@ -81,6 +83,7 @@ configurations:
               - boolean
               - string
               - categorical
+  # none / numeric
   - selected_variables:
       x_variable:
       y_variable:
@@ -154,6 +157,7 @@ configurations:
               - boolean
               - string
               - categorical
+  # numeric / numeric
   - selected_variables:
       x_variable:
         - numeric
@@ -210,6 +214,7 @@ configurations:
               - boolean
               - string
               - categorical
+  # numeric / numeric / numeric
   - selected_variables:
       x_variable:
         - numeric
@@ -231,9 +236,9 @@ configurations:
           size_variable:
             types:
               - numeric
+  # non-numeric / none
   - selected_variables:
       x_variable:
-        - date
         - boolean
         - string
         - categorical
@@ -271,6 +276,7 @@ configurations:
               - boolean
               - string
               - categorical
+  # none / non-numeric
   - selected_variables:
       x_variable:
       y_variable:
@@ -311,9 +317,9 @@ configurations:
               - boolean
               - string
               - categorical
+  # non-numeric / numeric
   - selected_variables:
       x_variable:
-        - date
         - boolean
         - string
         - categorical
@@ -352,6 +358,7 @@ configurations:
               - boolean
               - string
               - categorical
+  # numeric / non-numeric
   - selected_variables:
       x_variable:
         - numeric
@@ -393,6 +400,7 @@ configurations:
               - boolean
               - string
               - categorical
+  # non-numeric / non-numeric
   # - selected_variables:
   #     x_variable:
   #       - date
@@ -440,3 +448,115 @@ configurations:
   #             - boolean
   #             - string
   #             - categorical
+# date / none
+  - selected_variables:
+      x_variable:
+        - date
+      y_variable:
+    graph_types:
+      - name: histogram
+        description: Shows the distribution of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: box
+        description: Shows the distribution of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: line
+        description: Line graph of {{x_variable}} and the index/order.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          size_variable:
+            types:
+              - numeric
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+
+# date / numeric
+  - selected_variables:
+      x_variable:
+        - date
+      y_variable:
+        - numeric
+    graph_types:
+      - name: histogram
+        description: Shows the distribution of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: box
+        description: Shows the distribution of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: line
+        description: Line graph of {{x_variable}} and the index/order.
+        optional_variables:
+          color_variable:
+            types:
+              - numeric
+              - date
+              - boolean
+              - string
+              - categorical
+          size_variable:
+            types:
+              - numeric
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
