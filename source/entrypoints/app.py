@@ -22,6 +22,7 @@ from source.library.dash_ui import (
     CLASS__GRAPH_PANEL_SECTION,
 )
 from source.library.dash_utilities import (
+    InvalidConfigurationError,
     convert_to_graph_data,
     create_title_and_labels,
     filter_data_from_ui_control,
@@ -406,6 +407,13 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                     ]),
                 ]),
                 dbc.Col(sm=8, md=8, lg=8, xl=9, xxl= 10, children=[
+                    dbc.Alert(
+                        "Not a valid selection.",
+                        color="danger",
+                        id="invalid_configuration_alert",
+                        dismissable=True,
+                        fade=False,
+                    ),
                     dcc.Loading(type="default", children=[
                         dcc.Graph(
                             id='visualize_graph',
@@ -755,6 +763,7 @@ def filter_data(
     Output('facet_variable_dropdown', 'value'),
     Output('graph_type_dropdown', 'options'),
     Output('graph_type_dropdown', 'value'),
+    Output('invalid_configuration_alert', 'is_open'),
 
     # INPUTS
     Input('x_variable_dropdown', 'value'),
@@ -833,7 +842,7 @@ def update_controls_and_graph(  # noqa
             generated_filter_code: str,
             all_columns: list[str],
             numeric_columns: list[str],
-            non_numeric_columns: list[str],  # noqa: ARG001
+            non_numeric_columns: list[str],
             date_columns: list[str],
             categorical_columns: list[str],
             string_columns: list[str],
@@ -883,185 +892,188 @@ def update_controls_and_graph(  # noqa
     log_variable('boolean_columns', boolean_columns)
 
     graph_types = [x['value'] for x in graph_types]
-
-    ####
-    # update variables
-    ####
-
     fig = {}
     graph_data = pd.DataFrame()
     selected_graph_config = None
     numeric_na_removal_markdown = ''
     generated_code = generated_filter_code or ''
-    if (
-        (x_variable or y_variable)
-        and data is not None and len(data) > 0
-        and (not x_variable or x_variable in data.columns)
-        and (not y_variable or y_variable in data.columns)
-        and (not color_variable or color_variable in data.columns)
-        and (not size_variable or size_variable in data.columns)
-        and (not facet_variable or facet_variable in data.columns)
-        ):
-        ####
-        # update graph options
-        ####
-        # get current configuration based on graph_options.yml (selected_variables)
-        columns_by_type = {
-            'numeric': numeric_columns,
-            'date': date_columns,
-            'string': string_columns,
-            'categorical': categorical_columns,
-            'boolean': boolean_columns,
-        }
-        matching_graph_config = get_graph_config(
-            configurations=GRAPH_CONFIGS['configurations'],
-            x_variable=get_variable_type(variable=x_variable, options=columns_by_type),
-            y_variable=get_variable_type(variable=y_variable, options=columns_by_type),
-            z_variable=get_variable_type(variable=z_variable, options=columns_by_type),
-        )
-        log_variable('matching_graph_config', matching_graph_config)
-        possible_graph_types = matching_graph_config['graph_types']
-        # update graph options based on graph config
-        graph_types = [x['name'] for x in possible_graph_types]
-        # update graph_type if it's not valid (not in list) or if a new x/y variable has been
-        # selected
+    invalid_configuration_alert = False
+    try:
         if (
-            graph_type not in graph_types
-            or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown', 'z_variable_dropdown']  # noqa
-        ):
-            graph_type = graph_types[0]
-
-        selected_graph_config = next(x for x in possible_graph_types if x['name'] == graph_type)
-
-        ####
-        # create graph
-        ####
-        # create labels
-        config_description = selected_graph_config['description']
-        title, graph_labels = create_title_and_labels(
-            title_input=title_input,
-            subtitle_input=subtitle_input,
-            config_description=config_description,
-            x_variable=x_variable,
-            y_variable=y_variable,
-            z_variable=z_variable,
-            color_variable=color_variable,
-            size_variable=size_variable,
-            facet_variable=facet_variable,
-            x_axis_label_input=x_axis_label_input,
-            y_axis_label_input=y_axis_label_input,
-            color_label_input=color_label_input,
-            size_label_input=size_label_input,
-            facet_label_input=facet_label_input,
-        )
-
-        possible_variables = [
-            x_variable,
-            y_variable,
-            z_variable,
-            color_variable,
-            size_variable,
-            facet_variable,
-        ]
-        selected_variables = [col for col in possible_variables if col is not None]
-        selected_variables = list(set(selected_variables))  # remove duplicates
-
-        log(f"top_n_categories_lookup[{top_n_categories}]: {top_n_categories_lookup[top_n_categories]}")  # noqa
-        # TODO: need to convert code to string and execute string
-        top_n_categories = top_n_categories_lookup[top_n_categories]
-        top_n_categories = None if top_n_categories == 'None' else int(top_n_categories)
-        graph_data, numeric_na_removal_markdown, code = convert_to_graph_data(
-            data=data,
-            numeric_columns=numeric_columns,
-            string_columns=string_columns,
-            categorical_columns=categorical_columns,
-            boolean_columns=boolean_columns,
-            selected_variables=selected_variables,
-            top_n_categories=top_n_categories,
-        )
-        if code:
-            generated_code += "\n"
-            generated_code += code
-
-        fig, graph_code = generate_graph(
-            data=graph_data,
-            graph_type=graph_type,
-            x_variable=x_variable,
-            y_variable=y_variable,
-            z_variable=z_variable,
-            color_variable=color_variable,
-            size_variable=size_variable,
-            facet_variable=facet_variable,
-            num_facet_columns=num_facet_columns,
-            selected_category_order=sort_categories,
-            bar_mode=bar_mode,
-            opacity=opacity,
-            n_bins=n_bins,
-            log_x_axis='Log X-Axis' in log_x_y_axis,
-            log_y_axis='Log Y-Axis' in log_x_y_axis,
-            title=title,
-            graph_labels=graph_labels,
-            numeric_columns=numeric_columns,
-            string_columns=string_columns,
-            categorical_columns=categorical_columns,
-            boolean_columns=boolean_columns,
-            date_columns=date_columns,
-        )
-        generated_code += graph_code
-
-    if selected_graph_config:
-        # update color/size/facet variable options based on graph type
-        log_variable('graph_config', selected_graph_config)
-        optional_variables = selected_graph_config['optional_variables']
-        log_variable('optional_variables', optional_variables)
-
-        if 'color_variable' in optional_variables:
-            color_variable_div = {'display': 'block'}
-            color_variable_dropdown = get_columns_from_config(
-                allowed_types=optional_variables['color_variable']['types'],
-                columns_by_type=columns_by_type,
-                all_columns=all_columns,
+            (x_variable or y_variable)
+            and data is not None and len(data) > 0
+            and (not x_variable or x_variable in data.columns)
+            and (not y_variable or y_variable in data.columns)
+            and (not color_variable or color_variable in data.columns)
+            and (not size_variable or size_variable in data.columns)
+            and (not facet_variable or facet_variable in data.columns)
+            ):
+            ####
+            # update graph options
+            ####
+            # get current configuration based on graph_options.yml (selected_variables)
+            columns_by_type = {
+                'numeric': numeric_columns,
+                'date': date_columns,
+                'string': string_columns,
+                'categorical': categorical_columns,
+                'boolean': boolean_columns,
+            }
+            matching_graph_config = get_graph_config(
+                configurations=GRAPH_CONFIGS['configurations'],
+                x_variable=get_variable_type(variable=x_variable, options=columns_by_type),
+                y_variable=get_variable_type(variable=y_variable, options=columns_by_type),
+                z_variable=get_variable_type(variable=z_variable, options=columns_by_type),
             )
+            log_variable('matching_graph_config', matching_graph_config)
+            possible_graph_types = matching_graph_config['graph_types']
+            # update graph options based on graph config
+            graph_types = [x['name'] for x in possible_graph_types]
+            # update graph_type if it's not valid (not in list) or if a new x/y variable has been
+            # selected
+            if (
+                graph_type not in graph_types
+                or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown', 'z_variable_dropdown']  # noqa
+            ):
+                graph_type = graph_types[0]
+
+            selected_graph_config = next(
+                x for x in possible_graph_types if x['name'] == graph_type
+            )
+
+            ####
+            # create graph
+            ####
+            # create labels
+            config_description = selected_graph_config['description']
+            title, graph_labels = create_title_and_labels(
+                title_input=title_input,
+                subtitle_input=subtitle_input,
+                config_description=config_description,
+                x_variable=x_variable,
+                y_variable=y_variable,
+                z_variable=z_variable,
+                color_variable=color_variable,
+                size_variable=size_variable,
+                facet_variable=facet_variable,
+                x_axis_label_input=x_axis_label_input,
+                y_axis_label_input=y_axis_label_input,
+                color_label_input=color_label_input,
+                size_label_input=size_label_input,
+                facet_label_input=facet_label_input,
+            )
+
+            possible_variables = [
+                x_variable,
+                y_variable,
+                z_variable,
+                color_variable,
+                size_variable,
+                facet_variable,
+            ]
+            selected_variables = [col for col in possible_variables if col is not None]
+            selected_variables = list(set(selected_variables))  # remove duplicates
+
+            log(f"top_n_categories_lookup[{top_n_categories}]: {top_n_categories_lookup[top_n_categories]}")  # noqa
+            # TODO: need to convert code to string and execute string
+            top_n_categories = top_n_categories_lookup[top_n_categories]
+            top_n_categories = None if top_n_categories == 'None' else int(top_n_categories)
+            graph_data, numeric_na_removal_markdown, code = convert_to_graph_data(
+                data=data,
+                numeric_columns=numeric_columns,
+                string_columns=string_columns,
+                categorical_columns=categorical_columns,
+                boolean_columns=boolean_columns,
+                selected_variables=selected_variables,
+                top_n_categories=top_n_categories,
+            )
+            if code:
+                generated_code += "\n"
+                generated_code += code
+
+            fig, graph_code = generate_graph(
+                data=graph_data,
+                graph_type=graph_type,
+                x_variable=x_variable,
+                y_variable=y_variable,
+                z_variable=z_variable,
+                color_variable=color_variable,
+                size_variable=size_variable,
+                facet_variable=facet_variable,
+                num_facet_columns=num_facet_columns,
+                selected_category_order=sort_categories,
+                bar_mode=bar_mode,
+                opacity=opacity,
+                n_bins=n_bins,
+                log_x_axis='Log X-Axis' in log_x_y_axis,
+                log_y_axis='Log Y-Axis' in log_x_y_axis,
+                title=title,
+                graph_labels=graph_labels,
+                numeric_columns=numeric_columns,
+                string_columns=string_columns,
+                categorical_columns=categorical_columns,
+                boolean_columns=boolean_columns,
+                date_columns=date_columns,
+            )
+            generated_code += graph_code
+
+        if selected_graph_config:
+            # update color/size/facet variable options based on graph type
+            log_variable('graph_config', selected_graph_config)
+            optional_variables = selected_graph_config['optional_variables']
+            log_variable('optional_variables', optional_variables)
+
+            if 'color_variable' in optional_variables:
+                color_variable_div = {'display': 'block'}
+                color_variable_dropdown = get_columns_from_config(
+                    allowed_types=optional_variables['color_variable']['types'],
+                    columns_by_type=columns_by_type,
+                    all_columns=all_columns,
+                )
+            else:
+                color_variable_div = {'display': 'none'}
+                color_variable_dropdown = []
+                color_variable = None
+
+            if 'size_variable' in optional_variables:
+                size_variable_div = {'display': 'block'}
+                size_variable_dropdown = get_columns_from_config(
+                    allowed_types=optional_variables['size_variable']['types'],
+                    columns_by_type=columns_by_type,
+                    all_columns=all_columns,
+                )
+            else:
+                size_variable_div = {'display': 'none'}
+                size_variable_dropdown = []
+                size_variable = None
+
+            if 'facet_variable' in optional_variables:
+                facet_variable_div = {'display': 'block'}
+                facet_variable_dropdown = get_columns_from_config(
+                    allowed_types=optional_variables['facet_variable']['types'],
+                    columns_by_type=columns_by_type,
+                    all_columns=all_columns,
+                )
+            else:
+                facet_variable_div = {'display': 'none'}
+                facet_variable_dropdown = []
+                facet_variable = None
         else:
             color_variable_div = {'display': 'none'}
             color_variable_dropdown = []
             color_variable = None
 
-        if 'size_variable' in optional_variables:
-            size_variable_div = {'display': 'block'}
-            size_variable_dropdown = get_columns_from_config(
-                allowed_types=optional_variables['size_variable']['types'],
-                columns_by_type=columns_by_type,
-                all_columns=all_columns,
-            )
-        else:
             size_variable_div = {'display': 'none'}
             size_variable_dropdown = []
             size_variable = None
 
-        if 'facet_variable' in optional_variables:
-            facet_variable_div = {'display': 'block'}
-            facet_variable_dropdown = get_columns_from_config(
-                allowed_types=optional_variables['facet_variable']['types'],
-                columns_by_type=columns_by_type,
-                all_columns=all_columns,
-            )
-        else:
             facet_variable_div = {'display': 'none'}
             facet_variable_dropdown = []
             facet_variable = None
-    else:
-        color_variable_div = {'display': 'none'}
-        color_variable_dropdown = []
-        color_variable = None
 
-        size_variable_div = {'display': 'none'}
-        size_variable_dropdown = []
-        size_variable = None
-
-        facet_variable_div = {'display': 'none'}
-        facet_variable_dropdown = []
-        facet_variable = None
+    except InvalidConfigurationError as e:
+            log_error(e)
+            invalid_configuration_alert = True
 
     log("returning fig")
     return (
@@ -1084,6 +1096,7 @@ def update_controls_and_graph(  # noqa
         # graphing options
         [{'label': x.capitalize(), 'value': x} for x in graph_types],
         graph_type,
+        invalid_configuration_alert,
     )
 
 

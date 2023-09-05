@@ -148,6 +148,11 @@ def get_variable_type(variable: str | None, options: dict) -> str | None:
     raise ValueError(f"Unknown dtype for column `{variable}`")
 
 
+# New Error type for invalid configuration selected
+class InvalidConfigurationError(Exception):
+    """Invalid configuration selected."""
+
+
 def get_graph_config(
           configurations: list[dict],
           x_variable: str | None,
@@ -199,7 +204,7 @@ def get_graph_config(
             matching_configs.append(config)
 
     if len(matching_configs) == 0:
-        raise ValueError("No matching configurations found.")
+        raise InvalidConfigurationError("No matching configurations found.")
     if len(matching_configs) > 1:
         raise ValueError("More than one matching configuration found.")
 

@@ -4,6 +4,7 @@ import numpy as np
 import pytest
 from tests.conftest import generate_combinations
 from source.library.dash_utilities import (
+    InvalidConfigurationError,
     convert_to_graph_data,
     filter_data_from_ui_control,
     generate_graph,
@@ -220,7 +221,7 @@ def test_get_variable_type(mock_data2):  # noqa
     assert get_variable_type('datetimes_with_missing2', options=options) == 'date'
 
 def test_get_graph_config__not_found_raises_value_error(graphing_configurations):  # noqa
-    with pytest.raises(ValueError):  # noqa: PT011
+    with pytest.raises(InvalidConfigurationError):
         get_graph_config(
             configurations=graphing_configurations,
             x_variable='doesnotexist',
