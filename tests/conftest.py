@@ -1,14 +1,24 @@
 """Test fixtures for the project."""
 import os
+from itertools import product
 from dotenv import load_dotenv
 import pytest
 import pandas as pd
 import numpy as np
 from datetime import datetime
+import helpsk.pandas as hp
 
 import yaml
 
 load_dotenv()
+
+
+def generate_combinations(lists: list[list[str]]) -> list[tuple]:
+    """Get all combinations of the items in the lists. There can be any number of lists."""
+    if not lists:
+        return []
+    return list(product(*lists))
+
 
 @pytest.fixture()
 def mock_data1() -> pd.DataFrame:
@@ -64,3 +74,39 @@ def graphing_configurations() -> dict:
     os.getcwd()
     with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_configurations.yml')) as f:  # noqa
         return yaml.safe_load(f)['configurations']
+
+
+@pytest.fixture()
+def mock_data2_all_columns(mock_data2: pd.DataFrame) -> list[str]:
+    """Returns all_columns for mock_data2."""
+    return mock_data2.columns.tolist()
+
+
+@pytest.fixture()
+def mock_data2_numeric_columns(mock_data2: pd.DataFrame) -> list[str]:
+    """Returns numeric_columns for mock_data2."""
+    return hp.get_numeric_columns(mock_data2)
+
+
+@pytest.fixture()
+def mock_data2_date_columns(mock_data2: pd.DataFrame) -> list[str]:
+    """Returns date_columns for mock_data2."""
+    return hp.get_date_columns(mock_data2)
+
+
+@pytest.fixture()
+def mock_data2_string_columns(mock_data2: pd.DataFrame) -> list[str]:
+    """Returns string_columns for mock_data2."""
+    return hp.get_string_columns(mock_data2)
+
+
+@pytest.fixture()
+def mock_data2_categorical_columns(mock_data2: pd.DataFrame) -> list[str]:
+    """Returns categorical_columns for mock_data2."""
+    return hp.get_categorical_columns(mock_data2)
+
+
+@pytest.fixture()
+def mock_data2_boolean_columns(mock_data2: pd.DataFrame, mock_data2_all_columns: str) -> list[str]:
+    """Returns boolean_columns for mock_data2."""
+    return [x for x in mock_data2_all_columns if hp.is_series_bool(mock_data2[x])]

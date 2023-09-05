@@ -22,15 +22,21 @@ from source.library.dash_ui import (
     CLASS__GRAPH_PANEL_SECTION,
 )
 from source.library.dash_utilities import (
+    InvalidConfigurationError,
+    convert_to_graph_data,
+    create_title_and_labels,
     filter_data_from_ui_control,
+    generate_graph,
     get_variable_type,
     get_graph_config,
+    get_columns_from_config,
     log,
     log_error,
     log_function,
     log_variable,
 )
 from source.library.utilities import (
+    dataframe_columns_to_datetime,
     series_to_datetime,
     create_random_dataframe,
 )
@@ -57,6 +63,12 @@ top_n_categories_lookup = {
     9: '40',
     10: '50',
 }
+n_bins_month_lookup = {
+    0: 'None',
+    1: '1',
+    2: '2',
+    3: '3',
+}
 with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_configurations.yml')) as f:  # noqa
     GRAPH_CONFIGS = yaml.safe_load(f)
 
@@ -75,6 +87,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     dcc.Store(id='original_data'),
     dcc.Store(id='filtered_data'),
     dcc.Store(id='filter_columns_cache'),
+    dcc.Store(id='generated_filter_code'),
     dcc.Store(id='all_columns'),
     dcc.Store(id='numeric_columns'),
     dcc.Store(id='non_numeric_columns'),
@@ -82,7 +95,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     dcc.Store(id='categorical_columns'),
     dcc.Store(id='string_columns'),
     dcc.Store(id='boolean_columns'),
-    dcc.Store(id='category_orders_cache', data={}),
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
             dcc.Loading(type="default", children=[
@@ -110,7 +122,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             id='load_from_url',
                             type='text',
                             placeholder='Enter CSV URL',
-                            value='https://raw.githubusercontent.com/shane-kercheval/shiny-explore-dataset/master/shiny-explore-dataset/example_datasets/credit.csv',
+                            value = 'https://raw.githubusercontent.com/plotly/datasets/master/finance-charts-apple.csv',
+                            # value='https://raw.githubusercontent.com/shane-kercheval/shiny-explore-dataset/master/shiny-explore-dataset/example_datasets/credit.csv',
                             # value='https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv',
                             # value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
                             style={
@@ -151,7 +164,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
         ]),
         dbc.Tab(label="Visualize", children=[
             dbc.Row([
-                dbc.Col(width=3, children=[
+                dbc.Col(sm=4, md=4, lg=4, xl=3, xxl=2, children=[
                     dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
                         dbc.CardHeader(
                             dbc.Button(
@@ -199,12 +212,12 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 dbc.Button(
                                     "Clear",
                                     id="clear-settings-button",
-                                    style={'margin': '0 20px 20px 0'},
+                                    style={'margin': '10px 20px 0 0'},
                                 ),
                                 dbc.Button(
                                     "Swap X & Y",
                                     id="swap-x-y-button",
-                                    style={'margin': '0 20px 20px 0'},
+                                    style={'margin': '10px 20px 0 0'},
                                 ),
                             ]),
                         ]),
@@ -255,6 +268,20 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     clearable=False,
                                     placeholder="Select a variable above.",
                                 ),
+                                create_dropdown_control(
+                                    label="Aggregation",
+                                    id='hist_func_agg',
+                                    hidden=False,
+                                    multi=False,
+                                    clearable=False,
+                                    options=[
+                                        {'label': 'Sum', 'value': 'sum'},
+                                        {'label': 'Average', 'value': 'avg'},
+                                        {'label': 'Min', 'value': 'min'},
+                                        {'label': 'Max', 'value': 'max'},
+                                    ],
+                                    value='sum',
+                                ),
                                 # One of 'group', 'overlay' or 'relative'
                                 # In 'relative' mode, bars are stacked above zero for positive
                                 # values and below zero for negative values.
@@ -298,6 +325,16 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     marks=top_n_categories_lookup,
                                 ),
                                 create_slider_control(
+                                    label="Bin Months",
+                                    id='n_bins_month',
+                                    hidden=True,
+                                    min=0,
+                                    max=3,
+                                    step=1,
+                                    value=0,
+                                    marks=n_bins_month_lookup,
+                                ),
+                                create_slider_control(
                                     label="# of Bins",
                                     id='n_bins',
                                     hidden=True,
@@ -319,6 +356,12 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     id='log_x_y_axis',
                                     hidden=True,
                                     options=['Log X-Axis', 'Log Y-Axis'],
+                                    value=[],
+                                ),
+                                create_checklist_control(
+                                    id='free_x_y_axis',
+                                    hidden=True,
+                                    options=['Free X-Axis', 'Free Y-Axis'],
                                     value=[],
                                 ),
                                 create_slider_control(
@@ -399,7 +442,14 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         ]),
                     ]),
                 ]),
-                dbc.Col(width=9, children=[
+                dbc.Col(sm=8, md=8, lg=8, xl=9, xxl= 10, children=[
+                    dbc.Alert(
+                        "Unsupported selection.",
+                        color="danger",
+                        id="invalid_configuration_alert",
+                        dismissable=True,
+                        fade=False,
+                    ),
                     dcc.Loading(type="default", children=[
                         dcc.Graph(
                             id='visualize_graph',
@@ -417,7 +467,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             ]),
                             dbc.Tab(label="Code", children=[
                                 html.Br(),
-                                dcc.Markdown(id="visualize_filter_code", children="Select columns to graph."),  # noqa
+                                dcc.Markdown(id="generated_code", children="Select columns to graph."),  # noqa
                             ]),
                             dbc.Tab(label="Data", children=[
                                 html.Br(),
@@ -523,54 +573,11 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                 id='correlations_graph',
                 config={'staticPlot': False, 'displayModeBar': False},
                 # 3/12 because the sidebar is 3/12 of the width
-                # style={'width': '100%', 'height': f'100vw'},  # noqa
+                # style={'width': '100%', 'height': f'100vw'},
             ),
         ]),
     ]),
 ])
-
-
-def cache_category_order(cache: dict,
-        variable: str,
-        order_type: str,
-        top_n_categories: int,
-        data: pd.DataFrame,
-    ) -> dict:
-    """
-    Updates and returns the cache containing the category order for a variable.
-
-    The cache is dependant on top_n_categories because the order is different if the user selects
-    1 category vs 10 categories and the <Other> category may or may not be included.
-
-    The order is based on the order_type, which can be one of:
-        - 'category ascending': Sort the categories in ascending order
-        - 'category descending': Sort the categories in descending order
-        - 'total ascending': Sort the categories by the total in ascending order
-        - 'total descending': Sort the categories by the total in descending order
-    """
-    # TODO: test
-    # can't use a tuple as the key because tuples aren't json serializable so dash complains
-    key = f"{variable}__{order_type}__{top_n_categories}"
-    if key in cache:
-        return cache
-
-    if 'category' in order_type:
-        reverse = 'ascending' not in order_type
-        categories = sorted(
-            data[variable].unique().tolist(),
-            reverse=reverse,
-            key=lambda x: str(x),
-        )
-        cache[key] = categories
-    elif 'total' in order_type:
-        cache[key] = data[variable].\
-            value_counts(sort=True, ascending='ascending' in order_type).\
-            index.\
-            tolist()
-    else:
-        raise ValueError(f"Unknown order_type: {order_type}")
-
-    return cache
 
 
 @app.callback(
@@ -633,13 +640,6 @@ def load_data(  # noqa
     if callback_context.triggered:
         triggered = callback_context.triggered[0]['prop_id']
         log_variable('triggered', triggered)
-        # ctx_msg = json.dumps({
-        #     'states': callback_context.states,
-        #     'triggered': callback_context.triggered,
-        #     'triggered2': callback_context.triggered[0]['prop_id'],
-        #     'inputs': callback_context.inputs,
-        # }, indent=2)
-        # log_var('ctx_msg', ctx_msg)
 
         if triggered == 'upload-data.contents':
             log_variable('load_random_data_button', load_random_data_button)
@@ -676,15 +676,18 @@ def load_data(  # noqa
 
         # i can't convert columns to datetime here because the dataframe gets converted to a dict
         # and loses the converted datetime dtypes
-        # data, converted_columns = convert_columns_to_datetime(data)
-        # log_variable('converted_columns', converted_columns)
+        # but i need to still get the columns that should be treated as dates
+        _, date_columns = dataframe_columns_to_datetime(data.copy())
         all_columns = data.columns.tolist()
         numeric_columns = hp.get_numeric_columns(data)
         non_numeric_columns = hp.get_non_numeric_columns(data)
-        date_columns = hp.get_date_columns(data)
         categorical_columns = hp.get_categorical_columns(data)
-        string_columns = hp.get_string_columns(data)
+        string_columns = [x for x in hp.get_string_columns(data) if x not in date_columns]
         boolean_columns = [x for x in all_columns if hp.is_series_bool(data[x])]
+        # ensure all columns lists are mutually exclusive
+        sets = [set(lst) for lst in [numeric_columns, date_columns, categorical_columns, string_columns, boolean_columns]]  # noqa
+        assert sum(len(s) for s in sets) == len(set.union(*sets))
+
         log_variable('all_columns', all_columns)
         log_variable('numeric_columns', numeric_columns)
         log_variable('non_numeric_columns', non_numeric_columns)
@@ -758,7 +761,7 @@ def load_data(  # noqa
 @app.callback(
     Output('filtered_data', 'data'),
     Output('visualize_filter_info', 'children'),
-    Output('visualize_filter_code', 'children'),
+    Output('generated_filter_code', 'data'),
     Input('filter-apply-button', 'n_clicks'),
     State('filter_columns_cache', 'data'),
     State('original_data', 'data'),
@@ -781,7 +784,7 @@ def filter_data(
     Output('visualize_graph', 'figure'),
     Output('visualize_table', 'data'),
     Output('visualize_numeric_na_removal_markdown', 'children'),
-    Output('category_orders_cache', 'data'),
+    Output('generated_code', 'children'),
     # color variable
     Output('color_variable_div', 'style'),
     Output('color_variable_dropdown', 'options'),
@@ -796,6 +799,7 @@ def filter_data(
     Output('facet_variable_dropdown', 'value'),
     Output('graph_type_dropdown', 'options'),
     Output('graph_type_dropdown', 'value'),
+    Output('invalid_configuration_alert', 'is_open'),
 
     # INPUTS
     Input('x_variable_dropdown', 'value'),
@@ -817,14 +821,18 @@ def filter_data(
     Input('graph_type_dropdown', 'options'),
     Input('graph_type_dropdown', 'value'),
     Input('sort_categories_dropdown', 'value'),
+    Input('n_bins_month_slider', 'value'),
     Input('n_bins_slider', 'value'),
     Input('opacity_slider', 'value'),
     Input('top_n_categories_slider', 'value'),
+    Input('hist_func_agg_dropdown', 'value'),
     Input('bar_mode_dropdown', 'value'),
     Input('log_x_y_axis_checklist', 'value'),
+    Input('free_x_y_axis_checklist', 'value'),
     Input('num_facet_columns_slider', 'value'),
     Input('filtered_data', 'data'),
     Input('labels-apply-button', 'n_clicks'),
+    State('generated_filter_code', 'data'),
     State('all_columns', 'data'),
     State('numeric_columns', 'data'),
     State('non_numeric_columns', 'data'),
@@ -832,7 +840,6 @@ def filter_data(
     State('categorical_columns', 'data'),
     State('string_columns', 'data'),
     State('boolean_columns', 'data'),
-    State('category_orders_cache', 'data'),
     State('title_input', 'value'),
     State('subtitle_input', 'value'),
     State('x_axis_label_input', 'value'),
@@ -862,23 +869,26 @@ def update_controls_and_graph(  # noqa
             graph_types: list[dict],
             graph_type: str,
             sort_categories: str,
+            n_bins_month: int,
             n_bins: int,
             opacity: float,
             top_n_categories: float,
+            hist_func_agg: str,
             bar_mode: str,
             log_x_y_axis: list[str],
+            free_x_y_axis: list[str],
             num_facet_columns: int,
 
             data: pd.DataFrame,
             labels_apply_button: int,  # noqa: ARG001
-            all_columns: list[str],  # noqa: ARG001
+            generated_filter_code: str,
+            all_columns: list[str],
             numeric_columns: list[str],
             non_numeric_columns: list[str],
             date_columns: list[str],
             categorical_columns: list[str],
             string_columns: list[str],
             boolean_columns: list[str],
-            category_orders_cache: dict,
             title_input: str | None,
             subtitle_input: str | None,
             x_axis_label_input: str | None,
@@ -892,8 +902,6 @@ def update_controls_and_graph(  # noqa
 
     This function should *not* modify the data. It should only return a figure.
     """
-    # TODO: refactor and unit test
-
     log_function('update_graph')
     log_variable('triggered_id', ctx.triggered_id)
     log_variable('x_variable', x_variable)
@@ -902,11 +910,14 @@ def update_controls_and_graph(  # noqa
     log_variable('color_variable', color_variable)
     log_variable('size_variable', size_variable)
     log_variable('facet_variable', facet_variable)
+    log_variable('n_bins_month', n_bins_month)
     log_variable('n_bins', n_bins)
     log_variable('opacity', opacity)
     log_variable('top_n_categories', top_n_categories)
+    log_variable('hist_func_agg', hist_func_agg)
     log_variable('bar_mode', bar_mode)
     log_variable('log_x_y_axis', log_x_y_axis)
+    log_variable('free_x_y_axis', free_x_y_axis)
     log_variable('num_facet_columns', num_facet_columns)
     log_variable('graph_types', graph_types)
     log_variable('graph_type', graph_type)
@@ -918,323 +929,207 @@ def update_controls_and_graph(  # noqa
     log_variable('color_label_input', color_label_input)
     log_variable('size_label_input', size_label_input)
     log_variable('facet_label_input', facet_label_input)
-    log_variable('category_orders_cache', category_orders_cache)
-    # log_variable('type(data)', type(data))
-    # log_variable('data', data)
+    log_variable('numeric_columns', numeric_columns)
+    log_variable('non_numeric_columns', non_numeric_columns)
+    log_variable('date_columns', date_columns)
+    log_variable('categorical_columns', categorical_columns)
+    log_variable('string_columns', string_columns)
+    log_variable('boolean_columns', boolean_columns)
 
     graph_types = [x['value'] for x in graph_types]
-
-    ####
-    # update variables
-    ####
-
     fig = {}
     graph_data = pd.DataFrame()
-    graph_config = None
+    selected_graph_config = None
     numeric_na_removal_markdown = ''
-    if (
-        (x_variable or y_variable)
-        and data is not None and len(data) > 0
-        and (not x_variable or x_variable in data.columns)
-        and (not y_variable or y_variable in data.columns)
-        and (not color_variable or color_variable in data.columns)
-        and (not size_variable or size_variable in data.columns)
-        and (not facet_variable or facet_variable in data.columns)
-        ):
-        ####
-        # update graph options
-        ####
-        # get current configuration based on graph_options.yml (selected_variables)
-        columns_by_type = {
-            'numeric': numeric_columns,
-            'date': date_columns,
-            'string': string_columns,
-            'categorical': categorical_columns,
-            'boolean': boolean_columns,
-        }
-        graph_config = get_graph_config(
-            configurations=GRAPH_CONFIGS['configurations'],
-            x_variable=get_variable_type(variable=x_variable, options=columns_by_type),
-            y_variable=get_variable_type(variable=y_variable, options=columns_by_type),
-            z_variable=get_variable_type(variable=z_variable, options=columns_by_type),
-        )
-        log_variable('graph_config', graph_config)
-        graph_type_configs = graph_config['graph_types']
-        # update graph options based on graph config
-        graph_types = [x['name'] for x in graph_type_configs]
-
-         # update graph_type if it's not valid (not in list) or if a new x/y variable has been
-         # selected
+    generated_code = generated_filter_code or ''
+    invalid_configuration_alert = False
+    try:
         if (
-            graph_type not in graph_types
-            or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown', 'z_variable_dropdown']  # noqa
-        ):
-            graph_type = graph_types[0]
+            (x_variable or y_variable)
+            and data is not None and len(data) > 0
+            and (not x_variable or x_variable in data.columns)
+            and (not y_variable or y_variable in data.columns)
+            and (not color_variable or color_variable in data.columns)
+            and (not size_variable or size_variable in data.columns)
+            and (not facet_variable or facet_variable in data.columns)
+            ):
+            ####
+            # update graph options
+            ####
+            # get current configuration based on graph_options.yml (selected_variables)
+            columns_by_type = {
+                'numeric': numeric_columns,
+                'date': date_columns,
+                'string': string_columns,
+                'categorical': categorical_columns,
+                'boolean': boolean_columns,
+            }
+            matching_graph_config = get_graph_config(
+                configurations=GRAPH_CONFIGS['configurations'],
+                x_variable=get_variable_type(variable=x_variable, options=columns_by_type),
+                y_variable=get_variable_type(variable=y_variable, options=columns_by_type),
+                z_variable=get_variable_type(variable=z_variable, options=columns_by_type),
+            )
+            log_variable('matching_graph_config', matching_graph_config)
+            possible_graph_types = matching_graph_config['graph_types']
+            # update graph options based on graph config
+            graph_types = [x['name'] for x in possible_graph_types]
+            # update graph_type if it's not valid (not in list) or if a new x/y variable has been
+            # selected
+            if (
+                graph_type not in graph_types
+                or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown', 'z_variable_dropdown']  # noqa
+            ):
+                graph_type = graph_types[0]
 
-        # we have to decide if we are setting graph types or using something that was already
-        # selected
+            selected_graph_config = next(
+                x for x in possible_graph_types if x['name'] == graph_type
+            )
 
-        # selected graph config
-        graph_config = next(x for x in graph_type_configs if x['name'] == graph_type)
+            ####
+            # create graph
+            ####
+            # create labels
+            config_description = selected_graph_config['description']
+            title, graph_labels = create_title_and_labels(
+                title_input=title_input,
+                subtitle_input=subtitle_input,
+                config_description=config_description,
+                x_variable=x_variable,
+                y_variable=y_variable,
+                z_variable=z_variable,
+                color_variable=color_variable,
+                size_variable=size_variable,
+                facet_variable=facet_variable,
+                x_axis_label_input=x_axis_label_input,
+                y_axis_label_input=y_axis_label_input,
+                color_label_input=color_label_input,
+                size_label_input=size_label_input,
+                facet_label_input=facet_label_input,
+            )
 
-        ####
-        # create graph
-        ####
-        # create labels
-        if title_input or subtitle_input:
-            title = title_input or ''
-            if subtitle_input:
-                title += f"<br><sub>{subtitle_input}</sub>"
-        else:
-            title = f"<br><sub>{graph_config['description']}</sub>"
-            if x_variable:
-                title = title.replace('{{x_variable}}', f"`{x_variable}`")
-            if y_variable:
-                title = title.replace('{{y_variable}}', f"`{y_variable}`")
-            if z_variable:
-                title = title.replace('{{z_variable}}', f"`{z_variable}`")
-            if color_variable:
-                title = title.replace('{{color_variable}}', f"`{color_variable}`")
-            if size_variable:
-                title = title.replace('{{size_variable}}', f"`{size_variable}`")
-            if facet_variable:
-                title = title.replace('{{facet_variable}}', f"`{facet_variable}`")
-        graph_labels = {}
-        if x_variable and x_axis_label_input:
-            graph_labels[x_variable] = x_axis_label_input
-        if y_variable and y_axis_label_input:
-            graph_labels[y_variable] = y_axis_label_input
-        if color_variable and color_label_input:
-            graph_labels[color_variable] = color_label_input
-        if size_variable and size_label_input:
-            graph_labels[size_variable] = size_label_input
-        if facet_variable and facet_label_input:
-            graph_labels[facet_variable] = facet_label_input
+            possible_variables = [
+                x_variable,
+                y_variable,
+                z_variable,
+                color_variable,
+                size_variable,
+                facet_variable,
+            ]
+            selected_variables = [col for col in possible_variables if col is not None]
+            selected_variables = list(set(selected_variables))  # remove duplicates
 
+            log(f"top_n_categories_lookup[{top_n_categories}]: {top_n_categories_lookup[top_n_categories]}")  # noqa
+            # TODO: need to convert code to string and execute string
+            top_n_categories = top_n_categories_lookup[top_n_categories]
+            top_n_categories = None if top_n_categories == 'None' else int(top_n_categories)
+            graph_data, numeric_na_removal_markdown, code = convert_to_graph_data(
+                data=data,
+                numeric_columns=numeric_columns,
+                string_columns=string_columns,
+                categorical_columns=categorical_columns,
+                boolean_columns=boolean_columns,
+                selected_variables=selected_variables,
+                top_n_categories=top_n_categories,
+            )
+            if code:
+                generated_code += "\n"
+                generated_code += code
 
-        columns = [x_variable, y_variable, z_variable, color_variable, size_variable, facet_variable]
-        columns = [col for col in columns if col is not None]
-        columns = list(set(columns))
-        graph_data = data[columns].copy()
+            fig, graph_code = generate_graph(
+                data=graph_data,
+                graph_type=graph_type,
+                x_variable=x_variable,
+                y_variable=y_variable,
+                z_variable=z_variable,
+                color_variable=color_variable,
+                size_variable=size_variable,
+                facet_variable=facet_variable,
+                num_facet_columns=num_facet_columns,
+                selected_category_order=sort_categories,
+                hist_func_agg=hist_func_agg,
+                bar_mode=bar_mode,
+                opacity=opacity,
+                n_bins_month=n_bins_month,
+                n_bins=n_bins,
+                log_x_axis='Log X-Axis' in log_x_y_axis,
+                log_y_axis='Log Y-Axis' in log_x_y_axis,
+                free_x_axis='Free X-Axis' in free_x_y_axis,
+                free_y_axis='Free Y-Axis' in free_x_y_axis,
+                title=title,
+                graph_labels=graph_labels,
+                numeric_columns=numeric_columns,
+                string_columns=string_columns,
+                categorical_columns=categorical_columns,
+                boolean_columns=boolean_columns,
+                date_columns=date_columns,
+            )
+            generated_code += graph_code
 
-        # TODO: need to convert code to string and execute string
-        if any(x in numeric_columns for x in columns):
-            numeric_na_removal_markdown = "##### Automatic filters applied:  \n"
+        if selected_graph_config:
+            # update color/size/facet variable options based on graph type
+            log_variable('graph_config', selected_graph_config)
+            optional_variables = selected_graph_config['optional_variables']
+            log_variable('optional_variables', optional_variables)
 
-        for column in columns:
-            if column in string_columns or column in categorical_columns or column in boolean_columns:  # noqa
-                log(f"filling na for {column}")
-                graph_data[column] = hp.fill_na(
-                    series=graph_data[column],
-                    missing_value_replacement='<Missing>',
+            if 'color_variable' in optional_variables:
+                color_variable_div = {'display': 'block'}
+                color_variable_dropdown = get_columns_from_config(
+                    allowed_types=optional_variables['color_variable']['types'],
+                    columns_by_type=columns_by_type,
+                    all_columns=all_columns,
                 )
-                if top_n_categories:
-                    log(f"top_n_categories_lookup[{top_n_categories}]: {top_n_categories_lookup[top_n_categories]}")  # noqa
-                    graph_data[column] = hp.top_n_categories(
-                        categorical=graph_data[column],
-                        top_n=int(top_n_categories_lookup[top_n_categories]),
-                        other_category='<Other>',
-                    )
-            if column in numeric_columns:
-                log(f"removing missing values for {column}")
-                num_values_removed = graph_data[column].isna().sum()
-                if num_values_removed > 0:
-                    numeric_na_removal_markdown += f"- `{num_values_removed:,}` missing values have been removed from `{column}`  \n"  # noqa
-                graph_data = graph_data[graph_data[column].notna()]
+            else:
+                color_variable_div = {'display': 'none'}
+                color_variable_dropdown = []
+                color_variable = None
 
-        if any(x in numeric_columns for x in columns):
-            rows_remaining = len(graph_data)
-            rows_removed = len(data) - rows_remaining
-            numeric_na_removal_markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / len(data):.1%}`) rows removed from automatic filtering\n"  # noqa
-            numeric_na_removal_markdown += "---  \n"
-
-        selected_variables = [
-            x_variable,
-            y_variable,
-            z_variable,
-            color_variable,
-            size_variable,
-            facet_variable,
-        ]
-        # determine category orders
-        for variable in selected_variables:
-            if variable is not None and variable in non_numeric_columns:
-                category_orders_cache = cache_category_order(
-                    cache=category_orders_cache,
-                    variable=variable,
-                    order_type=sort_categories,
-                    top_n_categories=top_n_categories,
-                    data=graph_data,
+            if 'size_variable' in optional_variables:
+                size_variable_div = {'display': 'block'}
+                size_variable_dropdown = get_columns_from_config(
+                    allowed_types=optional_variables['size_variable']['types'],
+                    columns_by_type=columns_by_type,
+                    all_columns=all_columns,
                 )
-        log_variable('category_orders_cache', category_orders_cache)
-        category_orders = {
-            k.split('__')[0]:v for k, v in category_orders_cache.items()
-            if k in [f"{x}__{sort_categories}__{top_n_categories}" for x in selected_variables]
-        }
-        log_variable('category_orders', category_orders)
+            else:
+                size_variable_div = {'display': 'none'}
+                size_variable_dropdown = []
+                size_variable = None
 
-        # TODO: need to convert code to string and execute string
-        log("creating fig")
-        if graph_type == 'scatter':
-            fig = px.scatter(
-                graph_data,
-                x=x_variable,
-                y=y_variable,
-                color=color_variable,
-                size=size_variable,
-                opacity=opacity,
-                facet_col=facet_variable,
-                facet_col_wrap=num_facet_columns,
-                category_orders=category_orders,
-                log_x='Log X-Axis' in log_x_y_axis,
-                log_y='Log Y-Axis' in log_x_y_axis,
-                title=title,
-                labels=graph_labels,
-            )
-        elif graph_type == 'scatter-3d':
-            fig = px.scatter_3d(
-                graph_data,
-                x=x_variable,
-                y=y_variable,
-                z=z_variable,
-                color=color_variable,
-                size=size_variable,
-                opacity=opacity,
-                log_x='Log X-Axis' in log_x_y_axis,
-                log_y='Log Y-Axis' in log_x_y_axis,
-                # TODO LOG_z
-                title=title,
-                labels=graph_labels,
-            )
-            fig.update_layout(margin={'l': 0, 'r': 0, 'b': 0, 't': 20})
-        elif graph_type == 'box':
-            fig = px.box(
-                graph_data,
-                x=x_variable,
-                y=y_variable,
-                color=color_variable,
-                # opacity=opacity,
-                facet_col=facet_variable,
-                facet_col_wrap=num_facet_columns,
-                category_orders=category_orders,
-                log_x='Log X-Axis' in log_x_y_axis,
-                log_y='Log Y-Axis' in log_x_y_axis,
-                title=title,
-                labels=graph_labels,
-            )
-        elif graph_type == 'line':
-            fig = px.line(
-                graph_data,
-                x=x_variable,
-                y=y_variable,
-                color=color_variable,
-                # opacity=opacity,
-                facet_col=facet_variable,
-                facet_col_wrap=num_facet_columns,
-                log_x='Log X-Axis' in log_x_y_axis,
-                log_y='Log Y-Axis' in log_x_y_axis,
-                title=title,
-                labels=graph_labels,
-            )
-        elif graph_type == 'histogram':
-            fig = px.histogram(
-                graph_data,
-                x=x_variable,
-                y=y_variable,
-                color=color_variable,
-                opacity=opacity,
-                barmode=bar_mode,
-                # bargap=0.1,
-                # histnorm='percent',
-                # log_x bool
-                # log_y bool
-                facet_col=facet_variable,
-                facet_col_wrap=num_facet_columns,
-                category_orders=category_orders,
-                log_x='Log X-Axis' in log_x_y_axis,
-                log_y='Log Y-Axis' in log_x_y_axis,
-                title=title,
-                labels=graph_labels,
-                nbins=n_bins,
-            )
-            if x_variable in numeric_columns and bar_mode != 'group':# and color_variable is None:
-                # Adjust the bar group gap
-                fig.update_layout(barmode=bar_mode, bargap=0.05)
-
-        elif graph_type == 'bar':
-            fig = px.bar(
-                graph_data,
-                x=x_variable,
-                y=y_variable,
-                color=color_variable,
-                # opacity=opacity,
-                barmode=bar_mode,
-                facet_col=facet_variable,
-                facet_col_wrap=num_facet_columns,
-                log_x='Log X-Axis' in log_x_y_axis,
-                log_y='Log Y-Axis' in log_x_y_axis,
-                title=title,
-                labels=graph_labels,
-            )
-        else:
-            raise ValueError(f"Unknown graph type: {graph_type}")
-
-    if graph_config:
-        # update color/size/facet variable options based on graph type
-        log_variable('graph_config', graph_config)
-        optional_variables = graph_config['optional_variables']
-        log_variable('optional_variables', optional_variables)
-
-
-        def get_columns_from_config(variable: str | None) -> list[str]:
-            allowed_types = optional_variables[variable]['types']
-            types = []
-            for allowed_type in allowed_types:
-                types.extend(columns_by_type[allowed_type])
-            return types
-
-        if 'color_variable' in optional_variables:
-            color_variable_div = {'display': 'block'}
-            color_variable_dropdown = get_columns_from_config('color_variable')
+            if 'facet_variable' in optional_variables:
+                facet_variable_div = {'display': 'block'}
+                facet_variable_dropdown = get_columns_from_config(
+                    allowed_types=optional_variables['facet_variable']['types'],
+                    columns_by_type=columns_by_type,
+                    all_columns=all_columns,
+                )
+            else:
+                facet_variable_div = {'display': 'none'}
+                facet_variable_dropdown = []
+                facet_variable = None
         else:
             color_variable_div = {'display': 'none'}
             color_variable_dropdown = []
             color_variable = None
 
-        if 'size_variable' in optional_variables:
-            size_variable_div = {'display': 'block'}
-            size_variable_dropdown = get_columns_from_config('size_variable')
-        else:
             size_variable_div = {'display': 'none'}
             size_variable_dropdown = []
             size_variable = None
 
-        if 'facet_variable' in optional_variables:
-            facet_variable_div = {'display': 'block'}
-            facet_variable_dropdown = get_columns_from_config('facet_variable')
-        else:
             facet_variable_div = {'display': 'none'}
             facet_variable_dropdown = []
             facet_variable = None
-    else:
-        color_variable_div = {'display': 'none'}
-        color_variable_dropdown = []
-        color_variable = None
 
-        size_variable_div = {'display': 'none'}
-        size_variable_dropdown = []
-        size_variable = None
-
-        facet_variable_div = {'display': 'none'}
-        facet_variable_dropdown = []
-        facet_variable = None
+    except InvalidConfigurationError as e:
+            log_error(e)
+            invalid_configuration_alert = True
 
     log("returning fig")
     return (
         fig,
         graph_data.iloc[0:500].to_dict('records'),
         numeric_na_removal_markdown,
-        category_orders_cache,
+        f"""```python\n{generated_code}\n```""",
         # color variable
         color_variable_div,
         color_variable_dropdown,
@@ -1250,6 +1145,7 @@ def update_controls_and_graph(  # noqa
         # graphing options
         [{'label': x.capitalize(), 'value': x} for x in graph_types],
         graph_type,
+        invalid_configuration_alert,
     )
 
 
@@ -1310,6 +1206,9 @@ def swap_x_y_variables(n_clicks: int, x_variable: str | None, y_variable: str | 
     Output('subtitle_input', 'value'),
     Output('x_axis_label_input', 'value'),
     Output('y_axis_label_input', 'value'),
+    Output('color_label_input', 'value'),
+    Output('size_label_input', 'value'),
+    Output('facet_label_input', 'value'),
     Input('labels-clear-button', 'n_clicks'),
     prevent_initial_call=True,
 )
@@ -1317,7 +1216,7 @@ def clear_labels(n_clicks: int) -> str:
     """Triggered when the user clicks on the Clear button."""
     log_function('Clear Labels')
     log_variable('n_clicks', n_clicks)
-    return '', '', '', ''
+    return '', '', '', '', '', '', ''
 
 
 @app.callback(
@@ -1572,13 +1471,31 @@ def cache_filter_columns(  # noqa: PLR0912
 
 
 @app.callback(
-    Output('bar_mode_div', 'style'),
+    Output('hist_func_agg_div', 'style'),
     Input('graph_type_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
+    State('numeric_columns', 'data'),
     prevent_initial_call=True,
 )
-def update_bar_mode_div_style(graph_type: str) -> dict:
+def update_hist_func_agg_div_style(
+        graph_type: str,
+        y_variable: str | None,
+        numeric_columns: list[str]) -> dict:
     """Toggle the bar mode div."""
-    if graph_type in ['histogram', 'bar']:
+    if y_variable and y_variable in numeric_columns and graph_type == 'histogram':
+        return {'display': 'block'}
+    return {'display': 'none'}
+
+
+@app.callback(
+    Output('bar_mode_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    Input('color_variable_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_bar_mode_div_style(graph_type: str, color_variable: str | None) -> dict:
+    """Toggle the bar mode div."""
+    if color_variable and graph_type in ['histogram', 'bar']:
         return {'display': 'block'}
     return {'display': 'none'}
 
@@ -1597,9 +1514,7 @@ def update_z_variable_dropdown_style(
         numeric_columns: list[str],
     ) -> dict:
     """Toggle the z-variable dropdown."""
-    log('asdfasfdasdfasdfasdfasdfasfsadf')
     if x_variable in numeric_columns and y_variable in numeric_columns:
-        log('asdfasfdasdfasdfasdfasdfasfsadf')
         return {'display': 'block'}, None
     return {'display': 'none'}, None
 
@@ -1613,6 +1528,7 @@ def update_z_variable_dropdown_style(
     Input('size_variable_dropdown', 'value'),
     Input('facet_variable_dropdown', 'value'),
     State('non_numeric_columns', 'data'),
+    State('date_columns', 'data'),
     prevent_initial_call=True,
 )
 def update_categorical_controls_div_style(
@@ -1622,8 +1538,10 @@ def update_categorical_controls_div_style(
         size_variable: str | None,
         facet_variable: str | None,
         non_numeric_columns: list[str],
+        date_columns: list[str],
     ) -> dict:
     """Toggle the sort-categories div."""
+    non_numeric_columns = set(non_numeric_columns) - set(date_columns)
     if (
         x_variable in non_numeric_columns
         or y_variable in non_numeric_columns
@@ -1636,15 +1554,36 @@ def update_categorical_controls_div_style(
 
 
 @app.callback(
+    Output('n_bins_month_div', 'style'),
     Output('n_bins_div', 'style'),
     Input('graph_type_dropdown', 'value'),
+    Input('n_bins_month_slider', 'value'),
+    Input('x_variable_dropdown', 'value'),
+    State('date_columns', 'data'),
     prevent_initial_call=True,
 )
-def update_n_bins_div_style(graph_type: str) -> dict:
+def update_n_bins_div_style(
+        graph_type: str,
+        n_bins_month: int,
+        x_variable: str | None,
+        date_columns: list[str],
+    ) -> dict:
     """Toggle the n-bins div."""
-    if graph_type == 'histogram':
-        return {'display': 'block'}
-    return {'display': 'none'}
+    turn_on = {'display': 'block'}
+    turn_off = {'display': 'none'}
+    log('HELLO')
+    log_variable('graph_type', graph_type)
+    if graph_type != 'histogram':
+        log('A')
+        return turn_off, turn_off
+    if x_variable in date_columns:
+        if n_bins_month:
+            log('B')
+            return turn_on, turn_off
+        log('C')
+        return turn_on, turn_on
+    log('D')
+    return turn_off, turn_on
 
 
 @app.callback(
@@ -1675,6 +1614,18 @@ def update_log_x_y_axis_div_style(
     if (x_variable in numeric_columns or y_variable in numeric_columns):
         return {'display': 'block'}
     return {'display': 'none'}
+
+@app.callback(
+    Output('free_x_y_axis_div', 'style'),
+    Input('facet_variable_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_free_x_y_axis_div_style(facet_variable: str | None) -> dict:
+    """Toggle the 'free x/y axis' div."""
+    if facet_variable:
+        return {'display': 'block'}
+    return {'display': 'none'}
+
 
 @app.callback(
     Output('num_facet_columns_div', 'style'),
@@ -1751,4 +1702,3 @@ def update_facet_label_div_style(facet_variable: str | None) -> dict:
 
 if __name__ == '__main__':
     app.run_server(host=HOST, debug=DEBUG, port=PORT)
-
