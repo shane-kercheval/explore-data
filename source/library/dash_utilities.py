@@ -620,4 +620,3 @@ def generate_graph(  # noqa: PLR0912, PLR0915
     exec(graph_code, global_vars, local_vars)
     fig = local_vars['fig']
     return fig, graph_code
-

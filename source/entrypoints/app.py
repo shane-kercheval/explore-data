@@ -1615,6 +1615,7 @@ def update_log_x_y_axis_div_style(
         return {'display': 'block'}
     return {'display': 'none'}
 
+
 @app.callback(
     Output('free_x_y_axis_div', 'style'),
     Input('facet_variable_dropdown', 'value'),
