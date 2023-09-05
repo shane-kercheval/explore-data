@@ -35,6 +35,7 @@ from source.library.dash_utilities import (
     log_variable,
 )
 from source.library.utilities import (
+    dataframe_columns_to_datetime,
     series_to_datetime,
     create_random_dataframe,
 )
@@ -114,7 +115,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             id='load_from_url',
                             type='text',
                             placeholder='Enter CSV URL',
-                            value='https://raw.githubusercontent.com/shane-kercheval/shiny-explore-dataset/master/shiny-explore-dataset/example_datasets/credit.csv',
+                            value = 'https://raw.githubusercontent.com/plotly/datasets/master/finance-charts-apple.csv',
+                            # value='https://raw.githubusercontent.com/shane-kercheval/shiny-explore-dataset/master/shiny-explore-dataset/example_datasets/credit.csv',
                             # value='https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv',
                             # value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
                             style={
@@ -594,13 +596,6 @@ def load_data(  # noqa
     if callback_context.triggered:
         triggered = callback_context.triggered[0]['prop_id']
         log_variable('triggered', triggered)
-        # ctx_msg = json.dumps({
-        #     'states': callback_context.states,
-        #     'triggered': callback_context.triggered,
-        #     'triggered2': callback_context.triggered[0]['prop_id'],
-        #     'inputs': callback_context.inputs,
-        # }, indent=2)
-        # log_var('ctx_msg', ctx_msg)
 
         if triggered == 'upload-data.contents':
             log_variable('load_random_data_button', load_random_data_button)
@@ -637,15 +632,18 @@ def load_data(  # noqa
 
         # i can't convert columns to datetime here because the dataframe gets converted to a dict
         # and loses the converted datetime dtypes
-        # data, converted_columns = convert_columns_to_datetime(data)
-        # log_variable('converted_columns', converted_columns)
+        # but i need to still get the columns that should be treated as dates
+        _, date_columns = dataframe_columns_to_datetime(data.copy())
         all_columns = data.columns.tolist()
         numeric_columns = hp.get_numeric_columns(data)
         non_numeric_columns = hp.get_non_numeric_columns(data)
-        date_columns = hp.get_date_columns(data)
         categorical_columns = hp.get_categorical_columns(data)
-        string_columns = hp.get_string_columns(data)
+        string_columns = [x for x in hp.get_string_columns(data) if x not in date_columns]
         boolean_columns = [x for x in all_columns if hp.is_series_bool(data[x])]
+        # ensure all columns lists are mutually exclusive
+        sets = [set(lst) for lst in [numeric_columns, date_columns, categorical_columns, string_columns, boolean_columns]]  # noqa
+        assert sum(len(s) for s in sets) == len(set.union(*sets))
+
         log_variable('all_columns', all_columns)
         log_variable('numeric_columns', numeric_columns)
         log_variable('non_numeric_columns', non_numeric_columns)
@@ -877,6 +875,12 @@ def update_controls_and_graph(  # noqa
     log_variable('color_label_input', color_label_input)
     log_variable('size_label_input', size_label_input)
     log_variable('facet_label_input', facet_label_input)
+    log_variable('numeric_columns', numeric_columns)
+    log_variable('non_numeric_columns', non_numeric_columns)
+    log_variable('date_columns', date_columns)
+    log_variable('categorical_columns', categorical_columns)
+    log_variable('string_columns', string_columns)
+    log_variable('boolean_columns', boolean_columns)
 
     graph_types = [x['value'] for x in graph_types]
 
@@ -1430,9 +1434,7 @@ def update_z_variable_dropdown_style(
         numeric_columns: list[str],
     ) -> dict:
     """Toggle the z-variable dropdown."""
-    log('asdfasfdasdfasdfasdfasdfasfsadf')
     if x_variable in numeric_columns and y_variable in numeric_columns:
-        log('asdfasfdasdfasdfasdfasdfasfsadf')
         return {'display': 'block'}, None
     return {'display': 'none'}, None
 
