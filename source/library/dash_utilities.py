@@ -584,6 +584,9 @@ def generate_graph(  # noqa: PLR0912
         raise ValueError(f"Unknown graph type: {graph_type}")
 
 
+    # TODO: add range slider
+    # graph_code += "fig.update_xaxes(rangeslider_visible=True)\n"
+
     log_variable('graph_code', graph_code)
     if 'Timestamp' in graph_code:
         log("Timestamp found in graph_code")
