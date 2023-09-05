@@ -469,40 +469,6 @@ configurations:
               - boolean
               - string
               - categorical
-      - name: box
-        description: Shows the distribution of {{x_variable}}.
-        optional_variables:
-          color_variable:
-            types:
-              - date
-              - boolean
-              - string
-              - categorical
-          facet_variable:
-            types:
-              - date
-              - boolean
-              - string
-              - categorical
-      - name: line
-        description: Line graph of {{x_variable}} and the index/order.
-        optional_variables:
-          color_variable:
-            types:
-              - numeric
-              - date
-              - boolean
-              - string
-              - categorical
-          size_variable:
-            types:
-              - numeric
-          facet_variable:
-            types:
-              - date
-              - boolean
-              - string
-              - categorical
 
 # date / numeric
   - selected_variables:
@@ -526,11 +492,12 @@ configurations:
               - boolean
               - string
               - categorical
-      - name: box
-        description: Shows the distribution of {{x_variable}}.
+      - name: line
+        description: Line graph of {{x_variable}} and the index/order.
         optional_variables:
           color_variable:
             types:
+              - numeric
               - date
               - boolean
               - string
@@ -541,7 +508,7 @@ configurations:
               - boolean
               - string
               - categorical
-      - name: line
+      - name: scatter
         description: Line graph of {{x_variable}} and the index/order.
         optional_variables:
           color_variable:
@@ -554,6 +521,21 @@ configurations:
           size_variable:
             types:
               - numeric
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
+      - name: box
+        description: Shows the distribution of {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
           facet_variable:
             types:
               - date
