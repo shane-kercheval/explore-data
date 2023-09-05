@@ -699,6 +699,7 @@ def test_generate_graph__all_configurations(  # noqa
         hist_func_agg=None,
         bar_mode=None,
         opacity=None,
+        n_bins_month=None,
         n_bins=None,
         log_x_axis=None,
         log_y_axis=None,
@@ -753,6 +754,7 @@ def test_generate_graph__all_configurations(  # noqa
                     hist_func_agg='max',
                     bar_mode='relative',
                     opacity=0.6,
+                    n_bins_month=3,
                     n_bins=30,
                     log_x_axis=None,
                     log_y_axis=None,
@@ -797,6 +799,7 @@ def test_generate_graph__all_configurations(  # noqa
                         hist_func_agg=None,
                         bar_mode=None,
                         opacity=None,
+                        n_bins_month=None,
                         n_bins=None,
                         log_x_axis=True,
                         log_y_axis=False,
@@ -847,6 +850,7 @@ def test_generate_graph__error(  # noqa
         hist_func_agg=None,
         bar_mode=None,
         opacity=None,
+        n_bins_month=None,
         n_bins=None,
         log_x_axis=None,
         log_y_axis=None,
@@ -862,7 +866,6 @@ def test_generate_graph__error(  # noqa
     assert code is not None
     assert 'px.box' in code
 
-
     fig, code = generate_graph(
         data=data,
         graph_type='histogram',
@@ -877,6 +880,7 @@ def test_generate_graph__error(  # noqa
         hist_func_agg=None,
         bar_mode=None,
         opacity=None,
+        n_bins_month=None,
         n_bins=None,
         log_x_axis=None,
         log_y_axis=None,

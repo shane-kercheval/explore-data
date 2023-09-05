@@ -63,6 +63,12 @@ top_n_categories_lookup = {
     9: '40',
     10: '50',
 }
+n_bins_month_lookup = {
+    0: 'None',
+    1: '1',
+    2: '2',
+    3: '3',
+}
 with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_configurations.yml')) as f:  # noqa
     GRAPH_CONFIGS = yaml.safe_load(f)
 
@@ -317,6 +323,16 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     min=0,
                                     max=10,
                                     marks=top_n_categories_lookup,
+                                ),
+                                create_slider_control(
+                                    label="Bin Months",
+                                    id='n_bins_month',
+                                    hidden=True,
+                                    min=0,
+                                    max=3,
+                                    step=1,
+                                    value=0,
+                                    marks=n_bins_month_lookup,
                                 ),
                                 create_slider_control(
                                     label="# of Bins",
@@ -799,6 +815,7 @@ def filter_data(
     Input('graph_type_dropdown', 'options'),
     Input('graph_type_dropdown', 'value'),
     Input('sort_categories_dropdown', 'value'),
+    Input('n_bins_month_slider', 'value'),
     Input('n_bins_slider', 'value'),
     Input('opacity_slider', 'value'),
     Input('top_n_categories_slider', 'value'),
@@ -845,6 +862,7 @@ def update_controls_and_graph(  # noqa
             graph_types: list[dict],
             graph_type: str,
             sort_categories: str,
+            n_bins_month: int,
             n_bins: int,
             opacity: float,
             top_n_categories: float,
@@ -884,6 +902,7 @@ def update_controls_and_graph(  # noqa
     log_variable('color_variable', color_variable)
     log_variable('size_variable', size_variable)
     log_variable('facet_variable', facet_variable)
+    log_variable('n_bins_month', n_bins_month)
     log_variable('n_bins', n_bins)
     log_variable('opacity', opacity)
     log_variable('top_n_categories', top_n_categories)
@@ -1022,6 +1041,7 @@ def update_controls_and_graph(  # noqa
                 hist_func_agg=hist_func_agg,
                 bar_mode=bar_mode,
                 opacity=opacity,
+                n_bins_month=n_bins_month,
                 n_bins=n_bins,
                 log_x_axis='Log X-Axis' in log_x_y_axis,
                 log_y_axis='Log Y-Axis' in log_x_y_axis,
@@ -1523,15 +1543,36 @@ def update_categorical_controls_div_style(
 
 
 @app.callback(
+    Output('n_bins_month_div', 'style'),
     Output('n_bins_div', 'style'),
     Input('graph_type_dropdown', 'value'),
+    Input('n_bins_month_slider', 'value'),
+    Input('x_variable_dropdown', 'value'),
+    State('date_columns', 'data'),
     prevent_initial_call=True,
 )
-def update_n_bins_div_style(graph_type: str) -> dict:
+def update_n_bins_div_style(
+        graph_type: str,
+        n_bins_month: int,
+        x_variable: str | None,
+        date_columns: list[str],
+    ) -> dict:
     """Toggle the n-bins div."""
-    if graph_type == 'histogram':
-        return {'display': 'block'}
-    return {'display': 'none'}
+    turn_on = {'display': 'block'}
+    turn_off = {'display': 'none'}
+    log('HELLO')
+    log_variable('graph_type', graph_type)
+    if graph_type != 'histogram':
+        log('A')
+        return turn_off, turn_off
+    if x_variable in date_columns:
+        if n_bins_month:
+            log('B')
+            return turn_on, turn_off
+        log('C')
+        return turn_on, turn_on
+    log('D')
+    return turn_off, turn_on
 
 
 @app.callback(

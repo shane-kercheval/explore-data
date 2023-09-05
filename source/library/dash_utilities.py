@@ -386,7 +386,7 @@ def get_category_orders(
     return category_orders
 
 
-def generate_graph(  # noqa: PLR0912
+def generate_graph(  # noqa: PLR0912, PLR0915
         data: pd.DataFrame,
         graph_type: str,
         x_variable: str | None,
@@ -400,6 +400,7 @@ def generate_graph(  # noqa: PLR0912
         hist_func_agg: str | None,
         bar_mode: str | None,
         opacity: float | None,
+        n_bins_month: int | None,
         n_bins: int | None,
         log_x_axis: bool | None,
         log_y_axis: bool | None,
@@ -535,6 +536,15 @@ def generate_graph(  # noqa: PLR0912
         else:
             hist_func_agg = None
 
+        if x_variable and x_variable in date_columns:
+            if n_bins_month:
+                n_bins = None
+                n_bins_month = f"'M{n_bins_month}'"
+            else:
+                n_bins_month = None
+        else:
+            n_bins_month = None
+
         graph_code += textwrap.dedent(f"""
         import plotly.express as px
         fig = px.histogram(
@@ -558,9 +568,14 @@ def generate_graph(  # noqa: PLR0912
         if (
             (x_variable in numeric_columns or x_variable in date_columns)
             and bar_mode and bar_mode != 'group'
-        ):
+            ):
             # Adjust the bar group gap
             graph_code += f"fig.update_layout(barmode='{bar_mode}', bargap=0.05)\n"
+
+        if n_bins_month:
+            graph_code += f"fig.update_traces(xbins_size={n_bins_month})\n"
+            graph_code += f"fig.update_xaxes(showgrid=True, ticklabelmode='period', dtick={n_bins_month}, tickformat='%b\\n%Y')\n"  # noqa
+
         graph_code += "fig\n"
     elif graph_type == 'bar':
         graph_code += textwrap.dedent(f"""
