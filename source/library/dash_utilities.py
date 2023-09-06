@@ -635,9 +635,6 @@ def generate_graph(  # noqa: PLR0912, PLR0915
     else:
         raise ValueError(f"Unknown graph type: {graph_type}")
 
-    # if range_slider:
-    #     graph_code += "fig.update_xaxes(rangeslider_visible=True, rangeslider_thickness = 0.1)\n"  # noqa
-
     if free_x_axis:
         graph_code += "fig.update_xaxes(matches=None)\n"
         graph_code += "fig.for_each_xaxis(lambda xaxis: xaxis.update(showticklabels=True))\n"
