@@ -443,6 +443,8 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=10,
+        date_columns=[],
+        date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
@@ -464,6 +466,8 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=3,
+        date_columns=[],
+        date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
@@ -485,6 +489,8 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=None,
+        date_columns=[],
+        date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
@@ -507,6 +513,8 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=2,
+        date_columns=[],
+        date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
@@ -530,6 +538,8 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=2,
+        date_columns=[],
+        date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
@@ -553,6 +563,8 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=2,
+        date_columns=[],
+        date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
@@ -576,6 +588,8 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=1,
+        date_columns=[],
+        date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
     assert mock_data2 is not new_data
@@ -616,6 +630,8 @@ def test_convert_to_graph_data__missing_categories(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=10,
+        date_columns=[],
+        date_floor=None,
     )
 
     assert new_data.columns.tolist() == selected_variables
@@ -661,6 +677,259 @@ def test_convert_to_graph_data__missing_categories(capsys, mock_data2):  # noqa
         pd.NaT,
         pd.Timestamp('2023-01-04 00:00:00'),
         pd.Timestamp('2023-01-05 00:00:00'),
+    ]
+
+def test_convert_to_graph_data__date_columns(capsys):  # noqa
+    dates_df = pd.DataFrame({
+        'dates': [
+            pd.Timestamp('2023-02-15 00:00:01'),
+            pd.Timestamp('2023-03-31 10:31:00'),
+            pd.Timestamp('2023-07-02 09:13:00'),
+            pd.Timestamp('2023-09-04 01:01:01'),
+            pd.Timestamp('2024-12-31 11:59:59'),
+        ],
+        'dates_with_missing': [
+            pd.Timestamp('2023-02-15 00:00:01'),
+            pd.Timestamp('2023-03-31 10:31:00'),
+            pd.NaT,
+            pd.Timestamp('2023-09-04 01:01:01'),
+            pd.Timestamp('2024-12-31 11:59:59'),
+        ],
+    })
+
+    new_data, markdown, code = convert_to_graph_data(
+        data=dates_df,
+        numeric_columns=[],
+        string_columns=[],
+        categorical_columns=[],
+        boolean_columns=[],
+        selected_variables=['dates', 'dates_with_missing'],
+        top_n_categories=2,
+        date_columns=['dates', 'dates_with_missing'],
+        date_floor=None,
+    )
+    assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
+    assert dates_df is not new_data
+    assert code == ''
+    assert markdown == ''  # not filtering on numeric columns
+    assert new_data['dates'].tolist() == dates_df['dates'].tolist()
+    assert new_data['dates_with_missing'].tolist() == dates_df['dates_with_missing'].tolist()
+
+    new_data, markdown, code = convert_to_graph_data(
+        data=dates_df,
+        numeric_columns=[],
+        string_columns=[],
+        categorical_columns=[],
+        boolean_columns=[],
+        selected_variables=['dates', 'dates_with_missing'],
+        top_n_categories=2,
+        date_columns=['dates', 'dates_with_missing'],
+        date_floor='second',
+    )
+    assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
+    assert dates_df is not new_data
+    assert "'dates'" in code
+    assert "'dates_with_missing'" in code
+    assert markdown == ''  # not filtering on numeric columns
+    assert new_data['dates'].tolist() == [
+        '2023-02-15 00:00:01',
+        '2023-03-31 10:31:00',
+        '2023-07-02 09:13:00',
+        '2023-09-04 01:01:01',
+        '2024-12-31 11:59:59',
+    ]
+    assert new_data['dates_with_missing'].tolist() == [
+        '2023-02-15 00:00:01',
+        '2023-03-31 10:31:00',
+        np.nan,
+        '2023-09-04 01:01:01',
+        '2024-12-31 11:59:59',
+    ]
+
+    new_data, markdown, code = convert_to_graph_data(
+        data=dates_df,
+        numeric_columns=[],
+        string_columns=[],
+        categorical_columns=[],
+        boolean_columns=[],
+        selected_variables=['dates', 'dates_with_missing'],
+        top_n_categories=2,
+        date_columns=['dates', 'dates_with_missing'],
+        date_floor='minute',
+    )
+    assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
+    assert dates_df is not new_data
+    assert "'dates'" in code
+    assert "'dates_with_missing'" in code
+    assert markdown == ''  # not filtering on numeric columns
+    assert new_data['dates'].tolist() == [
+        '2023-02-15 00:00:00',
+        '2023-03-31 10:31:00',
+        '2023-07-02 09:13:00',
+        '2023-09-04 01:01:00',
+        '2024-12-31 11:59:00',
+    ]
+    assert new_data['dates_with_missing'].tolist() == [
+        '2023-02-15 00:00:00',
+        '2023-03-31 10:31:00',
+        np.nan,
+        '2023-09-04 01:01:00',
+        '2024-12-31 11:59:00',
+    ]
+
+    new_data, markdown, code = convert_to_graph_data(
+        data=dates_df,
+        numeric_columns=[],
+        string_columns=[],
+        categorical_columns=[],
+        boolean_columns=[],
+        selected_variables=['dates', 'dates_with_missing'],
+        top_n_categories=2,
+        date_columns=['dates', 'dates_with_missing'],
+        date_floor='hour',
+    )
+    assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
+    assert dates_df is not new_data
+    assert "'dates'" in code
+    assert "'dates_with_missing'" in code
+    assert markdown == ''  # not filtering on numeric columns
+    assert new_data['dates'].tolist() == [
+        '2023-02-15 00:00:00',
+        '2023-03-31 10:00:00',
+        '2023-07-02 09:00:00',
+        '2023-09-04 01:00:00',
+        '2024-12-31 11:00:00',
+    ]
+    assert new_data['dates_with_missing'].tolist() == [
+        '2023-02-15 00:00:00',
+        '2023-03-31 10:00:00',
+        np.nan,
+        '2023-09-04 01:00:00',
+        '2024-12-31 11:00:00',
+    ]
+
+    new_data, markdown, code = convert_to_graph_data(
+        data=dates_df,
+        numeric_columns=[],
+        string_columns=[],
+        categorical_columns=[],
+        boolean_columns=[],
+        selected_variables=['dates', 'dates_with_missing'],
+        top_n_categories=2,
+        date_columns=['dates', 'dates_with_missing'],
+        date_floor='day',
+    )
+    assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
+    assert dates_df is not new_data
+    assert "'dates'" in code
+    assert "'dates_with_missing'" in code
+    assert markdown == ''  # not filtering on numeric columns
+    assert new_data['dates'].tolist() == [
+        '2023-02-15',
+        '2023-03-31',
+        '2023-07-02',
+        '2023-09-04',
+        '2024-12-31',
+    ]
+    assert new_data['dates_with_missing'].tolist() == [
+        '2023-02-15',
+        '2023-03-31',
+        np.nan,
+        '2023-09-04',
+        '2024-12-31',
+    ]
+
+    new_data, markdown, code = convert_to_graph_data(
+        data=dates_df,
+        numeric_columns=[],
+        string_columns=[],
+        categorical_columns=[],
+        boolean_columns=[],
+        selected_variables=['dates', 'dates_with_missing'],
+        top_n_categories=2,
+        date_columns=['dates', 'dates_with_missing'],
+        date_floor='week',
+    )
+    assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
+    assert dates_df is not new_data
+    assert "'dates'" in code
+    assert "'dates_with_missing'" in code
+    assert markdown == ''  # not filtering on numeric columns
+    assert new_data['dates'].tolist() == [
+        '2023-02-13',
+        '2023-03-27',
+        '2023-06-26',
+        '2023-09-04',
+        '2024-12-30',
+    ]
+    assert new_data['dates_with_missing'].tolist() == [
+        '2023-02-13',
+        '2023-03-27',
+        np.nan,
+        '2023-09-04',
+        '2024-12-30',
+    ]
+
+    new_data, markdown, code = convert_to_graph_data(
+        data=dates_df,
+        numeric_columns=[],
+        string_columns=[],
+        categorical_columns=[],
+        boolean_columns=[],
+        selected_variables=['dates', 'dates_with_missing'],
+        top_n_categories=2,
+        date_columns=['dates', 'dates_with_missing'],
+        date_floor='quarter',
+    )
+    assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
+    assert dates_df is not new_data
+    assert "'dates'" in code
+    assert "'dates_with_missing'" in code
+    assert markdown == ''  # not filtering on numeric columns
+    assert new_data['dates'].tolist() == [
+        '2023-01-01',
+        '2023-01-01',
+        '2023-07-01',
+        '2023-07-01',
+        '2024-10-01',
+    ]
+    assert new_data['dates_with_missing'].tolist() == [
+        '2023-01-01',
+        '2023-01-01',
+        np.nan,
+        '2023-07-01',
+        '2024-10-01',
+    ]
+
+    new_data, markdown, code = convert_to_graph_data(
+        data=dates_df,
+        numeric_columns=[],
+        string_columns=[],
+        categorical_columns=[],
+        boolean_columns=[],
+        selected_variables=['dates', 'dates_with_missing'],
+        top_n_categories=2,
+        date_columns=['dates', 'dates_with_missing'],
+        date_floor='year',
+    )
+    assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
+    assert dates_df is not new_data
+    assert "'dates'" in code
+    assert "'dates_with_missing'" in code
+    assert markdown == ''  # not filtering on numeric columns
+    assert new_data['dates'].tolist() == [
+        '2023-01-01',
+        '2023-01-01',
+        '2023-01-01',
+        '2023-01-01',
+        '2024-01-01',
+    ]
+    assert new_data['dates_with_missing'].tolist() == [
+        '2023-01-01',
+        '2023-01-01',
+        np.nan,
+        '2023-01-01',
+        '2024-01-01',
     ]
 
 def test_get_combinations():  # noqa

@@ -209,6 +209,23 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     placeholder="Select a variable",
                                     hidden=True,
                                 ),
+                                create_dropdown_control(
+                                    label="Date Floor",
+                                    id="date_floor",
+                                    hidden=True,
+                                    options=[
+                                        {'label': 'None', 'value': 'None'},
+                                        {'label': 'Year', 'value': 'year'},
+                                        {'label': 'Quarter', 'value': 'quarter'},
+                                        {'label': 'Month', 'value': 'month'},
+                                        {'label': 'Week', 'value': 'week'},
+                                        {'label': 'Day', 'value': 'day'},
+                                        {'label': 'Hour', 'value': 'hour'},
+                                        {'label': 'Minute', 'value': 'minute'},
+                                        {'label': 'Second', 'value': 'second'},
+                                    ],
+                                    value='None',
+                                ),
                                 dbc.Button(
                                     "Clear",
                                     id="clear-settings-button",
@@ -338,7 +355,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     label="# of Bins",
                                     id='n_bins',
                                     hidden=True,
-                                    min=20,
+                                    min=0,
                                     max=100,
                                     step=20,
                                     value=40,
@@ -818,6 +835,8 @@ def filter_data(
     Input('facet_variable_dropdown', 'options'),
     Input('facet_variable_dropdown', 'value'),
 
+    Input('date_floor_dropdown', 'value'),
+
     Input('graph_type_dropdown', 'options'),
     Input('graph_type_dropdown', 'value'),
     Input('sort_categories_dropdown', 'value'),
@@ -865,6 +884,7 @@ def update_controls_and_graph(  # noqa
             facet_variable_div: dict,
             facet_variable_dropdown: list[str],
             facet_variable: str | None,
+            date_floor: str | None,
 
             graph_types: list[dict],
             graph_type: str,
@@ -943,6 +963,8 @@ def update_controls_and_graph(  # noqa
     numeric_na_removal_markdown = ''
     generated_code = generated_filter_code or ''
     invalid_configuration_alert = False
+    date_floor = None if date_floor == 'None' else date_floor
+
     try:
         if (
             (x_variable or y_variable)
@@ -1029,8 +1051,10 @@ def update_controls_and_graph(  # noqa
                 string_columns=string_columns,
                 categorical_columns=categorical_columns,
                 boolean_columns=boolean_columns,
+                date_columns=date_columns,
                 selected_variables=selected_variables,
                 top_n_categories=top_n_categories,
+                date_floor=date_floor,
             )
             if code:
                 generated_code += "\n"
@@ -1177,6 +1201,7 @@ def update_correlations_graph(data: pd.DataFrame) -> go.Figure:
 @app.callback(
     Output('x_variable_dropdown', 'value'),
     Output('y_variable_dropdown', 'value'),
+    Output('date_floor_dropdown', 'value'),
     Input('clear-settings-button', 'n_clicks'),
     prevent_initial_call=True,
 )
@@ -1184,7 +1209,7 @@ def clear_settings(n_clicks: int) -> str:
     """Triggered when the user clicks on the Clear button."""
     log_function('clear_settings')
     log_variable('n_clicks', n_clicks)
-    return None, None
+    return None, None, 'None'
 
 
 @app.callback(
@@ -1213,11 +1238,42 @@ def swap_x_y_variables(n_clicks: int, x_variable: str | None, y_variable: str | 
     prevent_initial_call=True,
 )
 def clear_labels(n_clicks: int) -> str:
-    """Triggered when the user clicks on the Clear button."""
+    """
+    Triggered when the user clicks on the Clear button in the "Other Options" section for
+    title/subtitle, etc.
+    """
     log_function('Clear Labels')
     log_variable('n_clicks', n_clicks)
     return '', '', '', '', '', '', ''
 
+
+@app.callback(
+    Output('date_floor_div', 'style'),
+    Input('x_variable_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
+    Input('z_variable_dropdown', 'value'),
+    Input('color_variable_dropdown', 'value'),
+    Input('size_variable_dropdown', 'value'),
+    Input('facet_variable_dropdown', 'value'),
+    State('date_columns', 'data'),
+    prevent_initial_call=True,
+)
+def show_date_floor_div(
+        x_variable: str | None,
+        y_variable: str | None,
+        z_variable: str | None,
+        color_variable: str | None,
+        size_variable: str | None,
+        facet_variable: str | None,
+        date_columns: list[str],
+        ) -> dict:
+    """Show the date floor dropdown if any of the variables are dates."""
+    log_function('show_date_floor_div')
+    # if any variables are in date_columns, show the date_floor dropdown
+    variables = [x_variable, y_variable, z_variable, color_variable, size_variable, facet_variable]
+    if any(x in date_columns for x in variables):
+        return {'display': 'block'}
+    return {'display': 'none'}
 
 @app.callback(
     Output("collapse-variables", "is_open"),
@@ -1571,18 +1627,13 @@ def update_n_bins_div_style(
     """Toggle the n-bins div."""
     turn_on = {'display': 'block'}
     turn_off = {'display': 'none'}
-    log('HELLO')
     log_variable('graph_type', graph_type)
     if graph_type != 'histogram':
-        log('A')
         return turn_off, turn_off
     if x_variable in date_columns:
         if n_bins_month:
-            log('B')
             return turn_on, turn_off
-        log('C')
         return turn_on, turn_on
-    log('D')
     return turn_off, turn_on
 
 

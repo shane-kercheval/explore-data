@@ -274,14 +274,16 @@ def create_title_and_labels(  # noqa
     return title, graph_labels
 
 
-def convert_to_graph_data(
+def convert_to_graph_data(  # noqa: PLR0912, PLR0915
         data: pd.DataFrame,
         numeric_columns: list[str],
         string_columns: list[str],
         categorical_columns: list[str],
         boolean_columns: list[str],
+        date_columns: list[str],
         selected_variables: list[str],
         top_n_categories: int,
+        date_floor: str | None,
     ) -> tuple[pd.DataFrame, str, str]:
     """
     Numeric columns are filtered by removing missing values.
@@ -327,6 +329,37 @@ def convert_to_graph_data(
                     top_n=top_n_categories,
                     other_category='<Other>',
                 )
+
+        if date_floor and variable in date_columns:
+            series = pd.to_datetime(data[variable], errors='coerce')
+            code += f"series = pd.to_datetime(graph_data['{variable}'], errors='coerce')\n"
+            if date_floor == 'year':
+                data[variable] = series.dt.to_period('Y').dt.start_time.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.to_period('Y').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa            
+            elif date_floor == 'quarter':
+                data[variable] = series.dt.to_period('Q').dt.start_time.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.to_period('Q').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa
+            elif date_floor == 'month':
+                data[variable] = series.dt.to_period('M').dt.start_time.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.to_period('M').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa
+            elif date_floor == 'week':
+                data[variable] = series.dt.to_period('W').dt.start_time.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.to_period('W').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa
+            elif date_floor == 'day':
+                data[variable] = series.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d')\n"
+            elif date_floor == 'hour':
+                data[variable] = series.dt.strftime('%Y-%m-%d %H:00:00')
+                code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d %H:00:00')\n"
+            elif date_floor == 'minute':
+                data[variable] = series.dt.strftime('%Y-%m-%d %H:%M:00')
+                code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d %H:%M:00')\n"
+            elif date_floor == 'second':
+                data[variable] = series.dt.strftime('%Y-%m-%d %H:%M:%S')
+                code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d %H:%M:%S')\n"
+            else:
+                raise ValueError(f"Unknown date_floor: {date_floor}")
+
         if variable in numeric_columns:
             log(f"removing missing values for {variable}")
             num_values_removed = data[variable].isna().sum()
@@ -599,6 +632,9 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         """)
     else:
         raise ValueError(f"Unknown graph type: {graph_type}")
+
+    # if range_slider:
+    #     graph_code += "fig.update_xaxes(rangeslider_visible=True, rangeslider_thickness = 0.1)\n"  # noqa
 
     if free_x_axis:
         graph_code += "fig.update_xaxes(matches=None)\n"
