@@ -710,10 +710,21 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
     assert dates_df is not new_data
-    assert code == ''
-    assert markdown == ''  # not filtering on numeric columns
-    assert new_data['dates'].tolist() == dates_df['dates'].tolist()
-    assert new_data['dates_with_missing'].tolist() == dates_df['dates_with_missing'].tolist()
+    assert 'dates_with_missing' in code
+    assert 'dates_with_missing' in markdown
+    assert '`1` missing' in markdown
+    assert new_data['dates'].tolist() == [
+        pd.Timestamp('2023-02-15 00:00:01'),
+        pd.Timestamp('2023-03-31 10:31:00'),
+        pd.Timestamp('2023-09-04 01:01:01'),
+        pd.Timestamp('2024-12-31 11:59:59'),
+    ]
+    assert new_data['dates_with_missing'].tolist() == [
+        pd.Timestamp('2023-02-15 00:00:01'),
+        pd.Timestamp('2023-03-31 10:31:00'),
+        pd.Timestamp('2023-09-04 01:01:01'),
+        pd.Timestamp('2024-12-31 11:59:59'),
+    ]
 
     new_data, markdown, code = convert_to_graph_data(
         data=dates_df,
@@ -730,18 +741,17 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
     assert dates_df is not new_data
     assert "'dates'" in code
     assert "'dates_with_missing'" in code
-    assert markdown == ''  # not filtering on numeric columns
+    assert 'dates_with_missing' in markdown
+    assert '`1` missing' in markdown
     assert new_data['dates'].tolist() == [
         '2023-02-15 00:00:01',
         '2023-03-31 10:31:00',
-        '2023-07-02 09:13:00',
         '2023-09-04 01:01:01',
         '2024-12-31 11:59:59',
     ]
     assert new_data['dates_with_missing'].tolist() == [
         '2023-02-15 00:00:01',
         '2023-03-31 10:31:00',
-        np.nan,
         '2023-09-04 01:01:01',
         '2024-12-31 11:59:59',
     ]
@@ -761,18 +771,17 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
     assert dates_df is not new_data
     assert "'dates'" in code
     assert "'dates_with_missing'" in code
-    assert markdown == ''  # not filtering on numeric columns
+    assert 'dates_with_missing' in markdown
+    assert '`1` missing' in markdown
     assert new_data['dates'].tolist() == [
         '2023-02-15 00:00:00',
         '2023-03-31 10:31:00',
-        '2023-07-02 09:13:00',
         '2023-09-04 01:01:00',
         '2024-12-31 11:59:00',
     ]
     assert new_data['dates_with_missing'].tolist() == [
         '2023-02-15 00:00:00',
         '2023-03-31 10:31:00',
-        np.nan,
         '2023-09-04 01:01:00',
         '2024-12-31 11:59:00',
     ]
@@ -792,18 +801,17 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
     assert dates_df is not new_data
     assert "'dates'" in code
     assert "'dates_with_missing'" in code
-    assert markdown == ''  # not filtering on numeric columns
+    assert 'dates_with_missing' in markdown
+    assert '`1` missing' in markdown
     assert new_data['dates'].tolist() == [
         '2023-02-15 00:00:00',
         '2023-03-31 10:00:00',
-        '2023-07-02 09:00:00',
         '2023-09-04 01:00:00',
         '2024-12-31 11:00:00',
     ]
     assert new_data['dates_with_missing'].tolist() == [
         '2023-02-15 00:00:00',
         '2023-03-31 10:00:00',
-        np.nan,
         '2023-09-04 01:00:00',
         '2024-12-31 11:00:00',
     ]
@@ -823,18 +831,17 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
     assert dates_df is not new_data
     assert "'dates'" in code
     assert "'dates_with_missing'" in code
-    assert markdown == ''  # not filtering on numeric columns
+    assert 'dates_with_missing' in markdown
+    assert '`1` missing' in markdown
     assert new_data['dates'].tolist() == [
         '2023-02-15',
         '2023-03-31',
-        '2023-07-02',
         '2023-09-04',
         '2024-12-31',
     ]
     assert new_data['dates_with_missing'].tolist() == [
         '2023-02-15',
         '2023-03-31',
-        np.nan,
         '2023-09-04',
         '2024-12-31',
     ]
@@ -854,18 +861,17 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
     assert dates_df is not new_data
     assert "'dates'" in code
     assert "'dates_with_missing'" in code
-    assert markdown == ''  # not filtering on numeric columns
+    assert 'dates_with_missing' in markdown
+    assert '`1` missing' in markdown
     assert new_data['dates'].tolist() == [
         '2023-02-13',
         '2023-03-27',
-        '2023-06-26',
         '2023-09-04',
         '2024-12-30',
     ]
     assert new_data['dates_with_missing'].tolist() == [
         '2023-02-13',
         '2023-03-27',
-        np.nan,
         '2023-09-04',
         '2024-12-30',
     ]
@@ -885,18 +891,17 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
     assert dates_df is not new_data
     assert "'dates'" in code
     assert "'dates_with_missing'" in code
-    assert markdown == ''  # not filtering on numeric columns
+    assert 'dates_with_missing' in markdown
+    assert '`1` missing' in markdown
     assert new_data['dates'].tolist() == [
         '2023-01-01',
         '2023-01-01',
-        '2023-07-01',
         '2023-07-01',
         '2024-10-01',
     ]
     assert new_data['dates_with_missing'].tolist() == [
         '2023-01-01',
         '2023-01-01',
-        np.nan,
         '2023-07-01',
         '2024-10-01',
     ]
@@ -916,9 +921,9 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
     assert dates_df is not new_data
     assert "'dates'" in code
     assert "'dates_with_missing'" in code
-    assert markdown == ''  # not filtering on numeric columns
+    assert 'dates_with_missing' in markdown
+    assert '`1` missing' in markdown
     assert new_data['dates'].tolist() == [
-        '2023-01-01',
         '2023-01-01',
         '2023-01-01',
         '2023-01-01',
@@ -927,7 +932,6 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
     assert new_data['dates_with_missing'].tolist() == [
         '2023-01-01',
         '2023-01-01',
-        np.nan,
         '2023-01-01',
         '2024-01-01',
     ]

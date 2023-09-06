@@ -310,6 +310,7 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
         markdown = ""
 
     for variable in selected_variables:
+        # fill missing values for string, categorical, and boolean columns with '<Missing>'
         if variable in string_columns or variable in categorical_columns or variable in boolean_columns:  # noqa
             log(f"filling na for {variable}")
             if data[variable].dtype.name == 'category':
@@ -331,6 +332,7 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
                 )
 
         if date_floor and variable in date_columns:
+            # convert the date to the specified date_floor
             series = pd.to_datetime(data[variable], errors='coerce')
             code += f"series = pd.to_datetime(graph_data['{variable}'], errors='coerce')\n"
             if date_floor == 'year':
@@ -360,13 +362,13 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
             else:
                 raise ValueError(f"Unknown date_floor: {date_floor}")
 
-        if variable in numeric_columns:
-            log(f"removing missing values for {variable}")
+        if variable in numeric_columns or variable in date_columns:
+            log(f"removing missing values for - {variable}")
             num_values_removed = data[variable].isna().sum()
             if num_values_removed > 0:
                 markdown += f"- `{num_values_removed:,}` missing values have been removed from `{variable}`  \n"  # noqa
-            code += f"graph_data = graph_data[graph_data['{variable}'].notna()].copy()\n"
-            data = data[data[variable].notna()]
+                code += f"graph_data = graph_data[graph_data['{variable}'].notna()].copy()\n"
+                data = data[data[variable].notna()]
 
     if any(x in numeric_columns for x in selected_variables):
         rows_remaining = len(data)
