@@ -428,6 +428,20 @@ configurations:
               - boolean
               - string
               - categorical
+      - name: bar - count distinct
+        description: Shows the count of unique values of {{y_variable}} for each {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
+              - boolean
+              - string
+              - categorical
+  # non-numeric / non-numeric / numeric
   - selected_variables:
       x_variable:
         - boolean
@@ -448,39 +462,30 @@ configurations:
               - boolean
               - string
               - categorical
-  #     - name: histogram
-  #       description: TBD...
-  #       optional_variables:
-  #         color_variable:
-  #           types:
-  #             - numeric
-  #             - date
-  #             - boolean
-  #             - string
-  #             - categorical
-  #         facet_variable:
-  #           types:
-  #             - date
-  #             - boolean
-  #             - string
-  #             - categorical
-  #     - name: bar
-  #       description: TBD...
-  #       optional_variables:
-  #         color_variable:
-  #           types:
-  #             - numeric
-  #             - date
-  #             - boolean
-  #             - string
-  #             - categorical
-  #         facet_variable:
-  #           types:
-  #             - date
-  #             - boolean
-  #             - string
-  #             - categorical
-# date / none
+  # non-numeric / non-numeric / non-numeric
+  - selected_variables:
+      x_variable:
+        - boolean
+        - string
+        - categorical
+      y_variable:
+        - boolean
+        - string
+        - categorical
+      z_variable:
+        - boolean
+        - string
+        - categorical
+    graph_types:
+      - name: heatmap - count distinct
+        description: Heatmap showing the count of distinct values of {{z_variable}} for each combination of {{x_variable}}, {{y_variable}}.
+        optional_variables:
+          facet_variable:
+            types:
+              - boolean
+              - string
+              - categorical
+  # date / none
   - selected_variables:
       x_variable:
         - date
@@ -501,8 +506,7 @@ configurations:
               - boolean
               - string
               - categorical
-
-# date / numeric
+  # date / numeric
   - selected_variables:
       x_variable:
         - date
@@ -571,6 +575,28 @@ configurations:
           facet_variable:
             types:
               - date
+              - boolean
+              - string
+              - categorical
+  # date / non-numeric
+  - selected_variables:
+      x_variable:
+        - date
+      y_variable:
+        - boolean
+        - string
+        - categorical
+    graph_types:
+      - name: bar - count distinct
+        description: Shows the count of unique values of {{y_variable}} for each {{x_variable}}.
+        optional_variables:
+          color_variable:
+            types:
+              - boolean
+              - string
+              - categorical
+          facet_variable:
+            types:
               - boolean
               - string
               - categorical

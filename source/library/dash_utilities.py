@@ -7,6 +7,11 @@ import helpsk.pandas as hp
 import plotly.graph_objs as go
 
 
+# New Error type for invalid configuration selected
+class InvalidConfigurationError(Exception):
+    """Invalid configuration selected."""
+
+
 def log(value: str) -> None:
     """Log value."""
     print(value, flush=True)
@@ -148,11 +153,6 @@ def get_variable_type(variable: str | None, options: dict) -> str | None:
     raise ValueError(f"Unknown dtype for column `{variable}`")
 
 
-# New Error type for invalid configuration selected
-class InvalidConfigurationError(Exception):
-    """Invalid configuration selected."""
-
-
 def get_graph_config(
           configurations: list[dict],
           x_variable: str | None,
@@ -283,6 +283,7 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
         date_columns: list[str],
         selected_variables: list[str],
         top_n_categories: int,
+        exclude_from_top_n_transformation: list[str],
         date_floor: str | None,
     ) -> tuple[pd.DataFrame, str, str]:
     """
@@ -321,7 +322,8 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
                 data[variable] = data[variable].fillna('<Missing>')
                 code += f"graph_data['{variable}'] = graph_data['{variable}'].fillna('<Missing>')\n"  # noqa
 
-            if top_n_categories:
+            exclude_from_top_n_transformation = exclude_from_top_n_transformation or []
+            if top_n_categories and variable not in exclude_from_top_n_transformation:
                 if 'top_n_categories' not in code:
                     code += top_n_categories_code
                 code += f"graph_data['{variable}'] = top_n_categories(graph_data['{variable}'], n={top_n_categories})\n"  # noqa
@@ -617,7 +619,23 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             graph_code += f"fig.update_xaxes(showgrid=True, ticklabelmode='period', dtick={n_bins_month}, tickformat='%b\\n%Y')\n"  # noqa
 
         graph_code += "fig\n"
-    elif graph_type == 'bar':
+    elif graph_type in ['bar', 'bar - count distinct']:
+        if graph_type == 'bar - count distinct':
+            if y_variable in [x_variable, color_variable, facet_variable]:
+                raise InvalidConfigurationError("Cannot use the same variable for y and x, color, or facet")  # noqa
+            selected_variables = [
+                x for x in [x_variable, color_variable, facet_variable]
+                if x is not None and x != y_variable
+            ]
+            selected_variables = list(set(selected_variables))
+            graph_code += textwrap.dedent(f"""
+            graph_data = (
+                graph_data
+                .groupby({selected_variables})
+                .agg({{'{y_variable}': 'nunique'}})
+                .reset_index()
+            )
+            """)
         graph_code += textwrap.dedent(f"""
         import plotly.express as px
         fig = px.bar(
@@ -665,6 +683,30 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         )
         """)
         fig
+    elif graph_type == 'heatmap - count distinct':
+        selected_variables = [
+            x for x in [x_variable, y_variable, z_variable, facet_variable]
+            if x is not None
+        ]
+        selected_variables = list(set(selected_variables))
+        graph_code += f"graph_data = graph_data[{selected_variables}].drop_duplicates()\n"
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.density_heatmap(
+            graph_data,
+            x={f"'{x_variable}'"},
+            y={f"'{y_variable}'"},
+            z={f"'{z_variable}'"},
+            histfunc='count',
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            title={f'"{title}"' if title else None},
+            marginal_x={"'histogram'" if show_axes_histogram else None},
+            marginal_y={"'histogram'" if show_axes_histogram else None},
+            labels={graph_labels},
+        )
+        """)
     else:
         raise ValueError(f"Unknown graph type: {graph_type}")
 

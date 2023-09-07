@@ -224,7 +224,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                         {'label': 'Minute', 'value': 'minute'},
                                         {'label': 'Second', 'value': 'second'},
                                     ],
-                                    value='None',
+                                    value='month',
                                 ),
                                 dbc.Button(
                                     "Clear",
@@ -606,7 +606,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
 @app.callback(
     Output('x_variable_dropdown', 'options'),
     Output('y_variable_dropdown', 'options'),
-    Output('z_variable_dropdown', 'options'),
     Output('filter_columns_dropdown', 'options'),
     Output('filter_columns_cache', 'data', allow_duplicate=True),
     Output('dynamic-filter-controls', 'children', allow_duplicate=True),
@@ -641,7 +640,6 @@ def load_data(  # noqa
     log_function('load_data')
     x_variable_dropdown = []
     y_variable_dropdown = []
-    z_variable_dropdown = []
     filter_columns_dropdown = []
     filter_columns_cache = None
     dynamic_filter_controls = None
@@ -741,7 +739,6 @@ def load_data(  # noqa
 
         x_variable_dropdown = all_columns
         y_variable_dropdown = all_columns
-        z_variable_dropdown = numeric_columns
         filter_columns_dropdown = all_columns
         table_uploaded_data = [
             dcc.Markdown("#### Sample of Uploaded Data (first 500 rows):"),
@@ -760,7 +757,6 @@ def load_data(  # noqa
     return (
         x_variable_dropdown,
         y_variable_dropdown,
-        z_variable_dropdown,
         filter_columns_dropdown,
         filter_columns_cache,
         dynamic_filter_controls,
@@ -1054,6 +1050,12 @@ def update_controls_and_graph(  # noqa
             # TODO: need to convert code to string and execute string
             top_n_categories = top_n_categories_lookup[top_n_categories]
             top_n_categories = None if top_n_categories == 'None' else int(top_n_categories)
+            exclude_from_top_n_transformation = []
+            if graph_type == 'bar - count distinct':
+                exclude_from_top_n_transformation = [y_variable]
+            elif graph_type == 'heatmap - count distinct':
+                exclude_from_top_n_transformation = [z_variable]
+
             graph_data, numeric_na_removal_markdown, code = convert_to_graph_data(
                 data=data,
                 numeric_columns=numeric_columns,
@@ -1063,6 +1065,7 @@ def update_controls_and_graph(  # noqa
                 date_columns=date_columns,
                 selected_variables=selected_variables,
                 top_n_categories=top_n_categories,
+                exclude_from_top_n_transformation=exclude_from_top_n_transformation,
                 date_floor=date_floor,
             )
             if code:
@@ -1564,13 +1567,14 @@ def update_hist_func_agg_div_style(
 )
 def update_bar_mode_div_style(graph_type: str, color_variable: str | None) -> dict:
     """Toggle the bar mode div."""
-    if color_variable and graph_type in ['histogram', 'bar']:
+    if color_variable and graph_type in ['histogram', 'bar', 'bar - count distinct']:
         return {'display': 'block'}
     return {'display': 'none'}
 
 
 @app.callback(
     Output('z_variable_div', 'style'),
+    Output('z_variable_dropdown', 'options'),
     Output('z_variable_dropdown', 'value'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
@@ -1578,6 +1582,7 @@ def update_bar_mode_div_style(graph_type: str, color_variable: str | None) -> di
     State('string_columns', 'data'),
     State('categorical_columns', 'data'),
     State('boolean_columns', 'data'),
+    State('all_columns', 'data'),
     prevent_initial_call=True,
 )
 def update_z_variable_dropdown_style(
@@ -1587,13 +1592,17 @@ def update_z_variable_dropdown_style(
         string_columns: list[str],
         categorical_columns: list[str],
         boolean_columns: list[str],
-    ) -> dict:
+        all_columns: list[str],
+    ) -> tuple[dict, list, str]:
     """Toggle the z-variable dropdown."""
-    non_numeric_columns = set(string_columns + categorical_columns + boolean_columns)
-    if (x_variable in numeric_columns and y_variable in numeric_columns) \
-        or (x_variable in non_numeric_columns and y_variable in non_numeric_columns):
-        return {'display': 'block'}, None
-    return {'display': 'none'}, None
+    if x_variable in numeric_columns and y_variable in numeric_columns:
+        return {'display': 'block'}, numeric_columns, None
+    non_numeric_columns = string_columns + categorical_columns + boolean_columns
+    if x_variable in non_numeric_columns and y_variable in non_numeric_columns:
+        # ensure correct order of columns (excluding date)
+        options = [x for x in all_columns if x in numeric_columns + non_numeric_columns]
+        return {'display': 'block'}, options, None
+    return {'display': 'none'}, [], None
 
 
 @app.callback(
@@ -1702,10 +1711,9 @@ def update_show_axes_histogram_div_style(
         graph_type: str,
     ) -> dict:
     """Toggle the 'log x/y axis' div."""
-    if graph_type in ['scatter', 'heatmap']:
+    if graph_type in ['scatter', 'heatmap', 'heatmap - count distinct']:
         return {'display': 'block'}
     return {'display': 'none'}
-
 
 
 @app.callback(

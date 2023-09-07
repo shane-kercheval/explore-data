@@ -281,6 +281,25 @@ def test_get_graph_config__numeric_numeric(graphing_configurations):  # noqa
     assert 'description' in config['graph_types'][0]
     assert 'optional_variables' in config['graph_types'][0]
 
+def test_get_graph_config__numeric_numeric_numeric(graphing_configurations):  # noqa
+    config = get_graph_config(
+        configurations=graphing_configurations,
+        x_variable='numeric',
+        y_variable='numeric',
+        z_variable='numeric',
+    )
+    assert isinstance(config, dict)
+    assert 'numeric' in config['selected_variables']['x_variable']
+    assert 'numeric' in config['selected_variables']['y_variable']
+
+    assert isinstance(config['graph_types'], list)
+    assert len(config['graph_types']) > 0
+    assert isinstance(config['graph_types'][0], dict)
+    assert 'name' in config['graph_types'][0]
+    assert config['graph_types'][0]['name'] == 'scatter-3d'
+    assert 'description' in config['graph_types'][0]
+    assert 'optional_variables' in config['graph_types'][0]
+
 @pytest.mark.parametrize('x_variable', ['date', 'boolean', 'string', 'categorical'])
 def test_get_graph_config__nonnumeric(x_variable, graphing_configurations):  # noqa
     config = get_graph_config(
@@ -339,26 +358,26 @@ def test_get_graph_config__nonnumeric_numeric(x_variable, graphing_configuration
     assert 'description' in config['graph_types'][0]
     assert 'optional_variables' in config['graph_types'][0]
 
-# @pytest.mark.parametrize('x_variable', ['date', 'boolean', 'string', 'categorical'])
-# @pytest.mark.parametrize('y_variable', ['date', 'boolean', 'string', 'categorical'])
-# def test_get_graph_config__nonnumeric_nonnumeric(x_variable, y_variable, graphing_configurations):  # noqa
-#     config = get_graph_config(
-#         configurations=graphing_configurations,
-#         x_variable=x_variable,
-#         y_variable=y_variable,
-#     )
-#     # test variables
-#     assert isinstance(config, dict)
-#     assert x_variable in config['selected_variables']['x_variable']
-#     assert y_variable in config['selected_variables']['y_variable']
-#     # test graph types
-#     assert isinstance(config['graph_types'], list)
-#     assert len(config['graph_types']) > 0
-#     assert isinstance(config['graph_types'][0], dict)
-#     assert 'name' in config['graph_types'][0]
-#     assert config['graph_types'][0]['name'] == 'heatmap'
-#     assert 'description' in config['graph_types'][0]
-#     assert 'optional_variables' in config['graph_types'][0]
+@pytest.mark.parametrize('x_variable', ['boolean', 'string', 'categorical'])
+@pytest.mark.parametrize('y_variable', ['boolean', 'string', 'categorical'])
+def test_get_graph_config__nonnumeric_nonnumeric(x_variable, y_variable, graphing_configurations):  # noqa
+    config = get_graph_config(
+        configurations=graphing_configurations,
+        x_variable=x_variable,
+        y_variable=y_variable,
+    )
+    # test variables
+    assert isinstance(config, dict)
+    assert x_variable in config['selected_variables']['x_variable']
+    assert y_variable in config['selected_variables']['y_variable']
+    # test graph types
+    assert isinstance(config['graph_types'], list)
+    assert len(config['graph_types']) > 0
+    assert isinstance(config['graph_types'][0], dict)
+    assert 'name' in config['graph_types'][0]
+    assert config['graph_types'][0]['name'] == 'heatmap'
+    assert 'description' in config['graph_types'][0]
+    assert 'optional_variables' in config['graph_types'][0]
 
 def test_get_graph_config__z_variable(graphing_configurations):  # noqa
     config = get_graph_config(
@@ -444,6 +463,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         selected_variables=selected_variables,
         top_n_categories=10,
         date_columns=[],
+        exclude_from_top_n_transformation=None,
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -466,6 +486,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=3,
+        exclude_from_top_n_transformation=None,
         date_columns=[],
         date_floor=None,
     )
@@ -489,6 +510,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=None,
+        exclude_from_top_n_transformation=None,
         date_columns=[],
         date_floor=None,
     )
@@ -513,6 +535,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=2,
+        exclude_from_top_n_transformation=None,
         date_columns=[],
         date_floor=None,
     )
@@ -538,6 +561,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=2,
+        exclude_from_top_n_transformation=None,
         date_columns=[],
         date_floor=None,
     )
@@ -563,6 +587,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=2,
+        exclude_from_top_n_transformation=None,
         date_columns=[],
         date_floor=None,
     )
@@ -588,6 +613,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=1,
+        exclude_from_top_n_transformation=None,
         date_columns=[],
         date_floor=None,
     )
@@ -630,6 +656,7 @@ def test_convert_to_graph_data__missing_categories(capsys, mock_data2):  # noqa
         boolean_columns=boolean_columns,
         selected_variables=selected_variables,
         top_n_categories=10,
+        exclude_from_top_n_transformation=None,
         date_columns=[],
         date_floor=None,
     )
@@ -705,6 +732,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         boolean_columns=[],
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
+        exclude_from_top_n_transformation=None,
         date_columns=['dates', 'dates_with_missing'],
         date_floor=None,
     )
@@ -734,6 +762,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         boolean_columns=[],
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
+        exclude_from_top_n_transformation=None,
         date_columns=['dates', 'dates_with_missing'],
         date_floor='second',
     )
@@ -764,6 +793,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         boolean_columns=[],
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
+        exclude_from_top_n_transformation=None,
         date_columns=['dates', 'dates_with_missing'],
         date_floor='minute',
     )
@@ -794,6 +824,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         boolean_columns=[],
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
+        exclude_from_top_n_transformation=None,
         date_columns=['dates', 'dates_with_missing'],
         date_floor='hour',
     )
@@ -824,6 +855,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         boolean_columns=[],
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
+        exclude_from_top_n_transformation=None,
         date_columns=['dates', 'dates_with_missing'],
         date_floor='day',
     )
@@ -854,6 +886,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         boolean_columns=[],
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
+        exclude_from_top_n_transformation=None,
         date_columns=['dates', 'dates_with_missing'],
         date_floor='week',
     )
@@ -884,6 +917,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         boolean_columns=[],
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
+        exclude_from_top_n_transformation=None,
         date_columns=['dates', 'dates_with_missing'],
         date_floor='quarter',
     )
@@ -914,6 +948,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         boolean_columns=[],
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
+        exclude_from_top_n_transformation=None,
         date_columns=['dates', 'dates_with_missing'],
         date_floor='year',
     )
@@ -934,6 +969,35 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         '2023-01-01',
         '2023-01-01',
         '2024-01-01',
+    ]
+
+def test_convert_to_graph_data__exclude_from_top_n_transformation():  # noqa
+    data = pd.DataFrame({
+        'strings': ['a', 'b', 'c', 'a', 'b', 'd', 'e', 'f'],
+        'strings2': ['a', 'b', 'c', 'a', 'b', 'd', 'e', 'f'],
+        'categories': pd.Categorical(['a', 'b', 'c', 'a', 'b', 'd', 'e', 'f']),
+        'categories2': pd.Categorical(['a', 'b', 'c', 'a', 'b', 'd', 'e', 'f']),
+    })
+
+    new_data, markdown, code = convert_to_graph_data(
+        data=data,
+        numeric_columns=[],
+        string_columns=['strings', 'strings2'],
+        categorical_columns=['categories', 'categories2'],
+        boolean_columns=[],
+        selected_variables=['strings', 'categories', 'categories2'],
+        top_n_categories=2,
+        exclude_from_top_n_transformation=['strings', 'categories'],
+        date_columns=[],
+        date_floor=None,
+    )
+    assert new_data.columns.tolist() == ['strings', 'categories', 'categories2']
+    assert data is not new_data
+    assert markdown == ''
+    assert new_data['strings'].tolist() == data['strings'].tolist()
+    assert new_data['categories'].tolist() == data['categories'].tolist()
+    assert new_data['categories2'].tolist() == [
+        'a', 'b', '<Other>', 'a', 'b', '<Other>', '<Other>', '<Other>',
     ]
 
 def test_get_combinations():  # noqa
@@ -1014,43 +1078,80 @@ def test_generate_graph__all_configurations(  # noqa
         for graph_type in graph_types:
             # graph_type = graph_types[0]
             for x_var, y_var, z_var in variable_combinations:
+                print(x_var, y_var, z_var)
                 # x_var, y_var, z_var = variable_combinations[0]
                 # test with no parameters
-                fig, code = generate_graph(
-                    data=mock_data2,
-                    graph_type=graph_type['name'],
-                    x_variable=type_to_column_lookup[x_var] if x_var else None,
-                    y_variable=type_to_column_lookup[y_var] if y_var else None,
-                    z_variable=type_to_column_lookup[z_var] if z_var else None,
-                    color_variable=None,
-                    size_variable=None,
-                    facet_variable=None,
-                    num_facet_columns=4,
-                    selected_category_order='category ascending',
-                    hist_func_agg='max',
-                    bar_mode='relative',
-                    opacity=0.6,
-                    n_bins_month=3,
-                    n_bins=30,
-                    log_x_axis=None,
-                    log_y_axis=None,
-                    free_x_axis=None,
-                    free_y_axis=None,
-                    show_axes_histogram=None,
-                    title=None,
-                    graph_labels=None,
-                    numeric_columns=mock_data2_numeric_columns,
-                    string_columns=mock_data2_string_columns,
-                    categorical_columns=mock_data2_categorical_columns,
-                    boolean_columns=mock_data2_boolean_columns,
-                    date_columns=mock_data2_date_columns,
-                )
-                assert isinstance(fig, go.Figure)
-                assert code is not None
-                if graph_type['name'] == 'scatter-3d':
-                    assert 'px.scatter_3d' in code
+                if graph_type['name'] == 'bar - count distinct' and y_var == x_var:
+                    with pytest.raises(InvalidConfigurationError):
+                        fig, code = generate_graph(
+                            data=mock_data2,
+                            graph_type=graph_type['name'],
+                            x_variable=type_to_column_lookup[x_var] if x_var else None,
+                            y_variable=type_to_column_lookup[y_var] if y_var else None,
+                            z_variable=type_to_column_lookup[z_var] if z_var else None,
+                            color_variable=None,
+                            size_variable=None,
+                            facet_variable=None,
+                            num_facet_columns=4,
+                            selected_category_order='category ascending',
+                            hist_func_agg='max',
+                            bar_mode='relative',
+                            opacity=0.6,
+                            n_bins_month=3,
+                            n_bins=30,
+                            log_x_axis=None,
+                            log_y_axis=None,
+                            free_x_axis=None,
+                            free_y_axis=None,
+                            show_axes_histogram=None,
+                            title=None,
+                            graph_labels=None,
+                            numeric_columns=mock_data2_numeric_columns,
+                            string_columns=mock_data2_string_columns,
+                            categorical_columns=mock_data2_categorical_columns,
+                            boolean_columns=mock_data2_boolean_columns,
+                            date_columns=mock_data2_date_columns,
+                        )
                 else:
-                    assert graph_type['name'] in code
+                    fig, code = generate_graph(
+                        data=mock_data2,
+                        graph_type=graph_type['name'],
+                        x_variable=type_to_column_lookup[x_var] if x_var else None,
+                        y_variable=type_to_column_lookup[y_var] if y_var else None,
+                        z_variable=type_to_column_lookup[z_var] if z_var else None,
+                        color_variable=None,
+                        size_variable=None,
+                        facet_variable=None,
+                        num_facet_columns=4,
+                        selected_category_order='category ascending',
+                        hist_func_agg='max',
+                        bar_mode='relative',
+                        opacity=0.6,
+                        n_bins_month=3,
+                        n_bins=30,
+                        log_x_axis=None,
+                        log_y_axis=None,
+                        free_x_axis=None,
+                        free_y_axis=None,
+                        show_axes_histogram=None,
+                        title=None,
+                        graph_labels=None,
+                        numeric_columns=mock_data2_numeric_columns,
+                        string_columns=mock_data2_string_columns,
+                        categorical_columns=mock_data2_categorical_columns,
+                        boolean_columns=mock_data2_boolean_columns,
+                        date_columns=mock_data2_date_columns,
+                    )
+                    assert isinstance(fig, go.Figure)
+                    assert code is not None
+                    if graph_type['name'] == 'scatter-3d':
+                        assert 'px.scatter_3d' in code
+                    elif graph_type['name'] == 'heatmap - count distinct':
+                        assert 'px.density_heatmap' in code
+                    elif graph_type['name'] == 'bar - count distinct':
+                        assert 'px.bar' in code
+                    else:
+                        assert graph_type['name'] in code
 
                 # test with optional parameters
                 optional_variables = graph_type['optional_variables']
@@ -1064,41 +1165,81 @@ def test_generate_graph__all_configurations(  # noqa
                     facet_variable or [None],
                 ])
                 for color_var, size_var, facet_var in optional_combinations:
-                    fig, code = generate_graph(
-                        data=mock_data2,
-                        graph_type=graph_type['name'],
-                        x_variable=type_to_column_lookup[x_var] if x_var else None,
-                        y_variable=type_to_column_lookup[y_var] if y_var else None,
-                        z_variable=type_to_column_lookup[z_var] if z_var else None,
-                        color_variable=type_to_column_lookup[color_var] if color_var else None,
-                        size_variable=type_to_column_lookup[size_var] if size_var else None,
-                        facet_variable=type_to_column_lookup[facet_var] if facet_var else None,
-                        num_facet_columns=None,
-                        selected_category_order=None,
-                        hist_func_agg=None,
-                        bar_mode=None,
-                        opacity=None,
-                        n_bins_month=None,
-                        n_bins=None,
-                        log_x_axis=True,
-                        log_y_axis=False,
-                        free_x_axis=True,
-                        free_y_axis=False,
-                        show_axes_histogram=True,
-                        title="Title",
-                        graph_labels={"x": "X", "y": "Y", "color": "Color", "size": "Size"},
-                        numeric_columns=mock_data2_numeric_columns,
-                        string_columns=mock_data2_string_columns,
-                        categorical_columns=mock_data2_categorical_columns,
-                        boolean_columns=mock_data2_boolean_columns,
-                        date_columns=mock_data2_date_columns,
-                    )
-                    assert isinstance(fig, go.Figure)
-                    assert code is not None
-                    if graph_type['name'] == 'scatter-3d':
-                        assert 'px.scatter_3d' in code
+                    if (graph_type['name'] == 'bar - count distinct'
+                            and y_var in [x_var, color_var, size_var, facet_var]
+                        ):
+                        # ensure y variable (which is what we are counting distinct on) is not the
+                        # same as x, color, or facet variable
+                        with pytest.raises(InvalidConfigurationError):
+                            fig, code = generate_graph(
+                                data=mock_data2,
+                                graph_type=graph_type['name'],
+                                x_variable=type_to_column_lookup[x_var] if x_var else None,
+                                y_variable=type_to_column_lookup[y_var] if y_var else None,
+                                z_variable=type_to_column_lookup[z_var] if z_var else None,
+                                color_variable=type_to_column_lookup[color_var] if color_var else None,  # noqa
+                                size_variable=type_to_column_lookup[size_var] if size_var else None,  # noqa
+                                facet_variable=type_to_column_lookup[facet_var] if facet_var else None,  # noqa
+                                num_facet_columns=None,
+                                selected_category_order=None,
+                                hist_func_agg=None,
+                                bar_mode=None,
+                                opacity=None,
+                                n_bins_month=None,
+                                n_bins=None,
+                                log_x_axis=True,
+                                log_y_axis=False,
+                                free_x_axis=True,
+                                free_y_axis=False,
+                                show_axes_histogram=True,
+                                title="Title",
+                                graph_labels={"x": "X", "y": "Y", "color": "Color", "size": "Size"},  # noqa
+                                numeric_columns=mock_data2_numeric_columns,
+                                string_columns=mock_data2_string_columns,
+                                categorical_columns=mock_data2_categorical_columns,
+                                boolean_columns=mock_data2_boolean_columns,
+                                date_columns=mock_data2_date_columns,
+                            )
                     else:
-                        assert graph_type['name'] in code
+                        fig, code = generate_graph(
+                            data=mock_data2,
+                            graph_type=graph_type['name'],
+                            x_variable=type_to_column_lookup[x_var] if x_var else None,
+                            y_variable=type_to_column_lookup[y_var] if y_var else None,
+                            z_variable=type_to_column_lookup[z_var] if z_var else None,
+                            color_variable=type_to_column_lookup[color_var] if color_var else None,
+                            size_variable=type_to_column_lookup[size_var] if size_var else None,
+                            facet_variable=type_to_column_lookup[facet_var] if facet_var else None,
+                            num_facet_columns=None,
+                            selected_category_order=None,
+                            hist_func_agg=None,
+                            bar_mode=None,
+                            opacity=None,
+                            n_bins_month=None,
+                            n_bins=None,
+                            log_x_axis=True,
+                            log_y_axis=False,
+                            free_x_axis=True,
+                            free_y_axis=False,
+                            show_axes_histogram=True,
+                            title="Title",
+                            graph_labels={"x": "X", "y": "Y", "color": "Color", "size": "Size"},
+                            numeric_columns=mock_data2_numeric_columns,
+                            string_columns=mock_data2_string_columns,
+                            categorical_columns=mock_data2_categorical_columns,
+                            boolean_columns=mock_data2_boolean_columns,
+                            date_columns=mock_data2_date_columns,
+                        )
+                        assert isinstance(fig, go.Figure)
+                        assert code is not None
+                        if graph_type['name'] == 'scatter-3d':
+                            assert 'px.scatter_3d' in code
+                        elif graph_type['name'] == 'heatmap - count distinct':
+                            assert 'px.density_heatmap' in code
+                        elif graph_type['name'] == 'bar - count distinct':
+                            assert 'px.bar' in code
+                        else:
+                            assert graph_type['name'] in code
 
 def test_generate_graph__error(  # noqa
         capsys,  # noqa
