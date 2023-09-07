@@ -183,6 +183,15 @@ configurations:
               - boolean
               - string
               - categorical
+      - name: heatmap
+        description: Shows the relationship between {{x_variable}} and {{y_variable}}.
+        optional_variables:
+          facet_variable:
+            types:
+              - date
+              - boolean
+              - string
+              - categorical
       - name: box
         description: Shows the distribution of {{y_variable}} values across {{x_variable}} values.
         optional_variables:
@@ -401,21 +410,44 @@ configurations:
               - string
               - categorical
   # non-numeric / non-numeric
-  # - selected_variables:
-  #     x_variable:
-  #       - date
-  #       - boolean
-  #       - string
-  #       - categorical
-  #     y_variable:
-  #       - date
-  #       - boolean
-  #       - string
-  #       - categorical
-  #   graph_types:
-  #     - name: heatmap
-  #       description: heatmap of counts tbd
-  #       optional_variables:
+  - selected_variables:
+      x_variable:
+        - boolean
+        - string
+        - categorical
+      y_variable:
+        - boolean
+        - string
+        - categorical
+    graph_types:
+      - name: heatmap
+        description: Heatmap of the counts of {{x_variable}} and {{y_variable}}.
+        optional_variables:
+          facet_variable:
+            types:
+              - boolean
+              - string
+              - categorical
+  - selected_variables:
+      x_variable:
+        - boolean
+        - string
+        - categorical
+      y_variable:
+        - boolean
+        - string
+        - categorical
+      z_variable:
+        - numeric
+    graph_types:
+      - name: heatmap
+        description: Heatmap of the aggregation of {{x_variable}}, {{y_variable}}, and {{z_variable}}.
+        optional_variables:
+          facet_variable:
+            types:
+              - boolean
+              - string
+              - categorical
   #     - name: histogram
   #       description: TBD...
   #       optional_variables:

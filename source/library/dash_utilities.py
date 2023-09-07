@@ -441,6 +441,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         log_y_axis: bool | None,
         free_x_axis: bool | None,
         free_y_axis: bool | None,
+        show_axes_histogram: bool | None,
         title: str | None,
         graph_labels: dict | None,
         numeric_columns: list[str],
@@ -505,6 +506,8 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             category_orders={category_orders},
             log_x={log_x_axis},
             log_y={log_y_axis},
+            marginal_x={"'histogram'" if show_axes_histogram else None},
+            marginal_y={"'histogram'" if show_axes_histogram else None},
             title={f'"{title}"' if title else None},
             labels={graph_labels},
         )
@@ -632,6 +635,36 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             labels={graph_labels},
         )
         """)
+    elif graph_type == 'heatmap':
+
+        if z_variable and z_variable in numeric_columns:
+            hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
+        else:
+            hist_func_agg = None
+
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.density_heatmap(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            z={f"'{z_variable}'" if z_variable else None},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            histfunc={hist_func_agg},
+            nbinsx={n_bins},
+            nbinsy={n_bins},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            # color_continuous_scale=['white', 'red'],
+            marginal_x={"'histogram'" if show_axes_histogram else None},
+            marginal_y={"'histogram'" if show_axes_histogram else None},
+            title={f'"{title}"' if title else None},
+            labels={graph_labels},
+        )
+        """)
+        fig
     else:
         raise ValueError(f"Unknown graph type: {graph_type}")
 

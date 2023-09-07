@@ -17,6 +17,12 @@
 -
 
 
+## Known Issues
+
+
+- The user needs to refresh the app before loading a different dataset.
+- This app is only tested with a single user running a local server; it is not tested/supported for multi-user non-local servers.
+- Selecting `Bin Months` (which bins the datetime column into months) doesn't play nice with some date `Date Floor` selections like `Week`. The solution is to only display/use `Bin Months` for valid selections of `Date Floor`. Fix TBD.
 
 
 ## Filtering

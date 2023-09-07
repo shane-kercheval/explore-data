@@ -122,8 +122,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             id='load_from_url',
                             type='text',
                             placeholder='Enter CSV URL',
-                            value = 'https://raw.githubusercontent.com/plotly/datasets/master/finance-charts-apple.csv',
-                            # value='https://raw.githubusercontent.com/shane-kercheval/shiny-explore-dataset/master/shiny-explore-dataset/example_datasets/credit.csv',
+                            # value = 'https://raw.githubusercontent.com/plotly/datasets/master/finance-charts-apple.csv',
+                            value='https://raw.githubusercontent.com/shane-kercheval/shiny-explore-dataset/master/shiny-explore-dataset/example_datasets/credit.csv',
                             # value='https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv',
                             # value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
                             style={
@@ -358,7 +358,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     min=0,
                                     max=100,
                                     step=20,
-                                    value=40,
+                                    value=0,  # off
                                 ),
                                 create_slider_control(
                                     label="Opacity",
@@ -380,6 +380,12 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     hidden=True,
                                     options=['Free X-Axis', 'Free Y-Axis'],
                                     value=[],
+                                ),
+                                create_checklist_control(
+                                    id='show_axes_histogram',
+                                    hidden=True,
+                                    options=['Show histogram in axes'],
+                                    value=['Show histogram in axes'],
                                 ),
                                 create_slider_control(
                                     label="# of Facet Columns",
@@ -848,6 +854,7 @@ def filter_data(
     Input('bar_mode_dropdown', 'value'),
     Input('log_x_y_axis_checklist', 'value'),
     Input('free_x_y_axis_checklist', 'value'),
+    Input('show_axes_histogram_checklist', 'value'),
     Input('num_facet_columns_slider', 'value'),
     Input('filtered_data', 'data'),
     Input('labels-apply-button', 'n_clicks'),
@@ -897,6 +904,7 @@ def update_controls_and_graph(  # noqa
             bar_mode: str,
             log_x_y_axis: list[str],
             free_x_y_axis: list[str],
+            show_axes_histogram: list[str],
             num_facet_columns: int,
 
             data: pd.DataFrame,
@@ -938,6 +946,7 @@ def update_controls_and_graph(  # noqa
     log_variable('bar_mode', bar_mode)
     log_variable('log_x_y_axis', log_x_y_axis)
     log_variable('free_x_y_axis', free_x_y_axis)
+    log_variable('show_axes_histogram', show_axes_histogram)
     log_variable('num_facet_columns', num_facet_columns)
     log_variable('graph_types', graph_types)
     log_variable('graph_type', graph_type)
@@ -1080,6 +1089,7 @@ def update_controls_and_graph(  # noqa
                 log_y_axis='Log Y-Axis' in log_x_y_axis,
                 free_x_axis='Free X-Axis' in free_x_y_axis,
                 free_y_axis='Free Y-Axis' in free_x_y_axis,
+                show_axes_histogram='Show histogram in axes' in show_axes_histogram,
                 title=title,
                 graph_labels=graph_labels,
                 numeric_columns=numeric_columns,
@@ -1530,15 +1540,18 @@ def cache_filter_columns(  # noqa: PLR0912
     Output('hist_func_agg_div', 'style'),
     Input('graph_type_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
+    Input('z_variable_dropdown', 'value'),
     State('numeric_columns', 'data'),
     prevent_initial_call=True,
 )
 def update_hist_func_agg_div_style(
         graph_type: str,
         y_variable: str | None,
+        z_variable: str | None,
         numeric_columns: list[str]) -> dict:
     """Toggle the bar mode div."""
-    if y_variable and y_variable in numeric_columns and graph_type == 'histogram':
+    if (y_variable and y_variable in numeric_columns and graph_type == 'histogram') \
+        or (z_variable and z_variable in numeric_columns and graph_type == 'heatmap'):
         return {'display': 'block'}
     return {'display': 'none'}
 
@@ -1562,15 +1575,23 @@ def update_bar_mode_div_style(graph_type: str, color_variable: str | None) -> di
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
     State('numeric_columns', 'data'),
+    State('string_columns', 'data'),
+    State('categorical_columns', 'data'),
+    State('boolean_columns', 'data'),
     prevent_initial_call=True,
 )
 def update_z_variable_dropdown_style(
         x_variable: str | None,
         y_variable: str | None,
         numeric_columns: list[str],
+        string_columns: list[str],
+        categorical_columns: list[str],
+        boolean_columns: list[str],
     ) -> dict:
     """Toggle the z-variable dropdown."""
-    if x_variable in numeric_columns and y_variable in numeric_columns:
+    non_numeric_columns = set(string_columns + categorical_columns + boolean_columns)
+    if (x_variable in numeric_columns and y_variable in numeric_columns) \
+        or (x_variable in non_numeric_columns and y_variable in non_numeric_columns):
         return {'display': 'block'}, None
     return {'display': 'none'}, None
 
@@ -1613,28 +1634,33 @@ def update_categorical_controls_div_style(
     Output('n_bins_month_div', 'style'),
     Output('n_bins_div', 'style'),
     Input('graph_type_dropdown', 'value'),
-    Input('n_bins_month_slider', 'value'),
     Input('x_variable_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
+    Input('n_bins_month_slider', 'value'),
+    State('numeric_columns', 'data'),
     State('date_columns', 'data'),
     prevent_initial_call=True,
 )
 def update_n_bins_div_style(
         graph_type: str,
-        n_bins_month: int,
         x_variable: str | None,
+        y_variable: str | None,
+        n_bins_month: int,
+        numeric_columns: list[str],
         date_columns: list[str],
     ) -> dict:
     """Toggle the n-bins div."""
     turn_on = {'display': 'block'}
     turn_off = {'display': 'none'}
     log_variable('graph_type', graph_type)
-    if graph_type != 'histogram':
-        return turn_off, turn_off
-    if x_variable in date_columns:
-        if n_bins_month:
-            return turn_on, turn_off
-        return turn_on, turn_on
-    return turn_off, turn_on
+    if x_variable in numeric_columns and y_variable in numeric_columns and graph_type == 'heatmap':
+        return turn_off, turn_on
+    if graph_type == 'histogram':  # noqa: SIM102
+        if x_variable in date_columns:
+            if n_bins_month:
+                return turn_on, turn_off
+            return turn_on, turn_on
+    return turn_off, turn_off
 
 
 @app.callback(
@@ -1665,6 +1691,21 @@ def update_log_x_y_axis_div_style(
     if (x_variable in numeric_columns or y_variable in numeric_columns):
         return {'display': 'block'}
     return {'display': 'none'}
+
+
+@app.callback(
+    Output('show_axes_histogram_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_show_axes_histogram_div_style(
+        graph_type: str,
+    ) -> dict:
+    """Toggle the 'log x/y axis' div."""
+    if graph_type in ['scatter', 'heatmap']:
+        return {'display': 'block'}
+    return {'display': 'none'}
+
 
 
 @app.callback(
