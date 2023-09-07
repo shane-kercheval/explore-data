@@ -269,22 +269,6 @@ configurations:
               - boolean
               - string
               - categorical
-      - name: bar
-        description: Shows the counts of {{x_variable}}.
-        optional_variables:
-          color_variable:
-            types:
-              - numeric
-              - date
-              - boolean
-              - string
-              - categorical
-          facet_variable:
-            types:
-              - date
-              - boolean
-              - string
-              - categorical
   # none / non-numeric
   - selected_variables:
       x_variable:
@@ -295,22 +279,6 @@ configurations:
         - categorical
     graph_types:
       - name: histogram
-        description: Shows the counts of {{y_variable}}.
-        optional_variables:
-          color_variable:
-            types:
-              - numeric
-              - date
-              - boolean
-              - string
-              - categorical
-          facet_variable:
-            types:
-              - date
-              - boolean
-              - string
-              - categorical
-      - name: bar
         description: Shows the counts of {{y_variable}}.
         optional_variables:
           color_variable:
