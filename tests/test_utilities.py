@@ -3,8 +3,14 @@ import numpy as np
 import pytest
 import pandas as pd
 from datetime import date, datetime
-from source.library.utilities import dataframe_columns_to_datetime, filter_dataframe, is_series_datetime, to_date, \
-    create_random_dataframe, to_date_string
+from source.library.utilities import (
+    dataframe_columns_to_datetime,
+    filter_dataframe,
+    is_series_datetime,
+    to_date,
+    create_random_dataframe,
+    to_date_string,
+)
 
 
 def test_is_series_datetime(mock_data1):  # noqa

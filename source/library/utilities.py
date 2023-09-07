@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import helpsk.pandas as hp
 
+
 def is_series_datetime(series: pd.Series) -> bool:
     """Check if a series can be converted to a datetime."""
     if pd.api.types.is_numeric_dtype(series):
