@@ -17,7 +17,13 @@
 -
 
 
+## Known Issues
 
+
+- The user needs to refresh the app before loading a different dataset.
+- This app is only tested with a single user running a local server; it is not tested/supported for multi-user non-local servers.
+- Selecting `Bin Months` (which bins the datetime column into months) doesn't play nice with some date `Date Floor` selections like `Week`. The solution is to only display/use `Bin Months` for valid selections of `Date Floor`. Fix TBD.
+- Doing a count distinct with a datetime variable (date as x and non-numeric as y) without first selecting `Date Floor` of `Day` or higher freezes up the app if the granularity of the datetime variable is something like seconds.
 
 ## Filtering
 

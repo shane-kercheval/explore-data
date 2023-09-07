@@ -7,6 +7,11 @@ import helpsk.pandas as hp
 import plotly.graph_objs as go
 
 
+# New Error type for invalid configuration selected
+class InvalidConfigurationError(Exception):
+    """Invalid configuration selected."""
+
+
 def log(value: str) -> None:
     """Log value."""
     print(value, flush=True)
@@ -148,11 +153,6 @@ def get_variable_type(variable: str | None, options: dict) -> str | None:
     raise ValueError(f"Unknown dtype for column `{variable}`")
 
 
-# New Error type for invalid configuration selected
-class InvalidConfigurationError(Exception):
-    """Invalid configuration selected."""
-
-
 def get_graph_config(
           configurations: list[dict],
           x_variable: str | None,
@@ -274,14 +274,17 @@ def create_title_and_labels(  # noqa
     return title, graph_labels
 
 
-def convert_to_graph_data(
+def convert_to_graph_data(  # noqa: PLR0912, PLR0915
         data: pd.DataFrame,
         numeric_columns: list[str],
         string_columns: list[str],
         categorical_columns: list[str],
         boolean_columns: list[str],
+        date_columns: list[str],
         selected_variables: list[str],
         top_n_categories: int,
+        exclude_from_top_n_transformation: list[str],
+        date_floor: str | None,
     ) -> tuple[pd.DataFrame, str, str]:
     """
     Numeric columns are filtered by removing missing values.
@@ -308,6 +311,7 @@ def convert_to_graph_data(
         markdown = ""
 
     for variable in selected_variables:
+        # fill missing values for string, categorical, and boolean columns with '<Missing>'
         if variable in string_columns or variable in categorical_columns or variable in boolean_columns:  # noqa
             log(f"filling na for {variable}")
             if data[variable].dtype.name == 'category':
@@ -318,7 +322,8 @@ def convert_to_graph_data(
                 data[variable] = data[variable].fillna('<Missing>')
                 code += f"graph_data['{variable}'] = graph_data['{variable}'].fillna('<Missing>')\n"  # noqa
 
-            if top_n_categories:
+            exclude_from_top_n_transformation = exclude_from_top_n_transformation or []
+            if top_n_categories and variable not in exclude_from_top_n_transformation:
                 if 'top_n_categories' not in code:
                     code += top_n_categories_code
                 code += f"graph_data['{variable}'] = top_n_categories(graph_data['{variable}'], n={top_n_categories})\n"  # noqa
@@ -327,13 +332,45 @@ def convert_to_graph_data(
                     top_n=top_n_categories,
                     other_category='<Other>',
                 )
-        if variable in numeric_columns:
-            log(f"removing missing values for {variable}")
+
+        if date_floor and variable in date_columns:
+            # convert the date to the specified date_floor
+            series = pd.to_datetime(data[variable], errors='coerce')
+            code += f"series = pd.to_datetime(graph_data['{variable}'], errors='coerce')\n"
+            if date_floor == 'year':
+                data[variable] = series.dt.to_period('Y').dt.start_time.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.to_period('Y').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa            
+            elif date_floor == 'quarter':
+                data[variable] = series.dt.to_period('Q').dt.start_time.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.to_period('Q').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa
+            elif date_floor == 'month':
+                data[variable] = series.dt.to_period('M').dt.start_time.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.to_period('M').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa
+            elif date_floor == 'week':
+                data[variable] = series.dt.to_period('W').dt.start_time.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.to_period('W').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa
+            elif date_floor == 'day':
+                data[variable] = series.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d')\n"
+            elif date_floor == 'hour':
+                data[variable] = series.dt.strftime('%Y-%m-%d %H:00:00')
+                code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d %H:00:00')\n"
+            elif date_floor == 'minute':
+                data[variable] = series.dt.strftime('%Y-%m-%d %H:%M:00')
+                code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d %H:%M:00')\n"
+            elif date_floor == 'second':
+                data[variable] = series.dt.strftime('%Y-%m-%d %H:%M:%S')
+                code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d %H:%M:%S')\n"
+            else:
+                raise ValueError(f"Unknown date_floor: {date_floor}")
+
+        if variable in numeric_columns or variable in date_columns:
+            log(f"removing missing values for - {variable}")
             num_values_removed = data[variable].isna().sum()
             if num_values_removed > 0:
                 markdown += f"- `{num_values_removed:,}` missing values have been removed from `{variable}`  \n"  # noqa
-            code += f"graph_data = graph_data[graph_data['{variable}'].notna()].copy()\n"
-            data = data[data[variable].notna()]
+                code += f"graph_data = graph_data[graph_data['{variable}'].notna()].copy()\n"
+                data = data[data[variable].notna()]
 
     if any(x in numeric_columns for x in selected_variables):
         rows_remaining = len(data)
@@ -406,6 +443,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         log_y_axis: bool | None,
         free_x_axis: bool | None,
         free_y_axis: bool | None,
+        show_axes_histogram: bool | None,
         title: str | None,
         graph_labels: dict | None,
         numeric_columns: list[str],
@@ -470,6 +508,8 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             category_orders={category_orders},
             log_x={log_x_axis},
             log_y={log_y_axis},
+            marginal_x={"'histogram'" if show_axes_histogram else None},
+            marginal_y={"'histogram'" if show_axes_histogram else None},
             title={f'"{title}"' if title else None},
             labels={graph_labels},
         )
@@ -579,7 +619,23 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             graph_code += f"fig.update_xaxes(showgrid=True, ticklabelmode='period', dtick={n_bins_month}, tickformat='%b\\n%Y')\n"  # noqa
 
         graph_code += "fig\n"
-    elif graph_type == 'bar':
+    elif graph_type in ['bar', 'bar - count distinct']:
+        if graph_type == 'bar - count distinct':
+            if y_variable in [x_variable, color_variable, facet_variable]:
+                raise InvalidConfigurationError("Cannot use the same variable for y and x, color, or facet")  # noqa
+            selected_variables = [
+                x for x in [x_variable, color_variable, facet_variable]
+                if x is not None and x != y_variable
+            ]
+            selected_variables = list(set(selected_variables))
+            graph_code += textwrap.dedent(f"""
+            graph_data = (
+                graph_data
+                .groupby({selected_variables})
+                .agg({{'{y_variable}': 'nunique'}})
+                .reset_index()
+            )
+            """)
         graph_code += textwrap.dedent(f"""
         import plotly.express as px
         fig = px.bar(
@@ -594,6 +650,60 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             log_x={log_x_axis},
             log_y={log_y_axis},
             title={f'"{title}"' if title else None},
+            labels={graph_labels},
+        )
+        """)
+    elif graph_type == 'heatmap':
+
+        if z_variable and z_variable in numeric_columns:
+            hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
+        else:
+            hist_func_agg = None
+
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.density_heatmap(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            z={f"'{z_variable}'" if z_variable else None},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            histfunc={hist_func_agg},
+            nbinsx={n_bins},
+            nbinsy={n_bins},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            # color_continuous_scale=['white', 'red'],
+            marginal_x={"'histogram'" if show_axes_histogram else None},
+            marginal_y={"'histogram'" if show_axes_histogram else None},
+            title={f'"{title}"' if title else None},
+            labels={graph_labels},
+        )
+        """)
+        fig
+    elif graph_type == 'heatmap - count distinct':
+        selected_variables = [
+            x for x in [x_variable, y_variable, z_variable, facet_variable]
+            if x is not None
+        ]
+        selected_variables = list(set(selected_variables))
+        graph_code += f"graph_data = graph_data[{selected_variables}].drop_duplicates()\n"
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.density_heatmap(
+            graph_data,
+            x={f"'{x_variable}'"},
+            y={f"'{y_variable}'"},
+            z={f"'{z_variable}'"},
+            histfunc='count',
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            title={f'"{title}"' if title else None},
+            marginal_x={"'histogram'" if show_axes_histogram else None},
+            marginal_y={"'histogram'" if show_axes_histogram else None},
             labels={graph_labels},
         )
         """)
@@ -620,4 +730,3 @@ def generate_graph(  # noqa: PLR0912, PLR0915
     exec(graph_code, global_vars, local_vars)
     fig = local_vars['fig']
     return fig, graph_code
-

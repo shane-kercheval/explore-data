@@ -122,8 +122,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             id='load_from_url',
                             type='text',
                             placeholder='Enter CSV URL',
-                            value = 'https://raw.githubusercontent.com/plotly/datasets/master/finance-charts-apple.csv',
-                            # value='https://raw.githubusercontent.com/shane-kercheval/shiny-explore-dataset/master/shiny-explore-dataset/example_datasets/credit.csv',
+                            # value = 'https://raw.githubusercontent.com/plotly/datasets/master/finance-charts-apple.csv',
+                            value='https://raw.githubusercontent.com/shane-kercheval/shiny-explore-dataset/master/shiny-explore-dataset/example_datasets/credit.csv',
                             # value='https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv',
                             # value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
                             style={
@@ -208,6 +208,23 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     id="facet_variable",
                                     placeholder="Select a variable",
                                     hidden=True,
+                                ),
+                                create_dropdown_control(
+                                    label="Date Floor",
+                                    id="date_floor",
+                                    hidden=True,
+                                    options=[
+                                        {'label': 'None', 'value': 'None'},
+                                        {'label': 'Year', 'value': 'year'},
+                                        {'label': 'Quarter', 'value': 'quarter'},
+                                        {'label': 'Month', 'value': 'month'},
+                                        {'label': 'Week', 'value': 'week'},
+                                        {'label': 'Day', 'value': 'day'},
+                                        {'label': 'Hour', 'value': 'hour'},
+                                        {'label': 'Minute', 'value': 'minute'},
+                                        {'label': 'Second', 'value': 'second'},
+                                    ],
+                                    value='month',
                                 ),
                                 dbc.Button(
                                     "Clear",
@@ -338,10 +355,10 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     label="# of Bins",
                                     id='n_bins',
                                     hidden=True,
-                                    min=20,
+                                    min=0,
                                     max=100,
                                     step=20,
-                                    value=40,
+                                    value=0,  # off
                                 ),
                                 create_slider_control(
                                     label="Opacity",
@@ -363,6 +380,12 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     hidden=True,
                                     options=['Free X-Axis', 'Free Y-Axis'],
                                     value=[],
+                                ),
+                                create_checklist_control(
+                                    id='show_axes_histogram',
+                                    hidden=True,
+                                    options=['Show histogram in axes'],
+                                    value=['Show histogram in axes'],
                                 ),
                                 create_slider_control(
                                     label="# of Facet Columns",
@@ -583,7 +606,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
 @app.callback(
     Output('x_variable_dropdown', 'options'),
     Output('y_variable_dropdown', 'options'),
-    Output('z_variable_dropdown', 'options'),
     Output('filter_columns_dropdown', 'options'),
     Output('filter_columns_cache', 'data', allow_duplicate=True),
     Output('dynamic-filter-controls', 'children', allow_duplicate=True),
@@ -618,7 +640,6 @@ def load_data(  # noqa
     log_function('load_data')
     x_variable_dropdown = []
     y_variable_dropdown = []
-    z_variable_dropdown = []
     filter_columns_dropdown = []
     filter_columns_cache = None
     dynamic_filter_controls = None
@@ -718,7 +739,6 @@ def load_data(  # noqa
 
         x_variable_dropdown = all_columns
         y_variable_dropdown = all_columns
-        z_variable_dropdown = numeric_columns
         filter_columns_dropdown = all_columns
         table_uploaded_data = [
             dcc.Markdown("#### Sample of Uploaded Data (first 500 rows):"),
@@ -737,7 +757,6 @@ def load_data(  # noqa
     return (
         x_variable_dropdown,
         y_variable_dropdown,
-        z_variable_dropdown,
         filter_columns_dropdown,
         filter_columns_cache,
         dynamic_filter_controls,
@@ -818,6 +837,8 @@ def filter_data(
     Input('facet_variable_dropdown', 'options'),
     Input('facet_variable_dropdown', 'value'),
 
+    Input('date_floor_dropdown', 'value'),
+
     Input('graph_type_dropdown', 'options'),
     Input('graph_type_dropdown', 'value'),
     Input('sort_categories_dropdown', 'value'),
@@ -829,6 +850,7 @@ def filter_data(
     Input('bar_mode_dropdown', 'value'),
     Input('log_x_y_axis_checklist', 'value'),
     Input('free_x_y_axis_checklist', 'value'),
+    Input('show_axes_histogram_checklist', 'value'),
     Input('num_facet_columns_slider', 'value'),
     Input('filtered_data', 'data'),
     Input('labels-apply-button', 'n_clicks'),
@@ -865,6 +887,7 @@ def update_controls_and_graph(  # noqa
             facet_variable_div: dict,
             facet_variable_dropdown: list[str],
             facet_variable: str | None,
+            date_floor: str | None,
 
             graph_types: list[dict],
             graph_type: str,
@@ -877,6 +900,7 @@ def update_controls_and_graph(  # noqa
             bar_mode: str,
             log_x_y_axis: list[str],
             free_x_y_axis: list[str],
+            show_axes_histogram: list[str],
             num_facet_columns: int,
 
             data: pd.DataFrame,
@@ -918,6 +942,7 @@ def update_controls_and_graph(  # noqa
     log_variable('bar_mode', bar_mode)
     log_variable('log_x_y_axis', log_x_y_axis)
     log_variable('free_x_y_axis', free_x_y_axis)
+    log_variable('show_axes_histogram', show_axes_histogram)
     log_variable('num_facet_columns', num_facet_columns)
     log_variable('graph_types', graph_types)
     log_variable('graph_type', graph_type)
@@ -943,6 +968,8 @@ def update_controls_and_graph(  # noqa
     numeric_na_removal_markdown = ''
     generated_code = generated_filter_code or ''
     invalid_configuration_alert = False
+    date_floor = None if date_floor == 'None' else date_floor
+
     try:
         if (
             (x_variable or y_variable)
@@ -1023,14 +1050,23 @@ def update_controls_and_graph(  # noqa
             # TODO: need to convert code to string and execute string
             top_n_categories = top_n_categories_lookup[top_n_categories]
             top_n_categories = None if top_n_categories == 'None' else int(top_n_categories)
+            exclude_from_top_n_transformation = []
+            if graph_type == 'bar - count distinct':
+                exclude_from_top_n_transformation = [y_variable]
+            elif graph_type == 'heatmap - count distinct':
+                exclude_from_top_n_transformation = [z_variable]
+
             graph_data, numeric_na_removal_markdown, code = convert_to_graph_data(
                 data=data,
                 numeric_columns=numeric_columns,
                 string_columns=string_columns,
                 categorical_columns=categorical_columns,
                 boolean_columns=boolean_columns,
+                date_columns=date_columns,
                 selected_variables=selected_variables,
                 top_n_categories=top_n_categories,
+                exclude_from_top_n_transformation=exclude_from_top_n_transformation,
+                date_floor=date_floor,
             )
             if code:
                 generated_code += "\n"
@@ -1056,6 +1092,7 @@ def update_controls_and_graph(  # noqa
                 log_y_axis='Log Y-Axis' in log_x_y_axis,
                 free_x_axis='Free X-Axis' in free_x_y_axis,
                 free_y_axis='Free Y-Axis' in free_x_y_axis,
+                show_axes_histogram='Show histogram in axes' in show_axes_histogram,
                 title=title,
                 graph_labels=graph_labels,
                 numeric_columns=numeric_columns,
@@ -1177,6 +1214,7 @@ def update_correlations_graph(data: pd.DataFrame) -> go.Figure:
 @app.callback(
     Output('x_variable_dropdown', 'value'),
     Output('y_variable_dropdown', 'value'),
+    Output('date_floor_dropdown', 'value'),
     Input('clear-settings-button', 'n_clicks'),
     prevent_initial_call=True,
 )
@@ -1184,7 +1222,7 @@ def clear_settings(n_clicks: int) -> str:
     """Triggered when the user clicks on the Clear button."""
     log_function('clear_settings')
     log_variable('n_clicks', n_clicks)
-    return None, None
+    return None, None, 'None'
 
 
 @app.callback(
@@ -1213,11 +1251,42 @@ def swap_x_y_variables(n_clicks: int, x_variable: str | None, y_variable: str | 
     prevent_initial_call=True,
 )
 def clear_labels(n_clicks: int) -> str:
-    """Triggered when the user clicks on the Clear button."""
+    """
+    Triggered when the user clicks on the Clear button in the "Other Options" section for
+    title/subtitle, etc.
+    """
     log_function('Clear Labels')
     log_variable('n_clicks', n_clicks)
     return '', '', '', '', '', '', ''
 
+
+@app.callback(
+    Output('date_floor_div', 'style'),
+    Input('x_variable_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
+    Input('z_variable_dropdown', 'value'),
+    Input('color_variable_dropdown', 'value'),
+    Input('size_variable_dropdown', 'value'),
+    Input('facet_variable_dropdown', 'value'),
+    State('date_columns', 'data'),
+    prevent_initial_call=True,
+)
+def show_date_floor_div(
+        x_variable: str | None,
+        y_variable: str | None,
+        z_variable: str | None,
+        color_variable: str | None,
+        size_variable: str | None,
+        facet_variable: str | None,
+        date_columns: list[str],
+        ) -> dict:
+    """Show the date floor dropdown if any of the variables are dates."""
+    log_function('show_date_floor_div')
+    # if any variables are in date_columns, show the date_floor dropdown
+    variables = [x_variable, y_variable, z_variable, color_variable, size_variable, facet_variable]
+    if any(x in date_columns for x in variables):
+        return {'display': 'block'}
+    return {'display': 'none'}
 
 @app.callback(
     Output("collapse-variables", "is_open"),
@@ -1474,15 +1543,18 @@ def cache_filter_columns(  # noqa: PLR0912
     Output('hist_func_agg_div', 'style'),
     Input('graph_type_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
+    Input('z_variable_dropdown', 'value'),
     State('numeric_columns', 'data'),
     prevent_initial_call=True,
 )
 def update_hist_func_agg_div_style(
         graph_type: str,
         y_variable: str | None,
+        z_variable: str | None,
         numeric_columns: list[str]) -> dict:
     """Toggle the bar mode div."""
-    if y_variable and y_variable in numeric_columns and graph_type == 'histogram':
+    if (y_variable and y_variable in numeric_columns and graph_type == 'histogram') \
+        or (z_variable and z_variable in numeric_columns and graph_type == 'heatmap'):
         return {'display': 'block'}
     return {'display': 'none'}
 
@@ -1495,28 +1567,42 @@ def update_hist_func_agg_div_style(
 )
 def update_bar_mode_div_style(graph_type: str, color_variable: str | None) -> dict:
     """Toggle the bar mode div."""
-    if color_variable and graph_type in ['histogram', 'bar']:
+    if color_variable and graph_type in ['histogram', 'bar', 'bar - count distinct']:
         return {'display': 'block'}
     return {'display': 'none'}
 
 
 @app.callback(
     Output('z_variable_div', 'style'),
+    Output('z_variable_dropdown', 'options'),
     Output('z_variable_dropdown', 'value'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
     State('numeric_columns', 'data'),
+    State('string_columns', 'data'),
+    State('categorical_columns', 'data'),
+    State('boolean_columns', 'data'),
+    State('all_columns', 'data'),
     prevent_initial_call=True,
 )
 def update_z_variable_dropdown_style(
         x_variable: str | None,
         y_variable: str | None,
         numeric_columns: list[str],
-    ) -> dict:
+        string_columns: list[str],
+        categorical_columns: list[str],
+        boolean_columns: list[str],
+        all_columns: list[str],
+    ) -> tuple[dict, list, str]:
     """Toggle the z-variable dropdown."""
     if x_variable in numeric_columns and y_variable in numeric_columns:
-        return {'display': 'block'}, None
-    return {'display': 'none'}, None
+        return {'display': 'block'}, numeric_columns, None
+    non_numeric_columns = string_columns + categorical_columns + boolean_columns
+    if x_variable in non_numeric_columns and y_variable in non_numeric_columns:
+        # ensure correct order of columns (excluding date)
+        options = [x for x in all_columns if x in numeric_columns + non_numeric_columns]
+        return {'display': 'block'}, options, None
+    return {'display': 'none'}, [], None
 
 
 @app.callback(
@@ -1557,33 +1643,33 @@ def update_categorical_controls_div_style(
     Output('n_bins_month_div', 'style'),
     Output('n_bins_div', 'style'),
     Input('graph_type_dropdown', 'value'),
-    Input('n_bins_month_slider', 'value'),
     Input('x_variable_dropdown', 'value'),
+    Input('y_variable_dropdown', 'value'),
+    Input('n_bins_month_slider', 'value'),
+    State('numeric_columns', 'data'),
     State('date_columns', 'data'),
     prevent_initial_call=True,
 )
 def update_n_bins_div_style(
         graph_type: str,
-        n_bins_month: int,
         x_variable: str | None,
+        y_variable: str | None,
+        n_bins_month: int,
+        numeric_columns: list[str],
         date_columns: list[str],
     ) -> dict:
     """Toggle the n-bins div."""
     turn_on = {'display': 'block'}
     turn_off = {'display': 'none'}
-    log('HELLO')
     log_variable('graph_type', graph_type)
-    if graph_type != 'histogram':
-        log('A')
-        return turn_off, turn_off
-    if x_variable in date_columns:
-        if n_bins_month:
-            log('B')
-            return turn_on, turn_off
-        log('C')
-        return turn_on, turn_on
-    log('D')
-    return turn_off, turn_on
+    if x_variable in numeric_columns and y_variable in numeric_columns and graph_type == 'heatmap':
+        return turn_off, turn_on
+    if graph_type == 'histogram':  # noqa: SIM102
+        if x_variable in date_columns:
+            if n_bins_month:
+                return turn_on, turn_off
+            return turn_on, turn_on
+    return turn_off, turn_off
 
 
 @app.callback(
@@ -1614,6 +1700,21 @@ def update_log_x_y_axis_div_style(
     if (x_variable in numeric_columns or y_variable in numeric_columns):
         return {'display': 'block'}
     return {'display': 'none'}
+
+
+@app.callback(
+    Output('show_axes_histogram_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_show_axes_histogram_div_style(
+        graph_type: str,
+    ) -> dict:
+    """Toggle the 'log x/y axis' div."""
+    if graph_type in ['scatter', 'heatmap', 'heatmap - count distinct']:
+        return {'display': 'block'}
+    return {'display': 'none'}
+
 
 @app.callback(
     Output('free_x_y_axis_div', 'style'),
