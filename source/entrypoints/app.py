@@ -36,9 +36,10 @@ from source.library.dash_utilities import (
     log_variable,
 )
 from source.library.utilities import (
-    dataframe_columns_to_datetime,
-    series_to_datetime,
     create_random_dataframe,
+    dataframe_columns_to_datetime,
+    is_series_datetime,
+    series_to_datetime,
 )
 
 from dash_extensions.enrich import DashProxy, Output, Input, State, Serverside, html, dcc, \
@@ -698,7 +699,7 @@ def load_data(  # noqa
         # i can't convert columns to datetime here because the dataframe gets converted to a dict
         # and loses the converted datetime dtypes
         # but i need to still get the columns that should be treated as dates
-        _, date_columns = dataframe_columns_to_datetime(data.copy())
+        date_columns = [x for x in data.columns.tolist() if is_series_datetime(data[x])]
         all_columns = data.columns.tolist()
         numeric_columns = hp.get_numeric_columns(data)
         non_numeric_columns = hp.get_non_numeric_columns(data)

@@ -4,6 +4,16 @@ import numpy as np
 import pandas as pd
 import helpsk.pandas as hp
 
+def is_series_datetime(series: pd.Series) -> bool:
+    """Check if a series can be converted to a datetime."""
+    if pd.api.types.is_numeric_dtype(series):
+        return False
+    try:
+        _ = pd.to_datetime(series)
+        return True
+    except Exception:
+        return False
+
 
 def series_to_datetime(series: pd.Series) -> tuple[pd.Series, bool]:
     """

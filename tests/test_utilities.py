@@ -3,9 +3,26 @@ import numpy as np
 import pytest
 import pandas as pd
 from datetime import date, datetime
-from source.library.utilities import dataframe_columns_to_datetime, filter_dataframe, to_date, \
+from source.library.utilities import dataframe_columns_to_datetime, filter_dataframe, is_series_datetime, to_date, \
     create_random_dataframe, to_date_string
 
+
+def test_is_series_datetime(mock_data1):  # noqa
+    assert is_series_datetime(mock_data1['date_string'])
+    assert is_series_datetime(mock_data1['date_string_with_missing'])
+    assert is_series_datetime(mock_data1['datetime_string'])
+    assert is_series_datetime(mock_data1['datetime_string_with_missing'])
+    assert is_series_datetime(mock_data1['datetimes'])
+    assert is_series_datetime(mock_data1['datetimes_with_missing'])
+    assert is_series_datetime(mock_data1['dates'])
+    assert is_series_datetime(mock_data1['dates_with_missing'])
+    assert not is_series_datetime(mock_data1['random_strings'])
+    assert not is_series_datetime(mock_data1['integers'])
+    assert not is_series_datetime(mock_data1['integers_with_missing'])
+    assert not is_series_datetime(mock_data1['floats'])
+    assert not is_series_datetime(mock_data1['floats_with_missing'])
+    assert not is_series_datetime(mock_data1['booleans'])
+    assert not is_series_datetime(mock_data1['booleans_with_missing'])
 
 def test_convert_columns_to_datetime(mock_data1):  # noqa
     data_copy = mock_data1.copy()
