@@ -1,5 +1,6 @@
 """Test fixtures for the project."""
 import os
+from itertools import product
 from dotenv import load_dotenv
 import pytest
 import pandas as pd
@@ -9,6 +10,14 @@ from datetime import datetime
 import yaml
 
 load_dotenv()
+
+
+def generate_combinations(lists: list[list[str]]) -> list[tuple]:
+    """Get all combinations of the items in the lists. There can be any number of lists."""
+    if not lists:
+        return []
+    return list(product(*lists))
+
 
 @pytest.fixture()
 def mock_data1() -> pd.DataFrame:
