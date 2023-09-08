@@ -572,6 +572,8 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         fig
         """)
     elif graph_type == 'histogram':
+        if not color_variable:
+            bar_mode = 'relative'
 
         if y_variable and y_variable in numeric_columns:
             hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
@@ -609,7 +611,8 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         """)
         if (
             (x_variable in numeric_columns or x_variable in date_columns)
-            and bar_mode and bar_mode != 'group'
+            and bar_mode
+            and bar_mode != 'group'
             ):
             # Adjust the bar group gap
             graph_code += f"fig.update_layout(barmode='{bar_mode}', bargap=0.05)\n"
@@ -620,6 +623,9 @@ def generate_graph(  # noqa: PLR0912, PLR0915
 
         graph_code += "fig\n"
     elif graph_type in ['bar', 'bar - count distinct']:
+        if not color_variable:
+            bar_mode = None
+
         if graph_type == 'bar - count distinct':
             if y_variable in [x_variable, color_variable, facet_variable]:
                 raise InvalidConfigurationError("Cannot use the same variable for y and x, color, or facet")  # noqa
