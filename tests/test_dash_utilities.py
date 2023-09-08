@@ -1212,6 +1212,28 @@ def test_unknown_order_type_raises_exception():  # noqa
             column_types=column_types,
         )
 
+@pytest.mark.parametrize('order_type', [
+    'category ascending',
+    'category descending',
+    'total ascending',
+    'total descending',
+])
+def test_get_category_orders_with_more_than_50_values(order_type):  # noqa
+    data = pd.DataFrame({
+        'valid': ['a', 'b'] * 50,
+        'invalid': [f'category_{i}' for i in range(100)],
+    })
+    column_types = t.get_column_types(data)
+    result = get_category_orders(
+        data=data,
+        selected_variables=['valid', 'invalid'],
+        selected_category_order=order_type,
+        column_types=column_types,
+    )
+    result['valid'] = ['a', 'b']
+    assert 'invalid' not in result
+
+
 def test_duplicates_in_selected_variables():  # noqa
     category_order_data = pd.DataFrame({
         'numeric': [1, 2, 3, 4, 5, 6],

@@ -1684,19 +1684,6 @@ def update_color_label_div_style(color_variable: str | None) -> dict:
     return {'display': 'none'}
 
 
-# there doesn't seem to be a legend for size
-# @app.callback(
-#     Output('size_label_div', 'style'),
-#     Input('size_variable_dropdown', 'value'),
-#     prevent_initial_call=True,
-# )
-# def update_size_label_div_style(size_variable: str | None) -> dict:
-#     """Toggle the size label div."""
-#     if size_variable:
-#         return {'width': '100%', 'display': 'block'}
-#     return {'display': 'none'}
-
-
 @app.callback(
     Output('facet_label_div', 'style'),
     Input('facet_variable_dropdown', 'value'),
