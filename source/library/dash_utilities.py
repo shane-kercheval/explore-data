@@ -381,7 +381,7 @@ def get_category_orders(
     category_orders = {}
     if selected_category_order:
         for variable in selected_variables:
-            if t.is_discrete(variable, column_types):
+            if t.is_discrete(variable, column_types) and data[variable].nunique() < 50:
                 if 'category' in selected_category_order:
                     reverse = 'ascending' not in selected_category_order
                     categories = sorted(
