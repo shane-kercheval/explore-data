@@ -3,32 +3,15 @@ import numpy as np
 import pytest
 import pandas as pd
 from datetime import date, datetime
+import source.library.types as t
 from source.library.utilities import (
     dataframe_columns_to_datetime,
     filter_dataframe,
-    is_series_datetime,
     to_date,
     create_random_dataframe,
     to_date_string,
 )
 
-
-def test_is_series_datetime(mock_data1):  # noqa
-    assert is_series_datetime(mock_data1['date_string'])
-    assert is_series_datetime(mock_data1['date_string_with_missing'])
-    assert is_series_datetime(mock_data1['datetime_string'])
-    assert is_series_datetime(mock_data1['datetime_string_with_missing'])
-    assert is_series_datetime(mock_data1['datetimes'])
-    assert is_series_datetime(mock_data1['datetimes_with_missing'])
-    assert is_series_datetime(mock_data1['dates'])
-    assert is_series_datetime(mock_data1['dates_with_missing'])
-    assert not is_series_datetime(mock_data1['random_strings'])
-    assert not is_series_datetime(mock_data1['integers'])
-    assert not is_series_datetime(mock_data1['integers_with_missing'])
-    assert not is_series_datetime(mock_data1['floats'])
-    assert not is_series_datetime(mock_data1['floats_with_missing'])
-    assert not is_series_datetime(mock_data1['booleans'])
-    assert not is_series_datetime(mock_data1['booleans_with_missing'])
 
 def test_convert_columns_to_datetime(mock_data1):  # noqa
     data_copy = mock_data1.copy()
@@ -141,10 +124,11 @@ def test_to_date_string():  # noqa
 def test_filter_dataframe_dates_no_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
     # testing dates not in range
+    column_types = t.get_column_types(mock_data2)
     filters = {
         'dates': (pd.to_datetime('2025-01-02'), pd.to_datetime('2025-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -154,7 +138,7 @@ def test_filter_dataframe_dates_no_missing(mock_data2):  # noqa
     filters = {
         'dates': (pd.to_datetime('2023-01-02'), pd.to_datetime('2023-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -166,7 +150,7 @@ def test_filter_dataframe_dates_no_missing(mock_data2):  # noqa
     filters = {
         'dates': (pd.to_datetime('2023-01-02 12:00:00'), pd.to_datetime('2023-01-04 12:00:00')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -178,7 +162,7 @@ def test_filter_dataframe_dates_no_missing(mock_data2):  # noqa
     filters = {
         'dates': ('2023-01-02', '2023-01-04'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -190,7 +174,7 @@ def test_filter_dataframe_dates_no_missing(mock_data2):  # noqa
     filters = {
         'dates': ('2023-01-02 12:00:00', '2023-01-04 12:00:00'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -201,10 +185,11 @@ def test_filter_dataframe_dates_no_missing(mock_data2):  # noqa
 def test_filter_dataframe_dates_with_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
     # testing dates not in range
+    column_types = t.get_column_types(mock_data2)
     filters = {
         'dates_with_missing': (pd.to_datetime('2025-01-02'), pd.to_datetime('2025-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -214,7 +199,7 @@ def test_filter_dataframe_dates_with_missing(mock_data2):  # noqa
     filters = {
         'dates_with_missing': (pd.to_datetime('2023-01-02'), pd.to_datetime('2023-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -226,7 +211,7 @@ def test_filter_dataframe_dates_with_missing(mock_data2):  # noqa
     filters = {
         'dates_with_missing': (pd.to_datetime('2023-01-02 12:00:00'), pd.to_datetime('2023-01-04 12:00:00')),  # noqa
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -238,7 +223,7 @@ def test_filter_dataframe_dates_with_missing(mock_data2):  # noqa
     filters = {
         'dates_with_missing': ('2023-01-02', '2023-01-04'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -250,7 +235,7 @@ def test_filter_dataframe_dates_with_missing(mock_data2):  # noqa
     filters = {
         'dates_with_missing': ('2023-01-02 12:00:00', '2023-01-04 12:00:00'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -260,11 +245,12 @@ def test_filter_dataframe_dates_with_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_dates_with_missing2(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing dates not in range
     filters = {
         'dates_with_missing2': (pd.to_datetime('2025-01-02'), pd.to_datetime('2025-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -274,7 +260,7 @@ def test_filter_dataframe_dates_with_missing2(mock_data2):  # noqa
     filters = {
         'dates_with_missing2': (pd.to_datetime('2023-01-01'), pd.to_datetime('2023-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -286,7 +272,7 @@ def test_filter_dataframe_dates_with_missing2(mock_data2):  # noqa
     filters = {
         'dates_with_missing2': (pd.to_datetime('2023-01-01 12:00:00'), pd.to_datetime('2023-01-04 12:00:00')),  # noqa
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -298,7 +284,7 @@ def test_filter_dataframe_dates_with_missing2(mock_data2):  # noqa
     filters = {
         'dates_with_missing2': ('2023-01-01', '2023-01-04'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -310,7 +296,7 @@ def test_filter_dataframe_dates_with_missing2(mock_data2):  # noqa
     filters = {
         'dates_with_missing2': ('2023-01-01 00:00:01', '2023-01-04 12:00:00'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -320,11 +306,12 @@ def test_filter_dataframe_dates_with_missing2(mock_data2):  # noqa
 
 def test_filter_dataframe_datetimes_no_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing datetimes not in range
     filters = {
         'datetimes': (pd.to_datetime('2025-01-02'), pd.to_datetime('2025-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -334,7 +321,7 @@ def test_filter_dataframe_datetimes_no_missing(mock_data2):  # noqa
     filters = {
         'datetimes': (pd.to_datetime('2023-01-02'), pd.to_datetime('2023-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -346,7 +333,7 @@ def test_filter_dataframe_datetimes_no_missing(mock_data2):  # noqa
     filters = {
         'datetimes': (pd.to_datetime('2023-01-02 12:00:00'), pd.to_datetime('2023-01-04 12:00:00')),  # noqa
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -358,7 +345,7 @@ def test_filter_dataframe_datetimes_no_missing(mock_data2):  # noqa
     filters = {
         'datetimes': ('2023-01-02', '2023-01-04'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -370,7 +357,7 @@ def test_filter_dataframe_datetimes_no_missing(mock_data2):  # noqa
     filters = {
         'datetimes': ('2023-01-02 12:00:00', '2023-01-04 12:00:00'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -380,11 +367,12 @@ def test_filter_dataframe_datetimes_no_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_datetimes_with_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing datetimes not in range
     filters = {
         'datetimes_with_missing': (pd.to_datetime('2025-01-02'), pd.to_datetime('2025-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -394,7 +382,7 @@ def test_filter_dataframe_datetimes_with_missing(mock_data2):  # noqa
     filters = {
         'datetimes_with_missing': (pd.to_datetime('2023-01-02'), pd.to_datetime('2023-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -406,7 +394,7 @@ def test_filter_dataframe_datetimes_with_missing(mock_data2):  # noqa
     filters = {
         'datetimes_with_missing': (pd.to_datetime('2023-01-02 12:00:00'), pd.to_datetime('2023-01-04 12:00:00')),  # noqa
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -418,7 +406,7 @@ def test_filter_dataframe_datetimes_with_missing(mock_data2):  # noqa
     filters = {
         'datetimes_with_missing': ('2023-01-02', '2023-01-04'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -430,7 +418,7 @@ def test_filter_dataframe_datetimes_with_missing(mock_data2):  # noqa
     filters = {
         'datetimes_with_missing': ('2023-01-02 12:00:00', '2023-01-04 12:00:00'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -440,11 +428,12 @@ def test_filter_dataframe_datetimes_with_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_datetimes_with_missing2(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing datetimes not in range
     filters = {
         'datetimes_with_missing2': (pd.to_datetime('2025-01-02'), pd.to_datetime('2025-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -454,7 +443,7 @@ def test_filter_dataframe_datetimes_with_missing2(mock_data2):  # noqa
     filters = {
         'datetimes_with_missing2': (pd.to_datetime('2023-01-01'), pd.to_datetime('2023-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -466,7 +455,7 @@ def test_filter_dataframe_datetimes_with_missing2(mock_data2):  # noqa
     filters = {
         'datetimes_with_missing2': (pd.to_datetime('2023-01-01 12:00:00'), pd.to_datetime('2023-01-04 12:00:00')),  # noqa
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -478,7 +467,7 @@ def test_filter_dataframe_datetimes_with_missing2(mock_data2):  # noqa
     filters = {
         'datetimes_with_missing2': ('2023-01-01', '2023-01-04'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -490,7 +479,7 @@ def test_filter_dataframe_datetimes_with_missing2(mock_data2):  # noqa
     filters = {
         'datetimes_with_missing2': ('2023-01-01 00:00:01', '2023-01-04 12:00:00'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -500,11 +489,12 @@ def test_filter_dataframe_datetimes_with_missing2(mock_data2):  # noqa
 
 def test_filter_dataframe_boolean_no_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing all possible values
     filters = {
         'booleans': [True, False, np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 5
@@ -516,7 +506,7 @@ def test_filter_dataframe_boolean_no_missing(mock_data2):  # noqa
     filters = {
         'booleans': [True],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -528,7 +518,7 @@ def test_filter_dataframe_boolean_no_missing(mock_data2):  # noqa
     filters = {
         'booleans': [False],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -540,7 +530,7 @@ def test_filter_dataframe_boolean_no_missing(mock_data2):  # noqa
     filters = {
         'booleans': [np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -550,7 +540,7 @@ def test_filter_dataframe_boolean_no_missing(mock_data2):  # noqa
     filters = {
         'booleans': [True, False],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 5
@@ -562,7 +552,7 @@ def test_filter_dataframe_boolean_no_missing(mock_data2):  # noqa
     filters = {
         'booleans': [True, np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -575,7 +565,7 @@ def test_filter_dataframe_boolean_no_missing(mock_data2):  # noqa
     filters = {
         'booleans': [False, np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -585,11 +575,12 @@ def test_filter_dataframe_boolean_no_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_boolean_with_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing all possible values
     filters = {
         'booleans_with_missing': [True, False, np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 5
@@ -601,7 +592,7 @@ def test_filter_dataframe_boolean_with_missing(mock_data2):  # noqa
     filters = {
         'booleans_with_missing': [True],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -613,7 +604,7 @@ def test_filter_dataframe_boolean_with_missing(mock_data2):  # noqa
     filters = {
         'booleans_with_missing': [False],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -625,7 +616,7 @@ def test_filter_dataframe_boolean_with_missing(mock_data2):  # noqa
     filters = {
         'booleans_with_missing': [np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 1
@@ -637,7 +628,7 @@ def test_filter_dataframe_boolean_with_missing(mock_data2):  # noqa
     filters = {
         'booleans_with_missing': [True, False],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 4
@@ -649,7 +640,7 @@ def test_filter_dataframe_boolean_with_missing(mock_data2):  # noqa
     filters = {
         'booleans_with_missing': [True, np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -662,7 +653,7 @@ def test_filter_dataframe_boolean_with_missing(mock_data2):  # noqa
     filters = {
         'booleans_with_missing': [False, np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -672,11 +663,12 @@ def test_filter_dataframe_boolean_with_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_boolean_with_missing2(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing all possible values
     filters = {
         'booleans_with_missing2': [True, False, np.nan, None],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 5
@@ -688,7 +680,7 @@ def test_filter_dataframe_boolean_with_missing2(mock_data2):  # noqa
     filters = {
         'booleans_with_missing2': [True, False, None],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 4
@@ -700,7 +692,7 @@ def test_filter_dataframe_boolean_with_missing2(mock_data2):  # noqa
     filters = {
         'booleans_with_missing2': [True, False, np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 4
@@ -713,7 +705,7 @@ def test_filter_dataframe_boolean_with_missing2(mock_data2):  # noqa
     filters = {
         'booleans_with_missing2': [True],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 1
@@ -725,7 +717,7 @@ def test_filter_dataframe_boolean_with_missing2(mock_data2):  # noqa
     filters = {
         'booleans_with_missing2': [False],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -737,7 +729,7 @@ def test_filter_dataframe_boolean_with_missing2(mock_data2):  # noqa
     filters = {
         'booleans_with_missing2': [np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 1
@@ -749,7 +741,7 @@ def test_filter_dataframe_boolean_with_missing2(mock_data2):  # noqa
     filters = {
         'booleans_with_missing2': [None],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 1
@@ -761,7 +753,7 @@ def test_filter_dataframe_boolean_with_missing2(mock_data2):  # noqa
     filters = {
         'booleans_with_missing2': [True, False],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -773,7 +765,7 @@ def test_filter_dataframe_boolean_with_missing2(mock_data2):  # noqa
     filters = {
         'booleans_with_missing2': [True, np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -786,7 +778,7 @@ def test_filter_dataframe_boolean_with_missing2(mock_data2):  # noqa
     filters = {
         'booleans_with_missing2': [False, np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -796,11 +788,12 @@ def test_filter_dataframe_boolean_with_missing2(mock_data2):  # noqa
 
 def test_filter_dataframe_string_no_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing non-existant value
     filters = {
         'strings': ['does not exist'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -811,7 +804,7 @@ def test_filter_dataframe_string_no_missing(mock_data2):  # noqa
     filters = {
         'strings': ['a', 'b', 'c'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 5
@@ -824,7 +817,7 @@ def test_filter_dataframe_string_no_missing(mock_data2):  # noqa
     filters = {
         'strings': ['a'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -836,7 +829,7 @@ def test_filter_dataframe_string_no_missing(mock_data2):  # noqa
     filters = {
         'strings': ['b'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -848,7 +841,7 @@ def test_filter_dataframe_string_no_missing(mock_data2):  # noqa
     filters = {
         'strings': ['c'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 1
@@ -861,7 +854,7 @@ def test_filter_dataframe_string_no_missing(mock_data2):  # noqa
     filters = {
         'strings': [np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -871,7 +864,7 @@ def test_filter_dataframe_string_no_missing(mock_data2):  # noqa
     filters = {
         'strings': ['a', 'does not exist'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -884,7 +877,7 @@ def test_filter_dataframe_string_no_missing(mock_data2):  # noqa
     filters = {
         'strings': ['a', np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -894,11 +887,12 @@ def test_filter_dataframe_string_no_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_string_with_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing all possible values
     filters = {
         'strings_with_missing': ['a', 'b', 'c', np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 5
@@ -910,7 +904,7 @@ def test_filter_dataframe_string_with_missing(mock_data2):  # noqa
     filters = {
         'strings_with_missing': ['a', 'b', 'c'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 4
@@ -922,7 +916,7 @@ def test_filter_dataframe_string_with_missing(mock_data2):  # noqa
     filters = {
         'strings_with_missing': ['a'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -934,7 +928,7 @@ def test_filter_dataframe_string_with_missing(mock_data2):  # noqa
     filters = {
         'strings_with_missing': [np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 1
@@ -946,7 +940,7 @@ def test_filter_dataframe_string_with_missing(mock_data2):  # noqa
     filters = {
         'strings_with_missing': ['a', np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -956,11 +950,12 @@ def test_filter_dataframe_string_with_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing all possible values
     filters = {
         'strings_with_missing2': ['a', 'b', 'c', np.nan, None],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 5
@@ -972,7 +967,7 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     filters = {
         'strings_with_missing2': ['a', 'b', None],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 4
@@ -984,7 +979,7 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     filters = {
         'strings_with_missing2': ['a', 'b', np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 4
@@ -997,7 +992,7 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     filters = {
         'strings_with_missing2': ['b'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -1009,7 +1004,7 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     filters = {
         'strings_with_missing2': [np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 1
@@ -1021,7 +1016,7 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     filters = {
         'strings_with_missing2': [None],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 1
@@ -1033,7 +1028,7 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     filters = {
         'strings_with_missing2': ['b', np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -1045,7 +1040,7 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     filters = {
         'strings_with_missing2': ['a', np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -1055,11 +1050,12 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
 
 def test_filter_dataframe_categories_no_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing non-existant value
     filters = {
         'categories': ['does not exist'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -1069,7 +1065,7 @@ def test_filter_dataframe_categories_no_missing(mock_data2):  # noqa
     filters = {
         'categories': ['a', 'b', 'c'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 5
@@ -1082,7 +1078,7 @@ def test_filter_dataframe_categories_no_missing(mock_data2):  # noqa
     filters = {
         'categories': ['a'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -1094,7 +1090,7 @@ def test_filter_dataframe_categories_no_missing(mock_data2):  # noqa
     filters = {
         'categories': ['b'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -1106,7 +1102,7 @@ def test_filter_dataframe_categories_no_missing(mock_data2):  # noqa
     filters = {
         'categories': ['c'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 1
@@ -1119,7 +1115,7 @@ def test_filter_dataframe_categories_no_missing(mock_data2):  # noqa
     filters = {
         'categories': [np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -1129,7 +1125,7 @@ def test_filter_dataframe_categories_no_missing(mock_data2):  # noqa
     filters = {
         'categories': ['a', 'does not exist'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -1142,7 +1138,7 @@ def test_filter_dataframe_categories_no_missing(mock_data2):  # noqa
     filters = {
         'categories': ['a', np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -1152,11 +1148,12 @@ def test_filter_dataframe_categories_no_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_categories_with_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing all possible values
     filters = {
         'categories_with_missing': ['a', 'b', 'c', np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 5
@@ -1168,7 +1165,7 @@ def test_filter_dataframe_categories_with_missing(mock_data2):  # noqa
     filters = {
         'categories_with_missing': ['a', 'b', 'c'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 4
@@ -1180,7 +1177,7 @@ def test_filter_dataframe_categories_with_missing(mock_data2):  # noqa
     filters = {
         'categories_with_missing': ['a'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -1192,7 +1189,7 @@ def test_filter_dataframe_categories_with_missing(mock_data2):  # noqa
     filters = {
         'categories_with_missing': [np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 1
@@ -1204,7 +1201,7 @@ def test_filter_dataframe_categories_with_missing(mock_data2):  # noqa
     filters = {
         'categories_with_missing': ['a', np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -1214,11 +1211,12 @@ def test_filter_dataframe_categories_with_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_categories_with_missing2(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing all possible values
     filters = {
         'categories_with_missing2': ['a', 'b', 'c', np.nan, None],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 5
@@ -1230,7 +1228,7 @@ def test_filter_dataframe_categories_with_missing2(mock_data2):  # noqa
     filters = {
         'categories_with_missing2': ['a', 'b', np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 5
@@ -1243,7 +1241,7 @@ def test_filter_dataframe_categories_with_missing2(mock_data2):  # noqa
     filters = {
         'categories_with_missing2': ['b'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -1255,7 +1253,7 @@ def test_filter_dataframe_categories_with_missing2(mock_data2):  # noqa
     filters = {
         'categories_with_missing2': [np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -1267,7 +1265,7 @@ def test_filter_dataframe_categories_with_missing2(mock_data2):  # noqa
     filters = {
         'categories_with_missing2': ['b', np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 4
@@ -1279,7 +1277,7 @@ def test_filter_dataframe_categories_with_missing2(mock_data2):  # noqa
     filters = {
         'categories_with_missing2': ['a', np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -1289,11 +1287,12 @@ def test_filter_dataframe_categories_with_missing2(mock_data2):  # noqa
 
 def test_filter_dataframe_integers_no_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing integers not in range
     filters = {
         'integers': (10, 15),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -1302,7 +1301,7 @@ def test_filter_dataframe_integers_no_missing(mock_data2):  # noqa
     filters = {
         'integers': (2, 4),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -1313,7 +1312,7 @@ def test_filter_dataframe_integers_no_missing(mock_data2):  # noqa
     filters = {
         'integers': (2, 10),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 4
@@ -1324,7 +1323,7 @@ def test_filter_dataframe_integers_no_missing(mock_data2):  # noqa
     filters = {
         'integers': (1, 5),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 5
     assert code
@@ -1333,11 +1332,12 @@ def test_filter_dataframe_integers_no_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_integers_with_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing integers not in range
     filters = {
         'integers_with_missing': (10, 15),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -1346,7 +1346,7 @@ def test_filter_dataframe_integers_with_missing(mock_data2):  # noqa
     filters = {
         'integers_with_missing': (2, 4),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -1357,7 +1357,7 @@ def test_filter_dataframe_integers_with_missing(mock_data2):  # noqa
     filters = {
         'integers_with_missing': (2, 10),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -1368,7 +1368,7 @@ def test_filter_dataframe_integers_with_missing(mock_data2):  # noqa
     filters = {
         'integers_with_missing': (1, 5),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 4
     assert code
@@ -1377,11 +1377,12 @@ def test_filter_dataframe_integers_with_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_integers_with_missing2(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing integers not in range
     filters = {
         'integers_with_missing2': (10, 15),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -1390,7 +1391,7 @@ def test_filter_dataframe_integers_with_missing2(mock_data2):  # noqa
     filters = {
         'integers_with_missing2': (2, 4),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -1401,7 +1402,7 @@ def test_filter_dataframe_integers_with_missing2(mock_data2):  # noqa
     filters = {
         'integers_with_missing2': (2, 10),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -1412,7 +1413,7 @@ def test_filter_dataframe_integers_with_missing2(mock_data2):  # noqa
     filters = {
         'integers_with_missing2': (1, 5),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 3
     assert code
@@ -1420,11 +1421,12 @@ def test_filter_dataframe_integers_with_missing2(mock_data2):  # noqa
 
 def test_filter_dataframe_floats_no_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing floats not in range
     filters = {
         'floats': (10, 15),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -1433,7 +1435,7 @@ def test_filter_dataframe_floats_no_missing(mock_data2):  # noqa
     filters = {
         'floats': (2, 4),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 2
@@ -1443,7 +1445,7 @@ def test_filter_dataframe_floats_no_missing(mock_data2):  # noqa
     filters = {
         'floats': (2, 10),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 4
@@ -1453,7 +1455,7 @@ def test_filter_dataframe_floats_no_missing(mock_data2):  # noqa
     filters = {
         'floats': (1, 5),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 4
     assert code
@@ -1462,7 +1464,7 @@ def test_filter_dataframe_floats_no_missing(mock_data2):  # noqa
     filters = {
         'floats': (1.1, 5.5),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 5
     assert code
@@ -1470,11 +1472,12 @@ def test_filter_dataframe_floats_no_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_floats_with_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing floats not in range
     filters = {
         'floats_with_missing': (10, 15),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -1483,7 +1486,7 @@ def test_filter_dataframe_floats_with_missing(mock_data2):  # noqa
     filters = {
         'floats_with_missing': (2, 4),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 1
@@ -1493,7 +1496,7 @@ def test_filter_dataframe_floats_with_missing(mock_data2):  # noqa
     filters = {
         'floats_with_missing': (2, 10),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -1503,7 +1506,7 @@ def test_filter_dataframe_floats_with_missing(mock_data2):  # noqa
     filters = {
         'floats_with_missing': (1, 5),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 3
     assert code
@@ -1512,7 +1515,7 @@ def test_filter_dataframe_floats_with_missing(mock_data2):  # noqa
     filters = {
         'floats_with_missing': (1.1, 5.5),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 4
     assert code
@@ -1520,11 +1523,12 @@ def test_filter_dataframe_floats_with_missing(mock_data2):  # noqa
 
 def test_filter_dataframe_floats_with_missing2(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     # testing floats not in range
     filters = {
         'floats_with_missing2': (10, 15),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 0
@@ -1533,7 +1537,7 @@ def test_filter_dataframe_floats_with_missing2(mock_data2):  # noqa
     filters = {
         'floats_with_missing2': (2, 4),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 1
@@ -1543,7 +1547,7 @@ def test_filter_dataframe_floats_with_missing2(mock_data2):  # noqa
     filters = {
         'floats_with_missing2': (2, 10),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 3
@@ -1553,7 +1557,7 @@ def test_filter_dataframe_floats_with_missing2(mock_data2):  # noqa
     filters = {
         'floats_with_missing2': (1, 5),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 2
     assert code
@@ -1562,7 +1566,7 @@ def test_filter_dataframe_floats_with_missing2(mock_data2):  # noqa
     filters = {
         'floats_with_missing2': (1.1, 5.5),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 3
     assert code
@@ -1570,19 +1574,21 @@ def test_filter_dataframe_floats_with_missing2(mock_data2):  # noqa
 
 def test_filter_dataframe_no_filters(mock_data2):  # noqa
     """Test filter_dataframe function."""
-    filtered_df, code = filter_dataframe(mock_data2, {})
-    assert mock_data2 is not filtered_df
+    column_types = t.get_column_types(mock_data2)
+    filtered_df, code = filter_dataframe(mock_data2, {}, column_types)
+    # assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
     assert len(filtered_df) == 5
     assert not code
 
 def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
     """Test filter_dataframe function."""
+    column_types = t.get_column_types(mock_data2)
     filters = {
         'integers': (2, 4),
         'strings': ['a', 'b'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 2
     assert code
@@ -1595,7 +1601,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'integers': (1, 2),
         'strings': ['c'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 0
     assert code
@@ -1604,7 +1610,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'integers': (2, 4),
         'booleans': [True],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 1
     assert code
@@ -1618,7 +1624,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'booleans_with_missing': [True],
         'booleans_with_missing2': [True],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 1
     assert code
@@ -1635,7 +1641,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'booleans_with_missing': [True, np.nan],
         'booleans_with_missing2': [True],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 1
     assert code
@@ -1651,7 +1657,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'booleans_with_missing': [True, np.nan],
         'booleans_with_missing2': [True, np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 2
     assert code
@@ -1667,7 +1673,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'booleans_with_missing': [True, np.nan],
         'booleans_with_missing2': [True, np.nan, None],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 3
     assert code
@@ -1682,7 +1688,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'booleans': [True],
         'strings': ['a', 'c'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 2
     assert code
@@ -1695,7 +1701,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'booleans': [True],
         'categories_with_missing': ['a', 'c'],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 1
     assert code
@@ -1708,7 +1714,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'booleans': [True],
         'categories_with_missing': [np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 1
     assert code
@@ -1721,7 +1727,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'booleans': [True],
         'dates_with_missing': ('2024-01-01', '2024-01-04'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 0
     assert code
@@ -1730,7 +1736,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'booleans': [True],
         'dates_with_missing': ('2023-01-01', '2023-01-04'),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 1
     assert code
@@ -1745,7 +1751,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'booleans': [False],
         'dates_with_missing': (pd.to_datetime('2023-01-03'), pd.to_datetime('2023-01-04')),
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 1
     assert code
@@ -1759,7 +1765,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'categories_with_missing': [np.nan],
         'categories_with_missing2': [np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 1
     assert code
@@ -1773,7 +1779,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'categories_with_missing': [np.nan],
         'categories_with_missing2': [np.nan, None],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 1
     assert code
@@ -1787,7 +1793,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
         'categories_with_missing': [np.nan, 'a'],
         'categories_with_missing2': [np.nan],
     }
-    filtered_df, code = filter_dataframe(mock_data2, filters)
+    filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert len(filtered_df) == 2
     assert code

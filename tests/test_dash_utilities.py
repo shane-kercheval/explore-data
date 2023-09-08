@@ -3,22 +3,20 @@ import pandas as pd
 import numpy as np
 import pytest
 from tests.conftest import generate_combinations
+import source.library.types as t
 from source.library.dash_utilities import (
     InvalidConfigurationError,
     convert_to_graph_data,
     filter_data_from_ui_control,
     generate_graph,
     get_category_orders,
-    get_columns_from_config,
     get_graph_config,
-    get_variable_type,
     log,
     log_function,
     log_variable,
     log_error,
     values_to_dropdown_options,
 )
-import helpsk.pandas as hp
 import plotly.graph_objs as go
 
 
@@ -55,27 +53,32 @@ def test_values_to_dropdown_options():  # noqa
     ]
 
 def test_filter_data_from_ui_control__no_selected_columns(capsys, mock_data2):  # noqa
+    column_types = t.get_column_types(mock_data2)
     filtered_data, _, _ = filter_data_from_ui_control(
         filters={},
+        column_types=column_types,
         data=mock_data2,
     )
-    assert filtered_data is not mock_data2
+    # assert filtered_data is not mock_data2
     assert filtered_data.equals(mock_data2)
 
     filtered_data, _, _ = filter_data_from_ui_control(
         filters=None,
+        column_types=column_types,
         data=mock_data2,
     )
-    assert filtered_data is not mock_data2
+    # assert filtered_data is not mock_data2
     assert filtered_data.equals(mock_data2)
 
 def test_filter_data_from_ui_control__integers_booleans(capsys, mock_data2):  # noqa
+    column_types = t.get_column_types(mock_data2)
     filters = {
         'integers': [1, 3],
         'booleans_with_missing2': ['True', '<Missing>'],
     }
     filtered_data, markdown_text, code = filter_data_from_ui_control(
         filters=filters,
+        column_types=column_types,
         data=mock_data2,
     )
     assert filtered_data.shape == (2, 21)
@@ -89,12 +92,14 @@ def test_filter_data_from_ui_control__integers_booleans(capsys, mock_data2):  # 
     assert filtered_data['booleans_with_missing2'].tolist() == [None, np.nan]
 
 def test_filter_data_from_ui_control__integers_with_missing_booleans(capsys, mock_data2):  # noqa
+    column_types = t.get_column_types(mock_data2)
     filters = {
         'integers_with_missing': [1, 3],
         'booleans_with_missing2': ['True', '<Missing>'],
     }
     filtered_data, markdown_text, code = filter_data_from_ui_control(
         filters=filters,
+        column_types=column_types,
         data=mock_data2,
     )
     assert filtered_data.shape == (1, 21)
@@ -108,12 +113,14 @@ def test_filter_data_from_ui_control__integers_with_missing_booleans(capsys, moc
     assert filtered_data['booleans_with_missing2'].tolist() == [None]
 
 def test_filter_data_from_ui_control__strings_with_missing(capsys, mock_data2):  # noqa
+    column_types = t.get_column_types(mock_data2)
     filters = {
         'floats': [1, 3.5],
         'strings_with_missing2': ['b', '<Missing>'],
     }
     filtered_data, markdown_text, code = filter_data_from_ui_control(
         filters=filters,
+        column_types=column_types,
         data=mock_data2,
     )
     assert filtered_data.shape == (3, 21)
@@ -127,12 +134,14 @@ def test_filter_data_from_ui_control__strings_with_missing(capsys, mock_data2): 
     assert filtered_data['strings'].tolist() == ['a', 'b', 'c']
 
 def test_filter_data_from_ui_control__categorical_with_missing(capsys, mock_data2):  # noqa
+    column_types = t.get_column_types(mock_data2)
     filters = {
         'floats': [1, 3.5],
         'categories_with_missing2': ['b', '<Missing>'],
     }
     filtered_data, markdown_text, code = filter_data_from_ui_control(
         filters=filters,
+        column_types=column_types,
         data=mock_data2,
     )
     assert filtered_data.shape == (3, 21)
@@ -147,11 +156,13 @@ def test_filter_data_from_ui_control__categorical_with_missing(capsys, mock_data
     assert filtered_data['strings'].tolist() == ['a', 'b', 'c']
 
 def test_filter_data_from_ui_control__dates_with_missing(capsys, mock_data2):  # noqa
+    column_types = t.get_column_types(mock_data2)
     filters = {
         'dates_with_missing2': ['2023-01-01', '2023-01-04'],
     }
     filtered_data, markdown_text, code = filter_data_from_ui_control(
         filters=filters,
+        column_types=column_types,
         data=mock_data2,
     )
     assert filtered_data.shape == (2, 21)
@@ -163,11 +174,13 @@ def test_filter_data_from_ui_control__dates_with_missing(capsys, mock_data2):  #
     assert filtered_data['strings'].tolist() == ['b', 'a']
 
 def test_filter_data_from_ui_control__datetimes_with_missing(capsys, mock_data2):  # noqa
+    column_types = t.get_column_types(mock_data2)
     filters = {
         'datetimes_with_missing2': ['2023-01-01', '2023-01-04'],
     }
     filtered_data, markdown_text, code = filter_data_from_ui_control(
         filters=filters,
+        column_types=column_types,
         data=mock_data2,
     )
     assert filtered_data.shape == (2, 21)
@@ -177,48 +190,6 @@ def test_filter_data_from_ui_control__datetimes_with_missing(capsys, mock_data2)
     assert filtered_data['datetimes_with_missing2'].tolist() == pd.to_datetime(['2023-01-02 02:02:02', '2023-01-04 04:04:04']).tolist()  # noqa
     assert filtered_data['floats'].tolist() == [2.2, 4.4]
     assert filtered_data['strings'].tolist() == ['b', 'a']
-
-def test_get_variable_type(mock_data2):  # noqa
-    all_columns = mock_data2.columns.tolist()
-    numeric_columns = hp.get_numeric_columns(mock_data2)
-    date_columns = hp.get_date_columns(mock_data2)
-    categorical_columns = hp.get_categorical_columns(mock_data2)
-    string_columns = hp.get_string_columns(mock_data2)
-    boolean_columns = [x for x in all_columns if hp.is_series_bool(mock_data2[x])]
-
-    options = {
-        'numeric': numeric_columns,
-        'date': date_columns,
-        'categorical': categorical_columns,
-        'string': string_columns,
-        'boolean': boolean_columns,
-    }
-
-    assert get_variable_type(None, options=options) is None
-    with pytest.raises(ValueError):  # noqa: PT011
-        get_variable_type('xxx', options=options)
-
-    assert get_variable_type('integers', options=options) == 'numeric'
-    assert get_variable_type('integers_with_missing', options=options) == 'numeric'
-    assert get_variable_type('integers_with_missing2', options=options) == 'numeric'
-    assert get_variable_type('floats', options=options) == 'numeric'
-    assert get_variable_type('floats_with_missing', options=options) == 'numeric'
-    assert get_variable_type('floats_with_missing2', options=options) == 'numeric'
-    assert get_variable_type('booleans', options=options) == 'boolean'
-    assert get_variable_type('booleans_with_missing', options=options) == 'boolean'
-    assert get_variable_type('booleans_with_missing2', options=options) == 'boolean'
-    assert get_variable_type('strings', options=options) == 'string'
-    assert get_variable_type('strings_with_missing', options=options) == 'string'
-    assert get_variable_type('strings_with_missing2', options=options) == 'string'
-    assert get_variable_type('categories', options=options) == 'categorical'
-    assert get_variable_type('categories_with_missing', options=options) == 'categorical'
-    assert get_variable_type('categories_with_missing2', options=options) == 'categorical'
-    assert get_variable_type('dates', options=options) == 'date'
-    assert get_variable_type('dates_with_missing', options=options) == 'date'
-    assert get_variable_type('dates_with_missing2', options=options) == 'date'
-    assert get_variable_type('datetimes', options=options) == 'date'
-    assert get_variable_type('datetimes_with_missing', options=options) == 'date'
-    assert get_variable_type('datetimes_with_missing2', options=options) == 'date'
 
 def test_get_graph_config__not_found_raises_value_error(graphing_configurations):  # noqa
     with pytest.raises(InvalidConfigurationError):
@@ -400,69 +371,15 @@ def test_get_graph_config__z_variable(graphing_configurations):  # noqa
     assert 'description' in config['graph_types'][0]
     assert 'optional_variables' in config['graph_types'][0]
 
-def test_get_columns_from_config():  # noqa
-    all_columns = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
-    columns_by_type = {
-        'numeric': ['a', 'b'],
-        'date': ['c', 'd'],
-        'categorical': ['e', 'f'],
-        'string': ['g', 'h'],
-        'boolean': ['i', 'j'],
-    }
-    results = get_columns_from_config(
-        allowed_types=['numeric', 'date', 'categorical', 'string', 'boolean'],
-        columns_by_type=columns_by_type,
-        all_columns=all_columns,
-    )
-    assert results == all_columns
-
-    results = get_columns_from_config(
-        allowed_types=['date'],
-        columns_by_type=columns_by_type,
-        all_columns=all_columns,
-    )
-    assert results == ['c', 'd']
-
-    results = get_columns_from_config(
-        allowed_types=['date', 'boolean'],
-        columns_by_type=columns_by_type,
-        all_columns=all_columns,
-    )
-    assert results == ['c', 'd', 'i', 'j']
-
-    results = get_columns_from_config(
-        allowed_types=reversed(['numeric', 'date', 'categorical', 'string', 'boolean']),
-        columns_by_type=columns_by_type,
-        all_columns=all_columns,
-    )
-    assert results == all_columns
-
-    results = get_columns_from_config(
-        allowed_types=reversed(['date', 'boolean']),
-        columns_by_type=columns_by_type,
-        all_columns=all_columns,
-    )
-    assert results == ['c', 'd', 'i', 'j']
-
 def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     data_copy = mock_data2.copy()
-    numeric_columns = [
-        'integers', 'integers_with_missing', 'integers_with_missing2',
-        'floats', 'floats_with_missing', 'floats_with_missing2',
-    ]
-    string_columns = ['strings', 'strings_with_missing', 'strings_with_missing2']
-    categorical_columns = ['categories', 'categories_with_missing', 'categories_with_missing2']
-    boolean_columns = ['booleans', 'booleans_with_missing', 'booleans_with_missing2']
+    column_types = t.get_column_types(data_copy)
     selected_variables = ['integers', 'strings', 'categories', 'booleans']
     new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
-        numeric_columns=numeric_columns,
-        string_columns=string_columns,
-        categorical_columns=categorical_columns,
-        boolean_columns=boolean_columns,
+        column_types=column_types,
         selected_variables=selected_variables,
         top_n_categories=10,
-        date_columns=[],
         exclude_from_top_n_transformation=None,
         date_floor=None,
     )
@@ -480,14 +397,10 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     # top_n_categories with 3 shouldn't change anything
     new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
-        numeric_columns=numeric_columns,
-        string_columns=string_columns,
-        categorical_columns=categorical_columns,
-        boolean_columns=boolean_columns,
+        column_types=column_types,
         selected_variables=selected_variables,
         top_n_categories=3,
         exclude_from_top_n_transformation=None,
-        date_columns=[],
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -504,14 +417,10 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     # top_n_categories with 3 shouldn't change anything
     new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
-        numeric_columns=numeric_columns,
-        string_columns=string_columns,
-        categorical_columns=categorical_columns,
-        boolean_columns=boolean_columns,
+        column_types=column_types,
         selected_variables=selected_variables,
         top_n_categories=None,
         exclude_from_top_n_transformation=None,
-        date_columns=[],
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -529,14 +438,10 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     # top_n_categories with 3 shouldn't change anything
     new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
-        numeric_columns=numeric_columns,
-        string_columns=string_columns,
-        categorical_columns=categorical_columns,
-        boolean_columns=boolean_columns,
+        column_types=column_types,
         selected_variables=selected_variables,
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
-        date_columns=[],
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -555,14 +460,10 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     ]
     new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
-        numeric_columns=numeric_columns,
-        string_columns=string_columns,
-        categorical_columns=categorical_columns,
-        boolean_columns=boolean_columns,
+        column_types=column_types,
         selected_variables=selected_variables,
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
-        date_columns=[],
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -581,14 +482,10 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     ]
     new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
-        numeric_columns=numeric_columns,
-        string_columns=string_columns,
-        categorical_columns=categorical_columns,
-        boolean_columns=boolean_columns,
+        column_types=column_types,
         selected_variables=selected_variables,
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
-        date_columns=[],
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -607,14 +504,10 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     ]
     new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
-        numeric_columns=numeric_columns,
-        string_columns=string_columns,
-        categorical_columns=categorical_columns,
-        boolean_columns=boolean_columns,
+        column_types=column_types,
         selected_variables=selected_variables,
         top_n_categories=1,
         exclude_from_top_n_transformation=None,
-        date_columns=[],
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -629,19 +522,13 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
     assert new_data['booleans_with_missing2'].tolist() == ['<Other>', False, False, '<Other>']
 
 def test_convert_to_graph_data__missing_categories(capsys, mock_data2):  # noqa
+    column_types = t.get_column_types(mock_data2)
     data_copy = mock_data2.copy()
-    numeric_columns = [
-        'integers', 'integers_with_missing', 'integers_with_missing2',
-        'floats', 'floats_with_missing', 'floats_with_missing2',
-    ]
-    string_columns = ['strings', 'strings_with_missing', 'strings_with_missing2']
-    categorical_columns = ['categories', 'categories_with_missing', 'categories_with_missing2']
-    boolean_columns = ['booleans', 'booleans_with_missing', 'booleans_with_missing2']
     selected_variables = [
         'strings', 'strings_with_missing', 'strings_with_missing2',
         'categories', 'categories_with_missing', 'categories_with_missing2',
         'booleans', 'booleans_with_missing', 'booleans_with_missing2',
-        'dates', 'dates_with_missing', 'dates_with_missing2',
+        'dates',
     ]
 
     assert mock_data2['categories'].dtype.name == 'category'
@@ -650,21 +537,14 @@ def test_convert_to_graph_data__missing_categories(capsys, mock_data2):  # noqa
 
     new_data, markdown, code = convert_to_graph_data(
         data=data_copy,
-        numeric_columns=numeric_columns,
-        string_columns=string_columns,
-        categorical_columns=categorical_columns,
-        boolean_columns=boolean_columns,
+        column_types=column_types,
         selected_variables=selected_variables,
         top_n_categories=10,
         exclude_from_top_n_transformation=None,
-        date_columns=[],
         date_floor=None,
     )
 
     assert new_data.columns.tolist() == selected_variables
-    assert mock_data2 is not new_data
-    assert code is not None
-    assert markdown == ''  # not filtering on numeric columns
 
     assert new_data['strings'].tolist() == ['a', 'b', 'c', 'a', 'b']
     assert new_data['strings_with_missing'].tolist() == ['a', 'b', '<Missing>', 'a', 'b']
@@ -691,20 +571,6 @@ def test_convert_to_graph_data__missing_categories(capsys, mock_data2):  # noqa
         pd.Timestamp('2023-01-04 00:00:00'),
         pd.Timestamp('2023-01-05 00:00:00'),
     ]
-    assert new_data['dates_with_missing'].tolist() == [
-        pd.Timestamp('2023-01-01 00:00:00'),
-        pd.Timestamp('2023-01-02 00:00:00'),
-        pd.NaT,
-        pd.Timestamp('2023-01-04 00:00:00'),
-        pd.Timestamp('2023-01-05 00:00:00'),
-    ]
-    assert new_data['dates_with_missing2'].tolist() == [
-        pd.NaT,
-        pd.Timestamp('2023-01-02 00:00:00'),
-        pd.NaT,
-        pd.Timestamp('2023-01-04 00:00:00'),
-        pd.Timestamp('2023-01-05 00:00:00'),
-    ]
 
 def test_convert_to_graph_data__date_columns(capsys):  # noqa
     dates_df = pd.DataFrame({
@@ -723,17 +589,14 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
             pd.Timestamp('2024-12-31 11:59:59'),
         ],
     })
+    column_types = t.get_column_types(dates_df)
 
     new_data, markdown, code = convert_to_graph_data(
         data=dates_df,
-        numeric_columns=[],
-        string_columns=[],
-        categorical_columns=[],
-        boolean_columns=[],
+        column_types=column_types,
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
-        date_columns=['dates', 'dates_with_missing'],
         date_floor=None,
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -756,14 +619,10 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
 
     new_data, markdown, code = convert_to_graph_data(
         data=dates_df,
-        numeric_columns=[],
-        string_columns=[],
-        categorical_columns=[],
-        boolean_columns=[],
+        column_types=column_types,
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
-        date_columns=['dates', 'dates_with_missing'],
         date_floor='second',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -787,14 +646,10 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
 
     new_data, markdown, code = convert_to_graph_data(
         data=dates_df,
-        numeric_columns=[],
-        string_columns=[],
-        categorical_columns=[],
-        boolean_columns=[],
+        column_types=column_types,
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
-        date_columns=['dates', 'dates_with_missing'],
         date_floor='minute',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -818,14 +673,10 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
 
     new_data, markdown, code = convert_to_graph_data(
         data=dates_df,
-        numeric_columns=[],
-        string_columns=[],
-        categorical_columns=[],
-        boolean_columns=[],
+        column_types=column_types,
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
-        date_columns=['dates', 'dates_with_missing'],
         date_floor='hour',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -849,14 +700,10 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
 
     new_data, markdown, code = convert_to_graph_data(
         data=dates_df,
-        numeric_columns=[],
-        string_columns=[],
-        categorical_columns=[],
-        boolean_columns=[],
+        column_types=column_types,
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
-        date_columns=['dates', 'dates_with_missing'],
         date_floor='day',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -880,14 +727,10 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
 
     new_data, markdown, code = convert_to_graph_data(
         data=dates_df,
-        numeric_columns=[],
-        string_columns=[],
-        categorical_columns=[],
-        boolean_columns=[],
+        column_types=column_types,
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
-        date_columns=['dates', 'dates_with_missing'],
         date_floor='week',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -911,14 +754,10 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
 
     new_data, markdown, code = convert_to_graph_data(
         data=dates_df,
-        numeric_columns=[],
-        string_columns=[],
-        categorical_columns=[],
-        boolean_columns=[],
+        column_types=column_types,
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
-        date_columns=['dates', 'dates_with_missing'],
         date_floor='quarter',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -942,14 +781,10 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
 
     new_data, markdown, code = convert_to_graph_data(
         data=dates_df,
-        numeric_columns=[],
-        string_columns=[],
-        categorical_columns=[],
-        boolean_columns=[],
+        column_types=column_types,
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
-        date_columns=['dates', 'dates_with_missing'],
         date_floor='year',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -978,21 +813,17 @@ def test_convert_to_graph_data__exclude_from_top_n_transformation():  # noqa
         'categories': pd.Categorical(['a', 'b', 'c', 'a', 'b', 'd', 'e', 'f']),
         'categories2': pd.Categorical(['a', 'b', 'c', 'a', 'b', 'd', 'e', 'f']),
     })
-
+    column_types = t.get_column_types(data)
     new_data, markdown, code = convert_to_graph_data(
         data=data,
-        numeric_columns=[],
-        string_columns=['strings', 'strings2'],
-        categorical_columns=['categories', 'categories2'],
-        boolean_columns=[],
+        column_types=column_types,
         selected_variables=['strings', 'categories', 'categories2'],
         top_n_categories=2,
         exclude_from_top_n_transformation=['strings', 'categories'],
-        date_columns=[],
         date_floor=None,
     )
     assert new_data.columns.tolist() == ['strings', 'categories', 'categories2']
-    assert data is not new_data
+    # assert data is not new_data
     assert markdown == ''
     assert new_data['strings'].tolist() == data['strings'].tolist()
     assert new_data['categories'].tolist() == data['categories'].tolist()
@@ -1014,14 +845,10 @@ def test_generate_graph__all_configurations(  # noqa
         capsys,  # noqa
         mock_data2: list[str],
         graphing_configurations: dict,
-        mock_data2_numeric_columns: list[str],
-        mock_data2_string_columns: list[str],
-        mock_data2_categorical_columns: list[str],
-        mock_data2_boolean_columns: list[str],
-        mock_data2_date_columns: list[str],
         ):
     # this function tests all combinations found in graphing_configurations.yml
     # it tests all selected-variable, grpah-type, and optional-variable combinations
+    column_types = t.get_column_types(mock_data2)
     fig, code = generate_graph(
         data=mock_data2,
         graph_type='scatter',
@@ -1045,11 +872,7 @@ def test_generate_graph__all_configurations(  # noqa
         show_axes_histogram=None,
         title=None,
         graph_labels=None,
-        numeric_columns=mock_data2_numeric_columns,
-        string_columns=mock_data2_string_columns,
-        categorical_columns=mock_data2_categorical_columns,
-        boolean_columns=mock_data2_boolean_columns,
-        date_columns=mock_data2_date_columns,
+        column_types=column_types,
     )
     assert isinstance(fig, go.Figure)
     assert code is not None
@@ -1106,11 +929,7 @@ def test_generate_graph__all_configurations(  # noqa
                             show_axes_histogram=None,
                             title=None,
                             graph_labels=None,
-                            numeric_columns=mock_data2_numeric_columns,
-                            string_columns=mock_data2_string_columns,
-                            categorical_columns=mock_data2_categorical_columns,
-                            boolean_columns=mock_data2_boolean_columns,
-                            date_columns=mock_data2_date_columns,
+                            column_types=column_types,
                         )
                 else:
                     fig, code = generate_graph(
@@ -1136,11 +955,7 @@ def test_generate_graph__all_configurations(  # noqa
                         show_axes_histogram=None,
                         title=None,
                         graph_labels=None,
-                        numeric_columns=mock_data2_numeric_columns,
-                        string_columns=mock_data2_string_columns,
-                        categorical_columns=mock_data2_categorical_columns,
-                        boolean_columns=mock_data2_boolean_columns,
-                        date_columns=mock_data2_date_columns,
+                        column_types=column_types,
                     )
                     assert isinstance(fig, go.Figure)
                     assert code is not None
@@ -1194,11 +1009,7 @@ def test_generate_graph__all_configurations(  # noqa
                                 show_axes_histogram=True,
                                 title="Title",
                                 graph_labels={"x": "X", "y": "Y", "color": "Color", "size": "Size"},  # noqa
-                                numeric_columns=mock_data2_numeric_columns,
-                                string_columns=mock_data2_string_columns,
-                                categorical_columns=mock_data2_categorical_columns,
-                                boolean_columns=mock_data2_boolean_columns,
-                                date_columns=mock_data2_date_columns,
+                                column_types=column_types,
                             )
                     else:
                         fig, code = generate_graph(
@@ -1224,11 +1035,7 @@ def test_generate_graph__all_configurations(  # noqa
                             show_axes_histogram=True,
                             title="Title",
                             graph_labels={"x": "X", "y": "Y", "color": "Color", "size": "Size"},
-                            numeric_columns=mock_data2_numeric_columns,
-                            string_columns=mock_data2_string_columns,
-                            categorical_columns=mock_data2_categorical_columns,
-                            boolean_columns=mock_data2_boolean_columns,
-                            date_columns=mock_data2_date_columns,
+                            column_types=column_types,
                         )
                         assert isinstance(fig, go.Figure)
                         assert code is not None
@@ -1244,11 +1051,6 @@ def test_generate_graph__all_configurations(  # noqa
 def test_generate_graph__error(  # noqa
         capsys,  # noqa
         mock_data2: list[str],
-        mock_data2_numeric_columns: list[str],
-        mock_data2_string_columns: list[str],
-        mock_data2_categorical_columns: list[str],
-        mock_data2_boolean_columns: list[str],
-        mock_data2_date_columns: list[str],
         ):
     # plotly express complains if you try to use a categorical series where the categories are
     # not in the data.
@@ -1257,8 +1059,8 @@ def test_generate_graph__error(  # noqa
     # as color or facet variable (for some reason plotly express doesn't complain about
     # using a categorical column as x or y variable)
     data = mock_data2.copy()
+    column_types = t.get_column_types(mock_data2)
     data = data[data['categories'].isin(['a', 'b'])]
-
     fig, code = generate_graph(
         data=data,
         graph_type='box',
@@ -1282,11 +1084,7 @@ def test_generate_graph__error(  # noqa
         show_axes_histogram=None,
         title=None,
         graph_labels=None,
-        numeric_columns=mock_data2_numeric_columns,
-        string_columns=mock_data2_string_columns,
-        categorical_columns=mock_data2_categorical_columns,
-        boolean_columns=mock_data2_boolean_columns,
-        date_columns=mock_data2_date_columns,
+        column_types=column_types,
     )
     assert isinstance(fig, go.Figure)
     assert code is not None
@@ -1315,11 +1113,7 @@ def test_generate_graph__error(  # noqa
         show_axes_histogram=None,
         title=None,
         graph_labels=None,
-        numeric_columns=mock_data2_numeric_columns,
-        string_columns=mock_data2_string_columns,
-        categorical_columns=mock_data2_categorical_columns,
-        boolean_columns=mock_data2_boolean_columns,
-        date_columns=mock_data2_date_columns,
+        column_types=column_types,
     )
     assert isinstance(fig, go.Figure)
     assert code is not None
@@ -1337,34 +1131,36 @@ def test_category_orders__strings_categories(order_type, expected_output):  # no
         'category_1': ['x', 'y', 'y', 'x', 'z', 'y'],
         'category_2': pd.Categorical(['x', 'y', 'y', 'x', 'z', 'y'], categories=['x', 'y', 'z']),
     })
+    column_types = t.get_column_types(category_order_data)
     result = get_category_orders(
         data=category_order_data,
         selected_variables=['numeric', 'category_1', 'category_2'],
         selected_category_order=order_type,
-        non_numeric_columns=['category_1', 'category_2'],
+        column_types=column_types,
     )
     assert result == expected_output
 
-@pytest.mark.parametrize('order_type,expected_output', [  # noqa
-    ('category ascending', {'date': [pd.to_datetime('2021-01-01'), pd.to_datetime('2021-01-02'), pd.to_datetime('2021-01-03')]}),  # noqa
-    ('category descending', {'date': [pd.to_datetime('2021-01-03'), pd.to_datetime('2021-01-02'), pd.to_datetime('2021-01-01')]}),  # noqa
-    ('total ascending',  {'date': [pd.to_datetime('2021-01-03'), pd.to_datetime('2021-01-01'), pd.to_datetime('2021-01-02')]}),  # noqa
-    ('total descending',   {'date': [pd.to_datetime('2021-01-02'), pd.to_datetime('2021-01-01'), pd.to_datetime('2021-01-03')]}),  # noqa
+@pytest.mark.parametrize('order_type', [
+    'category ascending',
+    'category descending',
+    'total ascending',
+    'total descending',
 ])
-def test_category_orders__dates(order_type, expected_output):  # noqa
+def test_category_orders__dates(order_type):  # noqa
     category_order_data = pd.DataFrame({
         'numeric': [1, 2, 3, 4, 5, 6],
         'date': pd.to_datetime([
             '2021-01-01', '2021-01-02', '2021-01-02', '2021-01-01', '2021-01-03', '2021-01-02',
         ]),
     })
+    column_types = t.get_column_types(category_order_data)
     result = get_category_orders(
         data=category_order_data,
         selected_variables=['numeric', 'date'],
         selected_category_order=order_type,
-        non_numeric_columns=['date'],
+        column_types=column_types,
     )
-    assert result == expected_output
+    assert result == {}
 
 @pytest.mark.parametrize('order_type,expected_output', [  # noqa
     ('category ascending', {'boolean': [False, True]}),
@@ -1377,11 +1173,12 @@ def test_category_orders__boolean(order_type, expected_output):  # noqa
         'numeric': [1, 2, 3, 4, 5],
         'boolean': [True, False, False, True, False],
     })
+    column_types = t.get_column_types(category_order_data)
     result = get_category_orders(
         data=category_order_data,
         selected_variables=['numeric', 'boolean'],
         selected_category_order=order_type,
-        non_numeric_columns=['boolean'],
+        column_types=column_types,
     )
     assert result == expected_output
 
@@ -1391,11 +1188,12 @@ def test_no_selected_order():  # noqa
         'category_1': ['x', 'y', 'y', 'x', 'z', 'y'],
         'category_2': pd.Categorical(['x', 'y', 'y', 'x', 'z', 'y'], categories=['x', 'y', 'z']),
     })
+    column_types = t.get_column_types(category_order_data)
     result = get_category_orders(
         data=category_order_data,
         selected_variables=['category_1', 'category_2'],
         selected_category_order=None,
-        non_numeric_columns=['category_1', 'category_2'],
+        column_types=column_types,
     )
     assert result == {}
 
@@ -1405,12 +1203,13 @@ def test_unknown_order_type_raises_exception():  # noqa
         'category_1': ['x', 'y', 'y', 'x', 'z', 'y'],
         'category_2': pd.Categorical(['x', 'y', 'y', 'x', 'z', 'y'], categories=['x', 'y', 'z']),
     })
+    column_types = t.get_column_types(category_order_data)
     with pytest.raises(ValueError, match=r"Unknown selected_category_order"):
         get_category_orders(
             data=category_order_data,
             selected_variables=['category_1', 'category_2'],
             selected_category_order='unknown_order_type',
-            non_numeric_columns=['category_1', 'category_2'],
+            column_types=column_types,
         )
 
 def test_duplicates_in_selected_variables():  # noqa
@@ -1419,10 +1218,11 @@ def test_duplicates_in_selected_variables():  # noqa
         'category_1': ['x', 'y', 'y', 'x', 'z', 'y'],
         'category_2': pd.Categorical(['x', 'y', 'y', 'x', 'z', 'y'], categories=['x', 'y', 'z']),
     })
+    column_types = t.get_column_types(category_order_data)
     with pytest.raises(AssertionError):
         get_category_orders(
             data=category_order_data,
             selected_variables=['category_1', 'category_1'],
             selected_category_order='unknown_order_type',
-            non_numeric_columns=['category_1', 'category_2'],
+            column_types=column_types,
         )

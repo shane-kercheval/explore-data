@@ -2,7 +2,7 @@
 from datetime import datetime, date, timedelta
 import numpy as np
 import pandas as pd
-import helpsk.pandas as hp
+import source.library.types as t
 
 
 def is_series_datetime(series: pd.Series) -> bool:
@@ -142,7 +142,11 @@ def create_random_dataframe(num_rows: int, sporadic_missing: bool = False) -> pd
     return fake_df
 
 
-def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataFrame, str]:
+def filter_dataframe(
+        data: pd.DataFrame,
+        filters: dict | None,
+        column_types: dict,
+        ) -> tuple[pd.DataFrame, str]:
     """
     Filter a dataframe based on a dictionary. Each key is a column name and the value is the
     value(s) (e.g. value or list) to filter on.
@@ -167,9 +171,8 @@ def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataF
     list. `np.nan` values can be included in the list to return missing values.
     """
     if not filters:
-        return data.copy(), ''
+        return data, ''
 
-    # graph_data = data.copy()
     code = 'def filter_data(data: pd.DataFrame) -> pd.DataFrame:\n'
     code += '    graph_data = data.copy()\n'
 
@@ -177,24 +180,19 @@ def filter_dataframe(data: pd.DataFrame, filters: dict | None) -> tuple[pd.DataF
         assert column in data.columns, f"Column `{column}` not found in `data`"
         code += f"    # Filter on `{column}`\n"
         # convert the series to a datetime if possible
-        series, converted_to_datetime = series_to_datetime(data[column].copy())
-        if converted_to_datetime:
+        if column_types[column] == t.DATE:
             assert isinstance(values, tuple)
             code += f"    series = pd.to_datetime(graph_data['{column}']).dt.date\n"
             code += f"    start_date = pd.to_datetime('{values[0]}').date()\n"
             code += f"    end_date = pd.to_datetime('{values[1]}').date() + pd.Timedelta(days=1)\n"
             code += "    graph_data = graph_data[(series >= start_date) & (series < end_date)]\n"
-        elif (
-            hp.is_series_bool(series)
-            or series.dtype == 'object'
-            or series.dtype.name == 'category'
-            ):
+        elif column_types[column] in t.DISCRETE_TYPES:
             assert isinstance(values, list), f"Values for column `{column}` must be a list not `{type(values)}`"  # noqa
             # np.nan values are converted to 'nan' strings, but we need 'np.nan' string for the
             # code to work
             values = str(values).replace('nan', 'np.nan')  # noqa
             code += f"    graph_data = graph_data[graph_data['{column}'].isin({values})]\n"
-        elif pd.api.types.is_numeric_dtype(series):
+        elif column_types[column] == t.NUMERIC:
             assert isinstance(values, tuple)
             code += f"    graph_data = graph_data[graph_data['{column}'].between({values[0]}, {values[1]})]\n"  # noqa
         else:

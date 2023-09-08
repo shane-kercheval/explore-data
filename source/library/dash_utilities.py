@@ -2,9 +2,14 @@
 import textwrap
 import numpy as np
 import pandas as pd
-from source.library.utilities import filter_dataframe, series_to_datetime, to_date
+from source.library.utilities import filter_dataframe, to_date
+import source.library.types as t
 import helpsk.pandas as hp
 import plotly.graph_objs as go
+
+
+MISSING = '<Missing>'
+OTHER = '<Other>'
 
 
 # New Error type for invalid configuration selected
@@ -40,6 +45,7 @@ def values_to_dropdown_options(values: list[str]) -> list[dict]:
 
 def filter_data_from_ui_control(  # noqa: PLR0915
         filters: dict,
+        column_types: dict,
         data: pd.DataFrame) -> tuple[pd.DataFrame, str, str]:
     """
     Filters data based on the selected columns and values. Returns the filtered data, markdown
@@ -66,19 +72,16 @@ def filter_data_from_ui_control(  # noqa: PLR0915
 
     if not filters:
         log("No filters applied.")
-        return data.copy(), "No filters applied.", ""
+        return data, "No filters applied.", ""
 
     converted_filters = {}
     markdown_text = "##### Manual filters applied:  \n"
 
     # this for loop builds the filters dictionary and the markdown text
     for column, value in filters.items():
-        log(f"filtering on `{column}` with `{value}`")
-
-        series, _ = series_to_datetime(data[column])
-        log_variable('series.dtype', series.dtype)
-        if pd.api.types.is_datetime64_any_dtype(series):
-            series = series.dt.date
+        log(f"filtering on `{column}` ({t.get_type(column, column_types)}) with `{value}`")
+        if t.is_date(column, column_types):
+            series = pd.to_datetime(data[column]).dt.date
             assert isinstance(value, list)
             assert len(value) == 2
             start_date = to_date(value[0])
@@ -89,68 +92,52 @@ def filter_data_from_ui_control(  # noqa: PLR0915
             if num_missing > 0:
                 markdown_text += f"; `{num_missing:,}` missing values removed"
             markdown_text += "  \n"
-        elif hp.is_series_bool(series):
-            # e.g. [True, False, '<Missing>']
+        elif t.is_boolean(column, column_types):
+            # e.g. [True, False, MISSING]
             assert isinstance(value, list)
             filters_list = [
                 x.lower() == 'true'
                 for x in value
-                if x != '<Missing>' and x is not None
+                if x != MISSING and x is not None
             ]
-            if '<Missing>' in value:
+            if MISSING in value:
                 filters_list.extend([np.nan, None])
             log_variable('filters_list', filters_list)
             converted_filters[column] = filters_list
             markdown_text += f"  - `{column}` in `{filters_list}`  \n"
-        elif series.dtype in ('object', 'category'):
+        elif t.get_type(column, column_types) in {t.STRING, t.CATEGORICAL}:
             assert isinstance(value, list)
-            filters_list = [x for x in value if x != '<Missing>' and x is not None]
-            if '<Missing>' in value:
+            filters_list = [x for x in value if x != MISSING and x is not None]
+            if MISSING in value:
                 filters_list.extend([np.nan, None])
             log_variable('filters_list', filters_list)
             converted_filters[column] = filters_list
             markdown_text += f"  - `{column}` in `{filters_list}`  \n"
-        elif pd.api.types.is_numeric_dtype(series):
+        elif t.is_numeric(column, column_types):
             assert isinstance(value, list)
             assert len(value) == 2
             min_value = value[0]
             max_value = value[1]
             converted_filters[column] = (min_value, max_value)
             markdown_text += f"  - `{column}` between `{min_value}` and `{max_value}`"
-            num_missing = series.isna().sum()
+            num_missing = data[column].isna().sum()
             if num_missing > 0:
                 markdown_text += f"; `{num_missing:,}` missing values removed"
             markdown_text += "  \n"
         else:
-            raise ValueError(f"Unknown dtype for column `{column}`: {data[column].dtype}")
+            raise ValueError(f"Unknown dtype for column `{column}` ({t.get_type(column, column_types)}): {data[column].dtype}")  # noqa
 
-    filtered_data, code = filter_dataframe(data=data, filters=converted_filters)
+    filtered_data, code = filter_dataframe(
+        data=data,
+        filters=converted_filters,
+        column_types=column_types,
+    )
     rows_removed = len(data) - len(filtered_data)
     markdown_text += f"  \n`{len(filtered_data):,}` rows remaining after manual filtering; `{rows_removed:,}` (`{rows_removed / len(data):.1%}`) rows removed  \n"  # noqa
     log(f"{len(data):,} rows before after filtering")
     log(f"{len(filtered_data):,} rows remaining after filtering")
 
     return filtered_data, markdown_text, code
-
-
-def get_variable_type(variable: str | None, options: dict) -> str | None:
-    """
-    Takes a variable name and returns the type of the variable based on the options.
-    The type will be one of 'numeric', 'date', 'categorical', 'string', or 'boolean', which will
-    be associated with the keys in `options`. The values in option are lists of column types that
-    match the key. For example, `options['numeric']` is a list of all numeric columns in the
-    dataset.
-    If the variable is None, then None is returned. If the variable is not found in the options,
-    then an error is raised.
-    """
-    if variable is None:
-        return None
-
-    for key, value in options.items():
-        if variable in value:
-            return key
-
-    raise ValueError(f"Unknown dtype for column `{variable}`")
 
 
 def get_graph_config(
@@ -213,15 +200,10 @@ def get_graph_config(
 
 def get_columns_from_config(
         allowed_types: list[str],
-        columns_by_type: dict,
-        all_columns: list[str],
+        column_types: dict,
     ) -> list[str]:
     """Get the columns that match the variable type allowed by the configuration."""
-    allowed_columns = []
-    for allowed_type in allowed_types:
-        allowed_columns.extend(columns_by_type[allowed_type])
-    # return the same order as the all_columns list
-    return [c for c in all_columns if c in allowed_columns]
+    return [c for c, t in column_types.items() if t in allowed_types]
 
 
 def create_title_and_labels(  # noqa
@@ -276,11 +258,7 @@ def create_title_and_labels(  # noqa
 
 def convert_to_graph_data(  # noqa: PLR0912, PLR0915
         data: pd.DataFrame,
-        numeric_columns: list[str],
-        string_columns: list[str],
-        categorical_columns: list[str],
-        boolean_columns: list[str],
-        date_columns: list[str],
+        column_types: dict,
         selected_variables: list[str],
         top_n_categories: int,
         exclude_from_top_n_transformation: list[str],
@@ -288,14 +266,14 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
     ) -> tuple[pd.DataFrame, str, str]:
     """
     Numeric columns are filtered by removing missing values.
-    Missing values in non_numeric columns are replaced with '<Missing>'.
+    Missing values in non_numeric columns are replaced with MISSING.
     The values non-numeric columns are updated to the top n categories. Other values are replaced
     with '<Other>'.
     """
-    top_n_categories_code = textwrap.dedent("""
+    top_n_categories_code = textwrap.dedent(f"""
     def top_n_categories(series: pd.Series, n: int):
         top_n_values = series.value_counts().nlargest(n).index
-        return series.where(series.isin(top_n_values), '<Other>')
+        return series.where(series.isin(top_n_values), '{OTHER}')
 
     """)
     assert isinstance(selected_variables, list)
@@ -305,22 +283,22 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
     code = ""
     data = data[selected_variables].copy()
     # TODO: need to convert code to string and execute string
-    if any(x in numeric_columns for x in selected_variables):
+    if any(t.is_numeric(x, column_types) for x in selected_variables):
         markdown = "##### Automatic filters applied:  \n"
     else:
         markdown = ""
 
     for variable in selected_variables:
-        # fill missing values for string, categorical, and boolean columns with '<Missing>'
-        if variable in string_columns or variable in categorical_columns or variable in boolean_columns:  # noqa
+        # fill missing values for string, categorical, and boolean columns with MISSING
+        if t.is_discrete(variable, column_types):
             log(f"filling na for {variable}")
             if data[variable].dtype.name == 'category':
                 if data[variable].isna().any():
-                    data[variable] = data[variable].cat.add_categories('<Missing>').fillna('<Missing>')  # noqa
-                    code += f"graph_data['{variable}'] = graph_data['{variable}'].cat.add_categories('<Missing>').fillna('<Missing>')\n"  # noqa
+                    data[variable] = data[variable].cat.add_categories(MISSING).fillna(MISSING)  # noqa
+                    code += f"graph_data['{variable}'] = graph_data['{variable}'].cat.add_categories('{MISSING}').fillna(MISSING)\n"  # noqa
             else:
-                data[variable] = data[variable].fillna('<Missing>')
-                code += f"graph_data['{variable}'] = graph_data['{variable}'].fillna('<Missing>')\n"  # noqa
+                data[variable] = data[variable].fillna(MISSING)
+                code += f"graph_data['{variable}'] = graph_data['{variable}'].fillna('{MISSING}')\n"  # noqa
 
             exclude_from_top_n_transformation = exclude_from_top_n_transformation or []
             if top_n_categories and variable not in exclude_from_top_n_transformation:
@@ -330,10 +308,10 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
                 data[variable] = hp.top_n_categories(
                     categorical=data[variable],
                     top_n=top_n_categories,
-                    other_category='<Other>',
+                    other_category=OTHER,
                 )
 
-        if date_floor and variable in date_columns:
+        if date_floor and t.is_date(variable, column_types):
             # convert the date to the specified date_floor
             series = pd.to_datetime(data[variable], errors='coerce')
             code += f"series = pd.to_datetime(graph_data['{variable}'], errors='coerce')\n"
@@ -364,15 +342,15 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
             else:
                 raise ValueError(f"Unknown date_floor: {date_floor}")
 
-        if variable in numeric_columns or variable in date_columns:
+        if t.is_continuous(variable, column_types):
             log(f"removing missing values for - {variable}")
             num_values_removed = data[variable].isna().sum()
             if num_values_removed > 0:
                 markdown += f"- `{num_values_removed:,}` missing values have been removed from `{variable}`  \n"  # noqa
-                code += f"graph_data = graph_data[graph_data['{variable}'].notna()].copy()\n"
+                code += f"graph_data = graph_data[graph_data['{variable}'].notna()]\n"
                 data = data[data[variable].notna()]
 
-    if any(x in numeric_columns for x in selected_variables):
+    if any(t.is_numeric(x, column_types) for x in selected_variables):
         rows_remaining = len(data)
         rows_removed = original_num_rows - rows_remaining
         markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / original_num_rows:.1%}`) rows removed from automatic filtering\n"  # noqa
@@ -385,7 +363,7 @@ def get_category_orders(
         data: pd.DataFrame,
         selected_variables: list[str],
         selected_category_order: str | None,
-        non_numeric_columns: list[str],
+        column_types: dict,
     ) -> dict:
     """
     Returns a dictionary of category orders for each categorical column. The dictionary keys are
@@ -403,7 +381,7 @@ def get_category_orders(
     category_orders = {}
     if selected_category_order:
         for variable in selected_variables:
-            if variable in non_numeric_columns:
+            if t.is_discrete(variable, column_types):
                 if 'category' in selected_category_order:
                     reverse = 'ascending' not in selected_category_order
                     categories = sorted(
@@ -446,11 +424,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         show_axes_histogram: bool | None,
         title: str | None,
         graph_labels: dict | None,
-        numeric_columns: list[str],
-        string_columns: list[str],
-        categorical_columns: list[str],
-        boolean_columns: list[str],
-        date_columns: list[str],
+        column_types: dict,
     ) -> tuple[go.Figure, str]:
     """
     Generate a graph based on the selected variables. Returns the graph and the code.
@@ -466,7 +440,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         selected_variables = list({x_variable, y_variable, z_variable, color_variable, size_variable, facet_variable}),  # noqa
         selected_category_order=selected_category_order,
         # TODO: dates?
-        non_numeric_columns=string_columns + categorical_columns + boolean_columns,
+        column_types=column_types,
     )
 
     def remove_unused_categories(variable: str) -> str:
@@ -575,12 +549,12 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         if not color_variable:
             bar_mode = 'relative'
 
-        if y_variable and y_variable in numeric_columns:
+        if t.is_numeric(y_variable, column_types):
             hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
         else:
             hist_func_agg = None
 
-        if x_variable and x_variable in date_columns:
+        if t.is_date(x_variable, column_types):
             if n_bins_month:
                 n_bins = None
                 n_bins_month = f"'M{n_bins_month}'"
@@ -610,7 +584,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         )
         """)
         if (
-            (x_variable in numeric_columns or x_variable in date_columns)
+            t.is_continuous(x_variable, column_types)
             and bar_mode
             and bar_mode != 'group'
             ):
@@ -661,7 +635,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         """)
     elif graph_type == 'heatmap':
 
-        if z_variable and z_variable in numeric_columns:
+        if t.is_numeric(z_variable, column_types):
             hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
         else:
             hist_func_agg = None

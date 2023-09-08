@@ -22,12 +22,12 @@ from source.library.dash_ui import (
     CLASS__GRAPH_PANEL_SECTION,
 )
 from source.library.dash_utilities import (
+    MISSING,
     InvalidConfigurationError,
     convert_to_graph_data,
     create_title_and_labels,
     filter_data_from_ui_control,
     generate_graph,
-    get_variable_type,
     get_graph_config,
     get_columns_from_config,
     log,
@@ -35,12 +35,8 @@ from source.library.dash_utilities import (
     log_function,
     log_variable,
 )
-from source.library.utilities import (
-    create_random_dataframe,
-    dataframe_columns_to_datetime,
-    is_series_datetime,
-    series_to_datetime,
-)
+import source.library.types as t
+from source.library.utilities import create_random_dataframe
 
 from dash_extensions.enrich import DashProxy, Output, Input, State, Serverside, html, dcc, \
     ServersideOutputTransform
@@ -89,13 +85,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     dcc.Store(id='filtered_data'),
     dcc.Store(id='filter_columns_cache'),
     dcc.Store(id='generated_filter_code'),
-    dcc.Store(id='all_columns'),
-    dcc.Store(id='numeric_columns'),
-    dcc.Store(id='non_numeric_columns'),
-    dcc.Store(id='date_columns'),
-    dcc.Store(id='categorical_columns'),
-    dcc.Store(id='string_columns'),
-    dcc.Store(id='boolean_columns'),
+    dcc.Store(id='column_types'),
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
             dcc.Loading(type="default", children=[
@@ -617,13 +607,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('non_numeric_summary_table', 'data'),
     Output('original_data', 'data'),
     Output('filtered_data', 'data', allow_duplicate=True),
-    Output('all_columns', 'data'),
-    Output('numeric_columns', 'data'),
-    Output('non_numeric_columns', 'data'),
-    Output('date_columns', 'data'),
-    Output('categorical_columns', 'data'),
-    Output('string_columns', 'data'),
-    Output('boolean_columns', 'data'),
+    Output('column_types', 'data'),
     Input('load_random_data_button', 'n_clicks'),
     Input('load_from_url_button', 'n_clicks'),
     Input('upload-data', 'contents'),
@@ -651,13 +635,6 @@ def load_data(  # noqa
     non_numeric_summary = None
     original_data = None
     filtered_data = None
-    all_columns = None
-    numeric_columns = None
-    non_numeric_columns = None
-    date_columns = None
-    categorical_columns = None
-    string_columns = None
-    boolean_columns = None
 
     if callback_context.triggered:
         triggered = callback_context.triggered[0]['prop_id']
@@ -696,27 +673,9 @@ def load_data(  # noqa
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
 
-        # i can't convert columns to datetime here because the dataframe gets converted to a dict
-        # and loses the converted datetime dtypes
-        # but i need to still get the columns that should be treated as dates
-        date_columns = [x for x in data.columns.tolist() if is_series_datetime(data[x])]
-        all_columns = data.columns.tolist()
-        numeric_columns = hp.get_numeric_columns(data)
-        non_numeric_columns = hp.get_non_numeric_columns(data)
-        categorical_columns = hp.get_categorical_columns(data)
-        string_columns = [x for x in hp.get_string_columns(data) if x not in date_columns]
-        boolean_columns = [x for x in all_columns if hp.is_series_bool(data[x])]
-        # ensure all columns lists are mutually exclusive
-        sets = [set(lst) for lst in [numeric_columns, date_columns, categorical_columns, string_columns, boolean_columns]]  # noqa
-        assert sum(len(s) for s in sets) == len(set.union(*sets))
-
-        log_variable('all_columns', all_columns)
-        log_variable('numeric_columns', numeric_columns)
-        log_variable('non_numeric_columns', non_numeric_columns)
-        log_variable('date_columns', date_columns)
-        log_variable('categorical_columns', categorical_columns)
-        log_variable('string_columns', string_columns)
-        log_variable('boolean_columns', boolean_columns)
+        column_types = t.get_column_types(data)
+        log_variable('column_types', column_types)
+        log_variable('column_types', column_types)
 
         log('creating numeric summary')
         numeric_summary = hp.numeric_summary(data, return_style=False)
@@ -738,13 +697,13 @@ def load_data(  # noqa
         else:
             non_numeric_summary = None
 
-        x_variable_dropdown = all_columns
-        y_variable_dropdown = all_columns
-        filter_columns_dropdown = all_columns
+        x_variable_dropdown = data.columns.to_list()
+        y_variable_dropdown = x_variable_dropdown
+        filter_columns_dropdown = x_variable_dropdown
         table_uploaded_data = [
-            dcc.Markdown("#### Sample of Uploaded Data (first 500 rows):"),
+            dcc.Markdown("#### Sample of Data (first 500 rows):"),
             dash_table.DataTable(
-                id='adsf',
+                id='data_sample_table',
                 data=data.iloc[0:500].to_dict('records'),
                 page_size=20,
                 style_header={
@@ -753,7 +712,7 @@ def load_data(  # noqa
             ),
         ]
         original_data = data
-        filtered_data = data.copy()
+        filtered_data = data
 
     return (
         x_variable_dropdown,
@@ -768,13 +727,7 @@ def load_data(  # noqa
         non_numeric_summary,
         Serverside(original_data),
         Serverside(filtered_data),
-        all_columns,
-        numeric_columns,
-        non_numeric_columns,
-        date_columns,
-        categorical_columns,
-        string_columns,
-        boolean_columns,
+        column_types,
     )
 
 
@@ -785,16 +738,19 @@ def load_data(  # noqa
     Input('filter-apply-button', 'n_clicks'),
     State('filter_columns_cache', 'data'),
     State('original_data', 'data'),
+    State('column_types', 'data'),
     prevent_initial_call=True,
 )
 def filter_data(
         n_clicks: int,  # noqa: ARG001
         filter_columns_cache: dict,
         original_data: pd.DataFrame,
+        column_types: dict,
         ) -> dict:
     """Filter the data based on the user's selections."""
     filtered_data, markdown_text, code = filter_data_from_ui_control(
         filters=filter_columns_cache,
+        column_types=column_types,
         data=original_data,
     )
     return Serverside(filtered_data), markdown_text, code
@@ -856,13 +812,7 @@ def filter_data(
     Input('filtered_data', 'data'),
     Input('labels-apply-button', 'n_clicks'),
     State('generated_filter_code', 'data'),
-    State('all_columns', 'data'),
-    State('numeric_columns', 'data'),
-    State('non_numeric_columns', 'data'),
-    State('date_columns', 'data'),
-    State('categorical_columns', 'data'),
-    State('string_columns', 'data'),
-    State('boolean_columns', 'data'),
+    State('column_types', 'data'),
     State('title_input', 'value'),
     State('subtitle_input', 'value'),
     State('x_axis_label_input', 'value'),
@@ -907,13 +857,7 @@ def update_controls_and_graph(  # noqa
             data: pd.DataFrame,
             labels_apply_button: int,  # noqa: ARG001
             generated_filter_code: str,
-            all_columns: list[str],
-            numeric_columns: list[str],
-            non_numeric_columns: list[str],
-            date_columns: list[str],
-            categorical_columns: list[str],
-            string_columns: list[str],
-            boolean_columns: list[str],
+            column_types: dict,
             title_input: str | None,
             subtitle_input: str | None,
             x_axis_label_input: str | None,
@@ -948,6 +892,8 @@ def update_controls_and_graph(  # noqa
     log_variable('graph_types', graph_types)
     log_variable('graph_type', graph_type)
     log_variable('sort_categories', sort_categories)
+    log_variable('date_floor', date_floor)
+    log_variable('column_types', column_types)
     log_variable('title_input', title_input)
     log_variable('subtitle_input', subtitle_input)
     log_variable('x_axis_label_input', x_axis_label_input)
@@ -955,12 +901,6 @@ def update_controls_and_graph(  # noqa
     log_variable('color_label_input', color_label_input)
     log_variable('size_label_input', size_label_input)
     log_variable('facet_label_input', facet_label_input)
-    log_variable('numeric_columns', numeric_columns)
-    log_variable('non_numeric_columns', non_numeric_columns)
-    log_variable('date_columns', date_columns)
-    log_variable('categorical_columns', categorical_columns)
-    log_variable('string_columns', string_columns)
-    log_variable('boolean_columns', boolean_columns)
 
     graph_types = [x['value'] for x in graph_types]
     fig = {}
@@ -985,18 +925,11 @@ def update_controls_and_graph(  # noqa
             # update graph options
             ####
             # get current configuration based on graph_options.yml (selected_variables)
-            columns_by_type = {
-                'numeric': numeric_columns,
-                'date': date_columns,
-                'string': string_columns,
-                'categorical': categorical_columns,
-                'boolean': boolean_columns,
-            }
             matching_graph_config = get_graph_config(
                 configurations=GRAPH_CONFIGS['configurations'],
-                x_variable=get_variable_type(variable=x_variable, options=columns_by_type),
-                y_variable=get_variable_type(variable=y_variable, options=columns_by_type),
-                z_variable=get_variable_type(variable=z_variable, options=columns_by_type),
+                x_variable=t.get_type(x_variable, column_types),
+                y_variable=t.get_type(y_variable, column_types),
+                z_variable=t.get_type(z_variable, column_types),
             )
             log_variable('matching_graph_config', matching_graph_config)
             possible_graph_types = matching_graph_config['graph_types']
@@ -1059,11 +992,7 @@ def update_controls_and_graph(  # noqa
 
             graph_data, numeric_na_removal_markdown, code = convert_to_graph_data(
                 data=data,
-                numeric_columns=numeric_columns,
-                string_columns=string_columns,
-                categorical_columns=categorical_columns,
-                boolean_columns=boolean_columns,
-                date_columns=date_columns,
+                column_types=column_types,
                 selected_variables=selected_variables,
                 top_n_categories=top_n_categories,
                 exclude_from_top_n_transformation=exclude_from_top_n_transformation,
@@ -1096,11 +1025,7 @@ def update_controls_and_graph(  # noqa
                 show_axes_histogram='Show histogram in axes' in show_axes_histogram,
                 title=title,
                 graph_labels=graph_labels,
-                numeric_columns=numeric_columns,
-                string_columns=string_columns,
-                categorical_columns=categorical_columns,
-                boolean_columns=boolean_columns,
-                date_columns=date_columns,
+                column_types=column_types,
             )
             generated_code += graph_code
 
@@ -1114,8 +1039,7 @@ def update_controls_and_graph(  # noqa
                 color_variable_div = {'display': 'block'}
                 color_variable_dropdown = get_columns_from_config(
                     allowed_types=optional_variables['color_variable']['types'],
-                    columns_by_type=columns_by_type,
-                    all_columns=all_columns,
+                    column_types=column_types,
                 )
             else:
                 color_variable_div = {'display': 'none'}
@@ -1126,8 +1050,7 @@ def update_controls_and_graph(  # noqa
                 size_variable_div = {'display': 'block'}
                 size_variable_dropdown = get_columns_from_config(
                     allowed_types=optional_variables['size_variable']['types'],
-                    columns_by_type=columns_by_type,
-                    all_columns=all_columns,
+                    column_types=column_types,
                 )
             else:
                 size_variable_div = {'display': 'none'}
@@ -1138,8 +1061,7 @@ def update_controls_and_graph(  # noqa
                 facet_variable_div = {'display': 'block'}
                 facet_variable_dropdown = get_columns_from_config(
                     allowed_types=optional_variables['facet_variable']['types'],
-                    columns_by_type=columns_by_type,
-                    all_columns=all_columns,
+                    column_types=column_types,
                 )
             else:
                 facet_variable_div = {'display': 'none'}
@@ -1240,6 +1162,7 @@ def swap_x_y_variables(n_clicks: int, x_variable: str | None, y_variable: str | 
     log_variable('n_clicks', n_clicks)
     return y_variable, x_variable
 
+
 @app.callback(
     Output('title_input', 'value'),
     Output('subtitle_input', 'value'),
@@ -1269,7 +1192,7 @@ def clear_labels(n_clicks: int) -> str:
     Input('color_variable_dropdown', 'value'),
     Input('size_variable_dropdown', 'value'),
     Input('facet_variable_dropdown', 'value'),
-    State('date_columns', 'data'),
+    State('column_types', 'data'),
     prevent_initial_call=True,
 )
 def show_date_floor_div(
@@ -1279,13 +1202,13 @@ def show_date_floor_div(
         color_variable: str | None,
         size_variable: str | None,
         facet_variable: str | None,
-        date_columns: list[str],
+        column_types: dict,
         ) -> dict:
     """Show the date floor dropdown if any of the variables are dates."""
     log_function('show_date_floor_div')
     # if any variables are in date_columns, show the date_floor dropdown
     variables = [x_variable, y_variable, z_variable, color_variable, size_variable, facet_variable]
-    if any(x in date_columns for x in variables):
+    if any(t.is_date(x, column_types) for x in variables):
         return {'display': 'block'}
     return {'display': 'none'}
 
@@ -1349,8 +1272,7 @@ def toggle_other_options_panel(n: int, is_open: bool) -> bool:
     Output('dynamic-filter-controls', 'children'),
     Input('filter_columns_dropdown', 'value'),
     State('filter_columns_cache', 'data'),
-    State('non_numeric_columns', 'data'),
-    State('numeric_columns', 'data'),
+    State('column_types', 'data'),
     State('original_data', 'data'),
 
     prevent_initial_call=True,
@@ -1358,8 +1280,7 @@ def toggle_other_options_panel(n: int, is_open: bool) -> bool:
 def update_filter_controls(
         selected_filter_columns: list[str],
         filter_columns_cache: dict,
-        non_numeric_columns: list[str],
-        numeric_columns: list[str],
+        column_types: list[str],
         data: dict) -> list[html.Div]:
     """
     Triggered when the user selects columns from the filter dropdown.
@@ -1371,38 +1292,32 @@ def update_filter_controls(
     log_function('update_filter_controls')
     log_variable('selected_filter_columns', selected_filter_columns)
     log_variable('filter_columns_cache', filter_columns_cache)
-    log_variable('non_numeric_columns', non_numeric_columns)
-    log_variable('numeric_columns', numeric_columns)
+    log_variable('non_numeric_columns', column_types)
 
     components = []
     if selected_filter_columns and data is not None and len(data) > 0:
         # data = pd.DataFrame(data)
         for column in selected_filter_columns:
-            series, _ = series_to_datetime(data[column])
-
             log(f"Creating controls for `{column}`")
             value = []
             if filter_columns_cache and column in filter_columns_cache:
                 value = filter_columns_cache[column]
                 log(f"found `{column}` in filter_columns_cache with value `{value}`")
 
-            # check if column is datetime
-            # if data[column].dtype == 'datetime64[ns]':
-            log_variable('series.dtype', series.dtype)
-            if pd.api.types.is_datetime64_any_dtype(series):
+            if t.is_date(column, column_types):
                 log("Creating date range control")
                 components.append(create_date_range_control(
                     label=column,
                     id=f"filter_control_{column}",
-                    min_value=value[0] if value else series.min(),
-                    max_value=value[1] if value else series.max(),
+                    min_value=value[0] if value else data[column].min(),
+                    max_value=value[1] if value else data[column].max(),
                     component_id={"type": "filter-control-date-range", "index": column},
                 ))
-            elif hp.is_series_bool(series):
+            elif t.is_boolean(column, column_types):
                 log("Creating dropdown control")
                 options = ['True', 'False']
-                if series.isna().any():
-                    options.append('<Missing>')
+                if data[column].isna().any():
+                    options.append(MISSING)
                     multi = True
                 else:
                     multi = False
@@ -1417,12 +1332,12 @@ def update_filter_controls(
                     options=options,
                     component_id={"type": "filter-control-dropdown", "index": column},
                 ))
-            elif column in non_numeric_columns:
+            elif t.get_type(column, column_types) in {t.STRING, t.CATEGORICAL}:
                 log("Creating dropdown control")
-                log_variable('series.unique()', series.unique())
-                options = sorted(series.dropna().unique().tolist())
-                if series.isna().any():
-                    options.append('<Missing>')
+                log_variable('series.unique()', data[column].unique())
+                options = sorted(data[column].dropna().unique().tolist())
+                if data[column].isna().any():
+                    options.append(MISSING)
                 components.append(create_dropdown_control(
                     label=column,
                     id=f"filter_control_{column}",
@@ -1432,13 +1347,13 @@ def update_filter_controls(
                     # options=values_to_dropdown_options(series.unique()),
                     component_id={"type": "filter-control-dropdown", "index": column},
                 ))
-            elif column in numeric_columns:
+            elif t.is_numeric(column, column_types):
                 log("Creating min/max control")
                 components.append(create_min_max_control(
                     label=column,
                     id=f"filter_control_{column}",
-                    min_value=value[0] if value else round(series.min()),
-                    max_value=value[1] if value else math.ceil(series.max()),
+                    min_value=value[0] if value else round(data[column].min()),
+                    max_value=value[1] if value else math.ceil(data[column].max()),
                     component_id={"type": "filter-control-min-max", "index": column},
                 ))
             else:
@@ -1545,17 +1460,19 @@ def cache_filter_columns(  # noqa: PLR0912
     Input('graph_type_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
     Input('z_variable_dropdown', 'value'),
-    State('numeric_columns', 'data'),
+    State('column_types', 'data'),
     prevent_initial_call=True,
 )
 def update_hist_func_agg_div_style(
         graph_type: str,
         y_variable: str | None,
         z_variable: str | None,
-        numeric_columns: list[str]) -> dict:
+        column_types: list[str]) -> dict:
     """Toggle the bar mode div."""
-    if (y_variable and y_variable in numeric_columns and graph_type == 'histogram') \
-        or (z_variable and z_variable in numeric_columns and graph_type == 'heatmap'):
+    if (
+        (t.is_numeric(y_variable, column_types) and graph_type == 'histogram')
+        or (t.is_numeric(z_variable, column_types) and graph_type == 'heatmap')
+        ):
         return {'display': 'block'}
     return {'display': 'none'}
 
@@ -1579,29 +1496,20 @@ def update_bar_mode_div_style(graph_type: str, color_variable: str | None) -> di
     Output('z_variable_dropdown', 'value'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
-    State('numeric_columns', 'data'),
-    State('string_columns', 'data'),
-    State('categorical_columns', 'data'),
-    State('boolean_columns', 'data'),
-    State('all_columns', 'data'),
+    State('column_types', 'data'),
     prevent_initial_call=True,
 )
 def update_z_variable_dropdown_style(
         x_variable: str | None,
         y_variable: str | None,
-        numeric_columns: list[str],
-        string_columns: list[str],
-        categorical_columns: list[str],
-        boolean_columns: list[str],
-        all_columns: list[str],
+        column_types: dict,
     ) -> tuple[dict, list, str]:
     """Toggle the z-variable dropdown."""
-    if x_variable in numeric_columns and y_variable in numeric_columns:
+    numeric_columns = t.get_numeric_columns(column_types)
+    if t.is_numeric(x_variable, column_types) and t.is_numeric(y_variable, column_types):
         return {'display': 'block'}, numeric_columns, None
-    non_numeric_columns = string_columns + categorical_columns + boolean_columns
-    if x_variable in non_numeric_columns and y_variable in non_numeric_columns:
-        # ensure correct order of columns (excluding date)
-        options = [x for x in all_columns if x in numeric_columns + non_numeric_columns]
+    if t.is_discrete(x_variable, column_types) and t.is_discrete(y_variable, column_types):
+        options = [x for x, y in column_types.items() if y != t.DATE]
         return {'display': 'block'}, options, None
     return {'display': 'none'}, [], None
 
@@ -1614,8 +1522,7 @@ def update_z_variable_dropdown_style(
     Input('color_variable_dropdown', 'value'),
     Input('size_variable_dropdown', 'value'),
     Input('facet_variable_dropdown', 'value'),
-    State('non_numeric_columns', 'data'),
-    State('date_columns', 'data'),
+    State('column_types', 'data'),
     prevent_initial_call=True,
 )
 def update_categorical_controls_div_style(
@@ -1624,17 +1531,15 @@ def update_categorical_controls_div_style(
         color_variable: str | None,
         size_variable: str | None,
         facet_variable: str | None,
-        non_numeric_columns: list[str],
-        date_columns: list[str],
+        column_types: list[str],
     ) -> dict:
     """Toggle the sort-categories div."""
-    non_numeric_columns = set(non_numeric_columns) - set(date_columns)
     if (
-        x_variable in non_numeric_columns
-        or y_variable in non_numeric_columns
-        or color_variable in non_numeric_columns
-        or size_variable in non_numeric_columns
-        or facet_variable in non_numeric_columns
+        t.is_discrete(x_variable, column_types)
+        or t.is_discrete(y_variable, column_types)
+        or t.is_discrete(color_variable, column_types)
+        or t.is_discrete(size_variable, column_types)
+        or t.is_discrete(facet_variable, column_types)
         ):
         return {'display': 'block'}, {'display': 'block'}
     return {'display': 'none'}, {'display': 'none'}
@@ -1647,8 +1552,7 @@ def update_categorical_controls_div_style(
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
     Input('n_bins_month_slider', 'value'),
-    State('numeric_columns', 'data'),
-    State('date_columns', 'data'),
+    State('column_types', 'data'),
     prevent_initial_call=True,
 )
 def update_n_bins_div_style(
@@ -1656,17 +1560,20 @@ def update_n_bins_div_style(
         x_variable: str | None,
         y_variable: str | None,
         n_bins_month: int,
-        numeric_columns: list[str],
-        date_columns: list[str],
+        column_types: dict,
     ) -> dict:
     """Toggle the n-bins div."""
     turn_on = {'display': 'block'}
     turn_off = {'display': 'none'}
     log_variable('graph_type', graph_type)
-    if x_variable in numeric_columns and y_variable in numeric_columns and graph_type == 'heatmap':
+    if (
+            t.is_numeric(x_variable, column_types)
+            and t.is_numeric(y_variable, column_types)
+            and graph_type == 'heatmap'
+        ):
         return turn_off, turn_on
     if graph_type == 'histogram':  # noqa: SIM102
-        if x_variable in date_columns:
+        if t.is_date(x_variable, column_types):
             if n_bins_month:
                 return turn_on, turn_off
             return turn_on, turn_on
@@ -1689,16 +1596,16 @@ def update_opacity_div_style(graph_type: str) -> dict:
     Output('log_x_y_axis_div', 'style'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
-    State('numeric_columns', 'data'),
+    State('column_types', 'data'),
     prevent_initial_call=True,
 )
 def update_log_x_y_axis_div_style(
         x_variable: str | None,
         y_variable: str | None,
-        numeric_columns: list[str],
+        column_types: dict,
     ) -> dict:
     """Toggle the 'log x/y axis' div."""
-    if (x_variable in numeric_columns or y_variable in numeric_columns):
+    if t.is_numeric(x_variable, column_types) or t.is_numeric(y_variable, column_types):
         return {'display': 'block'}
     return {'display': 'none'}
 
