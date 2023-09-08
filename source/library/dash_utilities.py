@@ -1,16 +1,21 @@
 """Utility functions for dash app."""
+import textwrap
 import numpy as np
 import pandas as pd
-from source.library.utilities import filter_dataframe, series_to_datetime, to_date
+from source.library.utilities import filter_dataframe, to_date
+import source.library.types as t
 import helpsk.pandas as hp
+import plotly.graph_objs as go
 
 
-TOP_N_CATEGORIES_CODE = """
-def top_n_categories(series: pd.Series, n: int):
-    top_n_values = series.value_counts().nlargest(n).index
-    return series.where(series.isin(top_n_values), '<Other>')
+MISSING = '<Missing>'
+OTHER = '<Other>'
 
-"""
+
+# New Error type for invalid configuration selected
+class InvalidConfigurationError(Exception):
+    """Invalid configuration selected."""
+
 
 def log(value: str) -> None:
     """Log value."""
@@ -40,6 +45,7 @@ def values_to_dropdown_options(values: list[str]) -> list[dict]:
 
 def filter_data_from_ui_control(  # noqa: PLR0915
         filters: dict,
+        column_types: dict,
         data: pd.DataFrame) -> tuple[pd.DataFrame, str, str]:
     """
     Filters data based on the selected columns and values. Returns the filtered data, markdown
@@ -66,19 +72,16 @@ def filter_data_from_ui_control(  # noqa: PLR0915
 
     if not filters:
         log("No filters applied.")
-        return data.copy(), "No filters applied.", ""
+        return data, "No filters applied.", ""
 
     converted_filters = {}
     markdown_text = "##### Manual filters applied:  \n"
 
     # this for loop builds the filters dictionary and the markdown text
     for column, value in filters.items():
-        log(f"filtering on `{column}` with `{value}`")
-
-        series, _ = series_to_datetime(data[column])
-        log_variable('series.dtype', series.dtype)
-        if pd.api.types.is_datetime64_any_dtype(series):
-            series = series.dt.date
+        log(f"filtering on `{column}` ({t.get_type(column, column_types)}) with `{value}`")
+        if t.is_date(column, column_types):
+            series = pd.to_datetime(data[column]).dt.date
             assert isinstance(value, list)
             assert len(value) == 2
             start_date = to_date(value[0])
@@ -89,42 +92,46 @@ def filter_data_from_ui_control(  # noqa: PLR0915
             if num_missing > 0:
                 markdown_text += f"; `{num_missing:,}` missing values removed"
             markdown_text += "  \n"
-        elif hp.is_series_bool(series):
-            # e.g. [True, False, '<Missing>']
+        elif t.is_boolean(column, column_types):
+            # e.g. [True, False, MISSING]
             assert isinstance(value, list)
             filters_list = [
                 x.lower() == 'true'
                 for x in value
-                if x != '<Missing>' and x is not None
+                if x != MISSING and x is not None
             ]
-            if '<Missing>' in value:
+            if MISSING in value:
                 filters_list.extend([np.nan, None])
             log_variable('filters_list', filters_list)
             converted_filters[column] = filters_list
             markdown_text += f"  - `{column}` in `{filters_list}`  \n"
-        elif series.dtype in ('object', 'category'):
+        elif t.get_type(column, column_types) in {t.STRING, t.CATEGORICAL}:
             assert isinstance(value, list)
-            filters_list = [x for x in value if x != '<Missing>' and x is not None]
-            if '<Missing>' in value:
+            filters_list = [x for x in value if x != MISSING and x is not None]
+            if MISSING in value:
                 filters_list.extend([np.nan, None])
             log_variable('filters_list', filters_list)
             converted_filters[column] = filters_list
             markdown_text += f"  - `{column}` in `{filters_list}`  \n"
-        elif pd.api.types.is_numeric_dtype(series):
+        elif t.is_numeric(column, column_types):
             assert isinstance(value, list)
             assert len(value) == 2
             min_value = value[0]
             max_value = value[1]
             converted_filters[column] = (min_value, max_value)
             markdown_text += f"  - `{column}` between `{min_value}` and `{max_value}`"
-            num_missing = series.isna().sum()
+            num_missing = data[column].isna().sum()
             if num_missing > 0:
                 markdown_text += f"; `{num_missing:,}` missing values removed"
             markdown_text += "  \n"
         else:
-            raise ValueError(f"Unknown dtype for column `{column}`: {data[column].dtype}")
+            raise ValueError(f"Unknown dtype for column `{column}` ({t.get_type(column, column_types)}): {data[column].dtype}")  # noqa
 
-    filtered_data, code = filter_dataframe(data=data, filters=converted_filters)
+    filtered_data, code = filter_dataframe(
+        data=data,
+        filters=converted_filters,
+        column_types=column_types,
+    )
     rows_removed = len(data) - len(filtered_data)
     markdown_text += f"  \n`{len(filtered_data):,}` rows remaining after manual filtering; `{rows_removed:,}` (`{rows_removed / len(data):.1%}`) rows removed  \n"  # noqa
     log(f"{len(data):,} rows before after filtering")
@@ -133,24 +140,24 @@ def filter_data_from_ui_control(  # noqa: PLR0915
     return filtered_data, markdown_text, code
 
 
-def get_variable_type(variable: str | None, options: dict) -> str | None:
-    """
-    Takes a variable name and returns the type of the variable based on the options.
-    The type will be one of 'numeric', 'date', 'categorical', 'string', or 'boolean', which will
-    be associated with the keys in `options`. The values in option are lists of column types that
-    match the key. For example, `options['numeric']` is a list of all numeric columns in the
-    dataset.
-    If the variable is None, then None is returned. If the variable is not found in the options,
-    then an error is raised.
-    """
-    if variable is None:
-        return None
+# def get_variable_type(variable: str | None, options: dict) -> str | None:
+#     """
+#     Takes a variable name and returns the type of the variable based on the options.
+#     The type will be one of t.NUMERIC, t.DATE, 'categorical', 'string', or 'boolean', which will
+#     be associated with the keys in `options`. The values in option are lists of column types that
+#     match the key. For example, `options[t.NUMERIC]` is a list of all numeric columns in the
+#     dataset.
+#     If the variable is None, then None is returned. If the variable is not found in the options,
+#     then an error is raised.
+#     """
+#     if variable is None:
+#         return None
 
-    for key, value in options.items():
-        if variable in value:
-            return key
+#     for key, value in options.items():
+#         if variable in value:
+#             return key
 
-    raise ValueError(f"Unknown dtype for column `{variable}`")
+#     raise ValueError(f"Unknown dtype for column `{variable}`")
 
 
 def get_graph_config(
@@ -204,7 +211,7 @@ def get_graph_config(
             matching_configs.append(config)
 
     if len(matching_configs) == 0:
-        raise ValueError("No matching configurations found.")
+        raise InvalidConfigurationError("No matching configurations found.")
     if len(matching_configs) > 1:
         raise ValueError("More than one matching configuration found.")
 
@@ -213,15 +220,10 @@ def get_graph_config(
 
 def get_columns_from_config(
         allowed_types: list[str],
-        columns_by_type: dict,
-        all_columns: list[str],
+        column_types: dict,
     ) -> list[str]:
     """Get the columns that match the variable type allowed by the configuration."""
-    allowed_columns = []
-    for allowed_type in allowed_types:
-        allowed_columns.extend(columns_by_type[allowed_type])
-    # return the same order as the all_columns list
-    return [c for c in all_columns if c in allowed_columns]
+    return [c for c, t in column_types.items() if t in allowed_types]
 
 
 def create_title_and_labels(  # noqa
@@ -274,62 +276,457 @@ def create_title_and_labels(  # noqa
     return title, graph_labels
 
 
-def convert_to_graph_data(
+def convert_to_graph_data(  # noqa: PLR0912, PLR0915
         data: pd.DataFrame,
-        numeric_columns: list[str],
-        string_columns: list[str],
-        categorical_columns: list[str],
-        boolean_columns: list[str],
+        column_types: dict,
         selected_variables: list[str],
         top_n_categories: int,
+        exclude_from_top_n_transformation: list[str],
+        date_floor: str | None,
     ) -> tuple[pd.DataFrame, str, str]:
     """
     Numeric columns are filtered by removing missing values.
-    Missing values in non_numeric columns are replaced with '<Missing>'.
+    Missing values in non_numeric columns are replaced with MISSING.
     The values non-numeric columns are updated to the top n categories. Other values are replaced
     with '<Other>'.
     """
+    top_n_categories_code = textwrap.dedent(f"""
+    def top_n_categories(series: pd.Series, n: int):
+        top_n_values = series.value_counts().nlargest(n).index
+        return series.where(series.isin(top_n_values), '{OTHER}')
+
+    """)
+    assert isinstance(selected_variables, list)
+    assert len(selected_variables) == len(set(selected_variables))  # no duplicates
     original_num_rows = len(data)
 
     code = ""
     data = data[selected_variables].copy()
     # TODO: need to convert code to string and execute string
-    if any(x in numeric_columns for x in selected_variables):
+    if any(t.is_numeric(x, column_types) for x in selected_variables):
         markdown = "##### Automatic filters applied:  \n"
     else:
         markdown = ""
 
     for variable in selected_variables:
-        if variable in string_columns or variable in categorical_columns or variable in boolean_columns:  # noqa
+        # fill missing values for string, categorical, and boolean columns with MISSING
+        if t.is_discrete(variable, column_types):
             log(f"filling na for {variable}")
-            if variable in categorical_columns:
-                code += f"graph_data['{variable}'] = graph_data['{variable}'].astype(str)\n"
-            data[variable] = hp.fill_na(
-                series=data[variable],
-                missing_value_replacement='<Missing>',
-            )
-            code += f"graph_data['{variable}'] = graph_data['{variable}'].fillna('<Missing>')\n"  # noqa
-            if top_n_categories:
+            if data[variable].dtype.name == 'category':
+                if data[variable].isna().any():
+                    data[variable] = data[variable].cat.add_categories(MISSING).fillna(MISSING)  # noqa
+                    code += f"graph_data['{variable}'] = graph_data['{variable}'].cat.add_categories('{MISSING}').fillna(MISSING)\n"  # noqa
+            else:
+                data[variable] = data[variable].fillna(MISSING)
+                code += f"graph_data['{variable}'] = graph_data['{variable}'].fillna('{MISSING}')\n"  # noqa
+
+            exclude_from_top_n_transformation = exclude_from_top_n_transformation or []
+            if top_n_categories and variable not in exclude_from_top_n_transformation:
                 if 'top_n_categories' not in code:
-                    code += TOP_N_CATEGORIES_CODE
+                    code += top_n_categories_code
                 code += f"graph_data['{variable}'] = top_n_categories(graph_data['{variable}'], n={top_n_categories})\n"  # noqa
                 data[variable] = hp.top_n_categories(
                     categorical=data[variable],
                     top_n=top_n_categories,
-                    other_category='<Other>',
+                    other_category=OTHER,
                 )
-        if variable in numeric_columns:
-            log(f"removing missing values for {variable}")
+
+        if date_floor and t.is_date(variable, column_types):
+            # convert the date to the specified date_floor
+            series = pd.to_datetime(data[variable], errors='coerce')
+            code += f"series = pd.to_datetime(graph_data['{variable}'], errors='coerce')\n"
+            if date_floor == 'year':
+                data[variable] = series.dt.to_period('Y').dt.start_time.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.to_period('Y').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa            
+            elif date_floor == 'quarter':
+                data[variable] = series.dt.to_period('Q').dt.start_time.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.to_period('Q').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa
+            elif date_floor == 'month':
+                data[variable] = series.dt.to_period('M').dt.start_time.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.to_period('M').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa
+            elif date_floor == 'week':
+                data[variable] = series.dt.to_period('W').dt.start_time.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.to_period('W').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa
+            elif date_floor == 'day':
+                data[variable] = series.dt.strftime('%Y-%m-%d')
+                code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d')\n"
+            elif date_floor == 'hour':
+                data[variable] = series.dt.strftime('%Y-%m-%d %H:00:00')
+                code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d %H:00:00')\n"
+            elif date_floor == 'minute':
+                data[variable] = series.dt.strftime('%Y-%m-%d %H:%M:00')
+                code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d %H:%M:00')\n"
+            elif date_floor == 'second':
+                data[variable] = series.dt.strftime('%Y-%m-%d %H:%M:%S')
+                code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d %H:%M:%S')\n"
+            else:
+                raise ValueError(f"Unknown date_floor: {date_floor}")
+
+        if t.is_continuous(variable, column_types):
+            log(f"removing missing values for - {variable}")
             num_values_removed = data[variable].isna().sum()
             if num_values_removed > 0:
                 markdown += f"- `{num_values_removed:,}` missing values have been removed from `{variable}`  \n"  # noqa
-            code += f"graph_data = graph_data[graph_data['{variable}'].notna()].copy()\n"
-            data = data[data[variable].notna()]
+                code += f"graph_data = graph_data[graph_data['{variable}'].notna()]\n"
+                data = data[data[variable].notna()]
 
-    if any(x in numeric_columns for x in selected_variables):
+    if any(t.is_numeric(x, column_types) for x in selected_variables):
         rows_remaining = len(data)
         rows_removed = original_num_rows - rows_remaining
         markdown += f"\n`{rows_remaining:,}` rows remaining after manual/automatic filtering; `{rows_removed:,}` (`{rows_removed / original_num_rows:.1%}`) rows removed from automatic filtering\n"  # noqa
         markdown += "---  \n"
 
     return data, markdown, code
+
+
+def get_category_orders(
+        data: pd.DataFrame,
+        selected_variables: list[str],
+        selected_category_order: str | None,
+        column_types: dict,
+    ) -> dict:
+    """
+    Returns a dictionary of category orders for each categorical column. The dictionary keys are
+    the categorical columns, and the values are lists of categories in the order they should be
+    displayed in the graph.
+    """
+    assert isinstance(selected_variables, list)
+    assert len(selected_variables) == len(set(selected_variables))  # no duplicates
+
+    # The order is based on the order_type, which can be one of:
+    #     - 'category ascending': Sort the categories in ascending order
+    #     - 'category descending': Sort the categories in descending order
+    #     - 'total ascending': Sort the categories by the total in ascending order
+    #     - 'total descending': Sort the categories by the total in descending order
+    category_orders = {}
+    if selected_category_order:
+        for variable in selected_variables:
+            if t.is_discrete(variable, column_types):
+                if 'category' in selected_category_order:
+                    reverse = 'ascending' not in selected_category_order
+                    categories = sorted(
+                        data[variable].unique().tolist(),
+                        reverse=reverse,
+                        key=lambda x: str(x),
+                    )
+                    category_orders[variable] = categories
+                elif 'total' in selected_category_order:
+                    category_orders[variable] = data[variable].\
+                        value_counts(sort=True, ascending='ascending' in selected_category_order).\
+                        index.\
+                        tolist()
+                else:
+                    raise ValueError(f"Unknown selected_category_order: {selected_category_order}")
+
+    return category_orders
+
+
+def generate_graph(  # noqa: PLR0912, PLR0915
+        data: pd.DataFrame,
+        graph_type: str,
+        x_variable: str | None,
+        y_variable: str | None,
+        z_variable: str | None,
+        color_variable: str | None,
+        size_variable: str | None,
+        facet_variable: str | None,
+        num_facet_columns: int | None,
+        selected_category_order: str | None,
+        hist_func_agg: str | None,
+        bar_mode: str | None,
+        opacity: float | None,
+        n_bins_month: int | None,
+        n_bins: int | None,
+        log_x_axis: bool | None,
+        log_y_axis: bool | None,
+        free_x_axis: bool | None,
+        free_y_axis: bool | None,
+        show_axes_histogram: bool | None,
+        title: str | None,
+        graph_labels: dict | None,
+        column_types: dict,
+    ) -> tuple[go.Figure, str]:
+    """
+    Generate a graph based on the selected variables. Returns the graph and the code.
+    The code is a string that can be used to recreate the graph.
+    """
+    log("creating fig")
+    fig = None
+    graph_data = data
+    graph_code = ''
+
+    category_orders = get_category_orders(
+        data=data,
+        selected_variables = list({x_variable, y_variable, z_variable, color_variable, size_variable, facet_variable}),  # noqa
+        selected_category_order=selected_category_order,
+        # TODO: dates?
+        column_types=column_types,
+    )
+
+    def remove_unused_categories(variable: str) -> str:
+        """Remove unused categories from the categorical columns."""
+        values = graph_data[variable].unique().tolist()
+        if data[variable].unique().tolist() != data[variable].cat.categories.tolist():
+            code = "# plotly complains if the categories are missing\n"
+            code += f"unique_values = {values}\n"
+            code += "# preserve categories in same order as original categories\n"
+            code += "new_categories = [\n"
+            code += f"    x for x in graph_data['{variable}'].cat.categories\n"
+            code += f"     if x in {values}\n"
+            code += "]\n"
+            code += f"graph_data['{variable}'] = pd.Categorical(graph_data['{variable}'], categories=new_categories)\n\n"  # noqa
+            return code
+        return ""
+
+    for variable in list({color_variable, size_variable, facet_variable}):
+        # plotly express complains if you try to use a categorical series where the categories are
+        # not in the data.
+        # In graph_data we removed unused categories for color, size, or facet variable
+        # (for some reason plotly express doesn't complain about using a categorical column as x
+        # or y variable)
+        if variable and data[variable].dtype.name == 'category':
+            graph_code += remove_unused_categories(variable)
+
+    if graph_type == 'scatter':
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.scatter(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            color={f"'{color_variable}'" if color_variable else None},
+            size={f"'{size_variable}'" if size_variable else None},
+            opacity={opacity},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            marginal_x={"'histogram'" if show_axes_histogram else None},
+            marginal_y={"'histogram'" if show_axes_histogram else None},
+            title={f'"{title}"' if title else None},
+            labels={graph_labels},
+        )
+        fig
+        """)
+    elif graph_type == 'scatter-3d':
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.scatter_3d(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            z={f"'{z_variable}'" if z_variable else None},
+            color={f"'{color_variable}'" if color_variable else None},
+            size={f"'{size_variable}'" if size_variable else None},
+            opacity={opacity},
+            category_orders={category_orders},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            title={f'"{title}"' if title else None},
+            labels={graph_labels},
+        )
+        fig.update_layout(margin={{'l': 0, 'r': 0, 'b': 0, 't': 20}})
+        fig
+        """)
+    elif graph_type == 'box':
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.box(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            color={f"'{color_variable}'" if color_variable else None},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            title={f'"{title}"' if title else None},
+            labels={graph_labels},
+        )
+        fig
+        """)
+    elif graph_type == 'line':
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.line(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            color={f"'{color_variable}'" if color_variable else None},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            title={f'"{title}"' if title else None},
+            labels={graph_labels},
+        )
+        fig
+        """)
+    elif graph_type == 'histogram':
+        if not color_variable:
+            bar_mode = 'relative'
+
+        if t.is_numeric(y_variable, column_types):
+            hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
+        else:
+            hist_func_agg = None
+
+        if t.is_date(x_variable, column_types):
+            if n_bins_month:
+                n_bins = None
+                n_bins_month = f"'M{n_bins_month}'"
+            else:
+                n_bins_month = None
+        else:
+            n_bins_month = None
+
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.histogram(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            color={f"'{color_variable}'" if color_variable else None},
+            opacity={opacity},
+            nbins={n_bins},
+            histfunc={hist_func_agg},
+            barmode={f"'{bar_mode}'" if bar_mode else None},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            title={f'"{title}"' if title else None},
+            labels={graph_labels},
+        )
+        """)
+        if (
+            t.is_continuous(x_variable, column_types)
+            and bar_mode
+            and bar_mode != 'group'
+            ):
+            # Adjust the bar group gap
+            graph_code += f"fig.update_layout(barmode='{bar_mode}', bargap=0.05)\n"
+
+        if n_bins_month:
+            graph_code += f"fig.update_traces(xbins_size={n_bins_month})\n"
+            graph_code += f"fig.update_xaxes(showgrid=True, ticklabelmode='period', dtick={n_bins_month}, tickformat='%b\\n%Y')\n"  # noqa
+
+        graph_code += "fig\n"
+    elif graph_type in ['bar', 'bar - count distinct']:
+        if not color_variable:
+            bar_mode = None
+
+        if graph_type == 'bar - count distinct':
+            if y_variable in [x_variable, color_variable, facet_variable]:
+                raise InvalidConfigurationError("Cannot use the same variable for y and x, color, or facet")  # noqa
+            selected_variables = [
+                x for x in [x_variable, color_variable, facet_variable]
+                if x is not None and x != y_variable
+            ]
+            selected_variables = list(set(selected_variables))
+            graph_code += textwrap.dedent(f"""
+            graph_data = (
+                graph_data
+                .groupby({selected_variables})
+                .agg({{'{y_variable}': 'nunique'}})
+                .reset_index()
+            )
+            """)
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.bar(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            color={f"'{color_variable}'" if color_variable else None},
+            barmode={f"'{bar_mode}'" if bar_mode else None},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            title={f'"{title}"' if title else None},
+            labels={graph_labels},
+        )
+        """)
+    elif graph_type == 'heatmap':
+
+        if t.is_numeric(z_variable, column_types):
+            hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
+        else:
+            hist_func_agg = None
+
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.density_heatmap(
+            graph_data,
+            x={f"'{x_variable}'" if x_variable else None},
+            y={f"'{y_variable}'" if y_variable else None},
+            z={f"'{z_variable}'" if z_variable else None},
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            histfunc={hist_func_agg},
+            nbinsx={n_bins},
+            nbinsy={n_bins},
+            log_x={log_x_axis},
+            log_y={log_y_axis},
+            # color_continuous_scale=['white', 'red'],
+            marginal_x={"'histogram'" if show_axes_histogram else None},
+            marginal_y={"'histogram'" if show_axes_histogram else None},
+            title={f'"{title}"' if title else None},
+            labels={graph_labels},
+        )
+        """)
+        fig
+    elif graph_type == 'heatmap - count distinct':
+        selected_variables = [
+            x for x in [x_variable, y_variable, z_variable, facet_variable]
+            if x is not None
+        ]
+        selected_variables = list(set(selected_variables))
+        graph_code += f"graph_data = graph_data[{selected_variables}].drop_duplicates()\n"
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        fig = px.density_heatmap(
+            graph_data,
+            x={f"'{x_variable}'"},
+            y={f"'{y_variable}'"},
+            z={f"'{z_variable}'"},
+            histfunc='count',
+            facet_col={f"'{facet_variable}'" if facet_variable else None},
+            facet_col_wrap={num_facet_columns},
+            category_orders={category_orders},
+            title={f'"{title}"' if title else None},
+            marginal_x={"'histogram'" if show_axes_histogram else None},
+            marginal_y={"'histogram'" if show_axes_histogram else None},
+            labels={graph_labels},
+        )
+        """)
+    else:
+        raise ValueError(f"Unknown graph type: {graph_type}")
+
+    if free_x_axis:
+        graph_code += "fig.update_xaxes(matches=None)\n"
+        graph_code += "fig.for_each_xaxis(lambda xaxis: xaxis.update(showticklabels=True))\n"
+
+    if free_y_axis:
+        graph_code += "fig.update_yaxes(matches=None)\n"
+        graph_code += "fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))\n"
+
+    # TODO: add range slider
+    # graph_code += "fig.update_xaxes(rangeslider_visible=True)\n"
+
+    log_variable('graph_code', graph_code)
+    if 'Timestamp' in graph_code:
+        log("Timestamp found in graph_code")
+        raise ValueError(f"Timestamp found in graph_code {graph_code}")
+    local_vars = locals()
+    global_vars = globals()
+    exec(graph_code, global_vars, local_vars)
+    fig = local_vars['fig']
+    return fig, graph_code
