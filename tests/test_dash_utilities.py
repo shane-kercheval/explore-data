@@ -867,7 +867,6 @@ def test_convert_to_graph_data__create_cohorts_from(capsys, mock_data2):  # noqa
         '2022-12-26', '2023-01-02', '2023-01-02', '2023-01-02',
     ]
 
-
 def test_convert_to_graph_data__exclude_from_top_n_transformation():  # noqa
     data = pd.DataFrame({
         'strings': ['a', 'b', 'c', 'a', 'b', 'd', 'e', 'f'],
@@ -1307,7 +1306,6 @@ def test_get_category_orders_with_more_than_50_values(order_type):  # noqa
     )
     result['valid'] = ['a', 'b']
     assert 'invalid' not in result
-
 
 def test_duplicates_in_selected_variables():  # noqa
     category_order_data = pd.DataFrame({
