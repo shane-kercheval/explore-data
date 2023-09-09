@@ -262,6 +262,7 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
         selected_variables: list[str],
         top_n_categories: int,
         exclude_from_top_n_transformation: list[str],
+        create_cohorts_from: tuple[str, str] | None,
         date_floor: str | None,
     ) -> tuple[pd.DataFrame, str, str]:
     """
@@ -269,6 +270,10 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
     Missing values in non_numeric columns are replaced with MISSING.
     The values non-numeric columns are updated to the top n categories. Other values are replaced
     with '<Other>'.
+
+    For `create_cohorts_from`, the first value is the x-variable, which we will create a cohorted
+    column from, and the second value is the y-variable, which we will not filter on because we
+    expect missing values.
     """
     top_n_categories_code = textwrap.dedent(f"""
     def top_n_categories(series: pd.Series, n: int):
@@ -313,8 +318,19 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
 
         if date_floor and t.is_date(variable, column_types):
             # convert the date to the specified date_floor
+            if create_cohorts_from and variable == create_cohorts_from[1]:
+                # we don't want to floor or remove anything from y-variable
+                # since we need to use that to calculate the conversion rates
+                continue
+
             series = pd.to_datetime(data[variable], errors='coerce')
             code += f"series = pd.to_datetime(graph_data['{variable}'], errors='coerce')\n"
+
+            temp_variable = None
+            if create_cohorts_from and variable == create_cohorts_from[0]:
+                temp_variable = variable
+                variable = f"{variable} (Cohorts)"  # noqa: PLW2901
+
             if date_floor == 'year':
                 data[variable] = series.dt.to_period('Y').dt.start_time.dt.strftime('%Y-%m-%d')
                 code += f"graph_data['{variable}'] = series.dt.to_period('Y').dt.start_time.dt.strftime('%Y-%m-%d')\n"  # noqa            
@@ -341,6 +357,9 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
                 code += f"graph_data['{variable}'] = series.dt.strftime('%Y-%m-%d %H:%M:%S')\n"
             else:
                 raise ValueError(f"Unknown date_floor: {date_floor}")
+
+            if temp_variable:
+                variable = temp_variable  # noqa
 
         if t.is_continuous(variable, column_types):
             log(f"removing missing values for - {variable}")
@@ -685,6 +704,33 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             marginal_x={"'histogram'" if show_axes_histogram else None},
             marginal_y={"'histogram'" if show_axes_histogram else None},
             labels={graph_labels},
+        )
+        """)
+    elif graph_type == 'cohorted conversion rates':
+        log_variable('columns', graph_data.columns.tolist())
+        log(x_variable in graph_data.columns)
+        log(y_variable in graph_data.columns)
+        log(f"{x_variable} (Cohorts)" in graph_data.columns)
+        graph_code += textwrap.dedent(f"""
+        from helpsk.conversions import plot_cohorted_conversion_rates
+        graph_data['{x_variable}'] = pd.to_datetime(graph_data['{x_variable}'])
+        graph_data['{y_variable}'] = pd.to_datetime(graph_data['{y_variable}'])
+        fig = plot_cohorted_conversion_rates(
+            df=graph_data,
+            base_timestamp='{x_variable}',
+            conversion_timestamp='{y_variable}',
+            cohort={f"'{x_variable} (Cohorts)'"},
+            intervals=[(1, 'days'), (7, 'days'), (14, 'days')],
+            groups={f"'{facet_variable}'" if facet_variable else None},
+            category_orders={category_orders},
+            current_datetime=None,
+            graph_type='bar',
+            title={f'"{title}"' if title else None},
+            facet_col_wrap={num_facet_columns},
+            bar_mode={f"'{bar_mode}'" if bar_mode else None},
+            opacity={opacity},
+            height=None,
+            width=None,
         )
         """)
     else:

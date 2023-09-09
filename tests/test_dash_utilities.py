@@ -381,6 +381,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         selected_variables=selected_variables,
         top_n_categories=10,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -401,6 +402,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         selected_variables=selected_variables,
         top_n_categories=3,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -421,6 +423,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         selected_variables=selected_variables,
         top_n_categories=None,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -442,6 +445,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         selected_variables=selected_variables,
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -464,6 +468,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         selected_variables=selected_variables,
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -486,6 +491,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         selected_variables=selected_variables,
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -508,6 +514,7 @@ def test_convert_to_graph_data(capsys, mock_data2):  # noqa
         selected_variables=selected_variables,
         top_n_categories=1,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor=None,
     )
     assert new_data.columns.tolist() == selected_variables
@@ -541,6 +548,7 @@ def test_convert_to_graph_data__missing_categories(capsys, mock_data2):  # noqa
         selected_variables=selected_variables,
         top_n_categories=10,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor=None,
     )
 
@@ -597,6 +605,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor=None,
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -623,6 +632,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor='second',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -650,6 +660,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor='minute',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -677,6 +688,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor='hour',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -704,6 +716,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor='day',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -731,6 +744,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor='week',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -758,6 +772,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor='quarter',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -785,6 +800,7 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         selected_variables=['dates', 'dates_with_missing'],
         top_n_categories=2,
         exclude_from_top_n_transformation=None,
+        create_cohorts_from=None,
         date_floor='year',
     )
     assert new_data.columns.tolist() == ['dates', 'dates_with_missing']
@@ -806,6 +822,52 @@ def test_convert_to_graph_data__date_columns(capsys):  # noqa
         '2024-01-01',
     ]
 
+def test_convert_to_graph_data__create_cohorts_from(capsys, mock_data2):  # noqa
+    column_types = t.get_column_types(mock_data2)
+    selected_variables = [
+        'integers', 'strings', 'dates', 'datetimes_with_missing', 'datetimes_with_missing2',
+    ]
+    new_data, markdown, code = convert_to_graph_data(
+        data=mock_data2,
+        column_types=column_types,
+        selected_variables=selected_variables,
+        top_n_categories=2,
+        exclude_from_top_n_transformation=None,
+        create_cohorts_from=('datetimes_with_missing', 'datetimes_with_missing2'),
+        date_floor='week',
+    )
+    assert new_data.columns.tolist() == [*selected_variables, "datetimes_with_missing (Cohorts)"]
+    assert mock_data2 is not new_data
+    assert new_data['integers'].tolist() == [1, 2, 4, 5]
+    assert new_data['strings'].tolist() == ['a', 'b', 'a', 'b']
+    assert new_data['dates'].tolist() == ['2022-12-26', '2023-01-02', '2023-01-02', '2023-01-02']
+    # still auto-filtering out missing values for datetimes_with_missing
+    # since it is being used as the cohort
+    assert 'datetimes_with_missing' in code
+    assert 'datetimes_with_missing' in markdown
+    # this variable should be ignored when using as cohort
+    assert 'datetimes_with_missing2' not in code
+    assert 'datetimes_with_missing2' not in markdown
+    assert '`1` missing' in markdown  # should only be missing value 1 from datetimes_with_missing
+    # should not have modified either dates so that we can accurately calculate the
+    # time to conversion
+    assert new_data['datetimes_with_missing'].tolist() == [
+        pd.Timestamp('2023-01-01 01:01:01'),
+        pd.Timestamp('2023-01-02 02:02:02'),
+        pd.Timestamp('2023-01-04 04:04:04'),
+        pd.Timestamp('2023-01-05 05:05:05'),
+    ]
+    assert new_data['datetimes_with_missing2'].tolist() == [
+        pd.NaT,
+        pd.Timestamp('2023-01-02 02:02:02'),
+        pd.Timestamp('2023-01-04 04:04:04'),
+        pd.Timestamp('2023-01-05 05:05:05'),
+    ]
+    assert new_data['datetimes_with_missing (Cohorts)'].tolist() == [
+        '2022-12-26', '2023-01-02', '2023-01-02', '2023-01-02',
+    ]
+
+
 def test_convert_to_graph_data__exclude_from_top_n_transformation():  # noqa
     data = pd.DataFrame({
         'strings': ['a', 'b', 'c', 'a', 'b', 'd', 'e', 'f'],
@@ -820,6 +882,7 @@ def test_convert_to_graph_data__exclude_from_top_n_transformation():  # noqa
         selected_variables=['strings', 'categories', 'categories2'],
         top_n_categories=2,
         exclude_from_top_n_transformation=['strings', 'categories'],
+        create_cohorts_from=None,
         date_floor=None,
     )
     assert new_data.columns.tolist() == ['strings', 'categories', 'categories2']
