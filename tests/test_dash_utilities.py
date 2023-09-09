@@ -964,6 +964,14 @@ def test_generate_graph__all_configurations(  # noqa
         for graph_type in graph_types:
             # graph_type = graph_types[0]
             for x_var, y_var, z_var in variable_combinations:
+                if graph_type['name'] == 'cohorted conversion rates':
+                    mock_data2 = mock_data2.copy()
+                    # this happens in `convert_to_graph_data``
+                    mock_data2[f'{type_to_column_lookup[x_var]} (Cohorts)'] = (
+                        pd.to_datetime(mock_data2[type_to_column_lookup[x_var]])
+                        .dt.to_period('M').dt.start_time
+                        .dt.strftime('%Y-%m-%d')
+                    )
                 print(x_var, y_var, z_var)
                 # x_var, y_var, z_var = variable_combinations[0]
                 # test with no parameters
@@ -1028,6 +1036,8 @@ def test_generate_graph__all_configurations(  # noqa
                         assert 'px.density_heatmap' in code
                     elif graph_type['name'] == 'bar - count distinct':
                         assert 'px.bar' in code
+                    elif graph_type['name'] == 'cohorted conversion rates':
+                        assert 'plot_cohorted_conversion_rates' in code
                     else:
                         assert graph_type['name'] in code
 
@@ -1108,6 +1118,8 @@ def test_generate_graph__all_configurations(  # noqa
                             assert 'px.density_heatmap' in code
                         elif graph_type['name'] == 'bar - count distinct':
                             assert 'px.bar' in code
+                        elif graph_type['name'] == 'cohorted conversion rates':
+                            assert 'plot_cohorted_conversion_rates' in code
                         else:
                             assert graph_type['name'] in code
 
