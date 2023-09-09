@@ -568,3 +568,18 @@ configurations:
               - boolean
               - string
               - categorical
+  # date / date
+  - selected_variables:
+      x_variable:
+        - date
+      y_variable:
+        - date
+    graph_types:
+      - name: cohorted conversion rates
+        description: Shows the cohorted conversion rates from {{x_variable}} to {{y_variable}} at various durations relative to {{x_variable}}.
+        optional_variables:
+          facet_variable:
+            types:
+              - boolean
+              - string
+              - categorical

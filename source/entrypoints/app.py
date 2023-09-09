@@ -66,6 +66,11 @@ n_bins_month_lookup = {
     2: '2',
     3: '3',
 }
+bar_mode_options = [
+    {'label': 'Stacked', 'value': 'relative'},
+    {'label': 'Side-by-Side', 'value': 'group'},
+    {'label': 'Overlay', 'value': 'overlay'},
+]
 with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_configurations.yml')) as f:  # noqa
     GRAPH_CONFIGS = yaml.safe_load(f)
 
@@ -301,11 +306,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     hidden=True,
                                     multi=False,
                                     clearable=False,
-                                    options=[
-                                        {'label': 'Stacked', 'value': 'relative'},
-                                        {'label': 'Side-by-Side', 'value': 'group'},
-                                        {'label': 'Overlay', 'value': 'overlay'},
-                                    ],
+                                    options=bar_mode_options,
                                     value='relative',
                                 ),
                                 create_dropdown_control(
@@ -990,11 +991,19 @@ def update_controls_and_graph(  # noqa
             elif graph_type == 'heatmap - count distinct':
                 exclude_from_top_n_transformation = [z_variable]
 
+            if t.is_date(x_variable, column_types) and t.is_date(y_variable, column_types):
+                # if x and y are both dates then we need to preserve them to calculate the
+                # cohorted conversion rates
+                # missing values will be removed from the timestamps
+                create_cohorts_from = (x_variable, y_variable)
+            else:
+                create_cohorts_from = []
             graph_data, numeric_na_removal_markdown, code = convert_to_graph_data(
                 data=data,
                 column_types=column_types,
                 selected_variables=selected_variables,
                 top_n_categories=top_n_categories,
+                create_cohorts_from=create_cohorts_from,
                 exclude_from_top_n_transformation=exclude_from_top_n_transformation,
                 date_floor=date_floor,
             )
@@ -1485,7 +1494,8 @@ def update_hist_func_agg_div_style(
 )
 def update_bar_mode_div_style(graph_type: str, color_variable: str | None) -> dict:
     """Toggle the bar mode div."""
-    if color_variable and graph_type in ['histogram', 'bar', 'bar - count distinct']:
+    allowed_graphs = ['histogram', 'bar', 'bar - count distinct']
+    if (color_variable and graph_type in allowed_graphs) or graph_type == 'cohorted conversion rates':  # noqa
         return {'display': 'block'}
     return {'display': 'none'}
 
