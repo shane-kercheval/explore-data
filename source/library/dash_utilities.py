@@ -419,6 +419,7 @@ def get_category_orders(
 
     return category_orders
 
+
 def plot_retention(
         graph_data: pd.DataFrame,
         x_variable:str,
@@ -429,8 +430,11 @@ def plot_retention(
     """Plot retention heatmap."""
     if intervals not in ['day', 'week', 'month']:
         raise InvalidConfigurationError(f"Invalid interval selected for retention heatmap ({intervals}).")  # noqa
+
     from helpsk.conversions import retention_matrix
     import pandas as pd
+    import plotly.express as px
+
     graph_data[x_variable] = pd.to_datetime(graph_data[x_variable])
     retention = retention_matrix(
         df=graph_data,
@@ -439,12 +443,9 @@ def plot_retention(
         intervals=intervals,
         min_events=min_events,
     )
-    print(retention)
-    import plotly.express as px
     columns = [str(x) for x in range(1, max_periods_to_display) if str(x) in retention.columns]
-    print(columns)
     retention_data = retention[columns]
-    fig = px.imshow(
+    return px.imshow(
         retention_data,
         color_continuous_scale='Greens',
         text_auto='.1%',
@@ -454,7 +455,7 @@ def plot_retention(
         zmin=0,
         zmax=retention_data.max().max(),
     )
-    return fig
+
 
 def generate_graph(  # noqa: PLR0912, PLR0915
         data: pd.DataFrame,
@@ -470,8 +471,8 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         hist_func_agg: str | None,
         bar_mode: str | None,
         date_floor: str | None,
-        cohort_conversion_rate_snapshots: list[int],
-        cohort_conversion_rate_units: str,
+        cohort_conversion_rate_snapshots: list[int] | None,
+        cohort_conversion_rate_units: str | None,
         opacity: float | None,
         n_bins_month: int | None,
         n_bins: int | None,
