@@ -867,7 +867,6 @@ def test_convert_to_graph_data__create_cohorts_from(capsys, mock_data2):  # noqa
         '2022-12-26', '2023-01-02', '2023-01-02', '2023-01-02',
     ]
 
-
 def test_convert_to_graph_data__exclude_from_top_n_transformation():  # noqa
     data = pd.DataFrame({
         'strings': ['a', 'b', 'c', 'a', 'b', 'd', 'e', 'f'],
@@ -925,9 +924,14 @@ def test_generate_graph__all_configurations(  # noqa
         selected_category_order=None,
         hist_func_agg=None,
         bar_mode=None,
+        date_floor=None,
+        cohort_conversion_rate_snapshots=None,
+        cohort_conversion_rate_units=None,
         opacity=None,
         n_bins_month=None,
         n_bins=None,
+        min_retention_events=None,
+        num_retention_periods=None,
         log_x_axis=None,
         log_y_axis=None,
         free_x_axis=None,
@@ -990,9 +994,14 @@ def test_generate_graph__all_configurations(  # noqa
                             selected_category_order='category ascending',
                             hist_func_agg='max',
                             bar_mode='relative',
+                            date_floor='week',
+                            cohort_conversion_rate_snapshots=[1, 2, 3],
+                            cohort_conversion_rate_units='days',
                             opacity=0.6,
                             n_bins_month=3,
                             n_bins=30,
+                            min_retention_events=2,
+                            num_retention_periods=10,
                             log_x_axis=None,
                             log_y_axis=None,
                             free_x_axis=None,
@@ -1016,9 +1025,14 @@ def test_generate_graph__all_configurations(  # noqa
                         selected_category_order='category ascending',
                         hist_func_agg='max',
                         bar_mode='relative',
+                        date_floor='week',
+                        cohort_conversion_rate_snapshots=[1, 2, 3],
+                        cohort_conversion_rate_units='days',
                         opacity=0.6,
                         n_bins_month=3,
                         n_bins=30,
+                        min_retention_events=2,
+                        num_retention_periods=10,
                         log_x_axis=None,
                         log_y_axis=None,
                         free_x_axis=None,
@@ -1032,6 +1046,8 @@ def test_generate_graph__all_configurations(  # noqa
                     assert code is not None
                     if graph_type['name'] == 'scatter-3d':
                         assert 'px.scatter_3d' in code
+                    elif graph_type['name'] == 'retention':
+                        assert 'plot_retention' in code
                     elif graph_type['name'] == 'heatmap - count distinct':
                         assert 'px.density_heatmap' in code
                     elif graph_type['name'] == 'bar - count distinct':
@@ -1042,7 +1058,11 @@ def test_generate_graph__all_configurations(  # noqa
                         assert graph_type['name'] in code
 
                 # test with optional parameters
-                optional_variables = graph_type['optional_variables']
+                if 'optional_variables' in graph_type:
+                    optional_variables = graph_type['optional_variables'] or {}
+                else:
+                    optional_variables = {}
+
                 color_variable = optional_variables['color_variable']['types'] if 'color_variable' in optional_variables else None  # noqa
                 size_variable = optional_variables['size_variable']['types'] if 'size_variable' in optional_variables else None  # noqa
                 facet_variable = optional_variables['facet_variable']['types'] if 'facet_variable' in optional_variables else None  # noqa
@@ -1072,9 +1092,14 @@ def test_generate_graph__all_configurations(  # noqa
                                 selected_category_order=None,
                                 hist_func_agg=None,
                                 bar_mode=None,
+                                date_floor=None,
+                                cohort_conversion_rate_snapshots=None,
+                                cohort_conversion_rate_units=None,
                                 opacity=None,
                                 n_bins_month=None,
                                 n_bins=None,
+                                min_retention_events=None,
+                                num_retention_periods=None,
                                 log_x_axis=True,
                                 log_y_axis=False,
                                 free_x_axis=True,
@@ -1098,9 +1123,14 @@ def test_generate_graph__all_configurations(  # noqa
                             selected_category_order=None,
                             hist_func_agg=None,
                             bar_mode=None,
+                            date_floor='week',
+                            cohort_conversion_rate_snapshots=[1, 2, 3],
+                            cohort_conversion_rate_units='days',
                             opacity=None,
                             n_bins_month=None,
                             n_bins=None,
+                            min_retention_events=2,
+                            num_retention_periods=10,
                             log_x_axis=True,
                             log_y_axis=False,
                             free_x_axis=True,
@@ -1114,6 +1144,8 @@ def test_generate_graph__all_configurations(  # noqa
                         assert code is not None
                         if graph_type['name'] == 'scatter-3d':
                             assert 'px.scatter_3d' in code
+                        elif graph_type['name'] == 'retention':
+                            assert 'plot_retention' in code
                         elif graph_type['name'] == 'heatmap - count distinct':
                             assert 'px.density_heatmap' in code
                         elif graph_type['name'] == 'bar - count distinct':
@@ -1149,9 +1181,14 @@ def test_generate_graph__error(  # noqa
         selected_category_order=None,
         hist_func_agg=None,
         bar_mode=None,
+        date_floor=None,
+        cohort_conversion_rate_snapshots=None,
+        cohort_conversion_rate_units=None,
         opacity=None,
         n_bins_month=None,
         n_bins=None,
+        min_retention_events=None,
+        num_retention_periods=None,
         log_x_axis=None,
         log_y_axis=None,
         free_x_axis=None,
@@ -1178,9 +1215,14 @@ def test_generate_graph__error(  # noqa
         selected_category_order=None,
         hist_func_agg=None,
         bar_mode=None,
+        date_floor=None,
+        cohort_conversion_rate_snapshots=None,
+        cohort_conversion_rate_units=None,
         opacity=None,
         n_bins_month=None,
         n_bins=None,
+        min_retention_events=None,
+        num_retention_periods=None,
         log_x_axis=None,
         log_y_axis=None,
         free_x_axis=None,
@@ -1307,7 +1349,6 @@ def test_get_category_orders_with_more_than_50_values(order_type):  # noqa
     )
     result['valid'] = ['a', 'b']
     assert 'invalid' not in result
-
 
 def test_duplicates_in_selected_variables():  # noqa
     category_order_data = pd.DataFrame({

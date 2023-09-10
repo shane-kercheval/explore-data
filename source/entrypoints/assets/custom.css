@@ -73,3 +73,13 @@ label.graph_panel_section_label {
 .min_max_div input {
     width: 100% !important;
 }
+
+.cohort_snapshots_div {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.cohort_snapshots_div input {
+    width: 100% !important;
+}

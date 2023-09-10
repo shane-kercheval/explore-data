@@ -1,4 +1,5 @@
 """Dash app entry point."""
+from datetime import datetime, timedelta
 import math
 import os
 from dotenv import load_dotenv
@@ -13,6 +14,7 @@ import pandas as pd
 import helpsk.pandas as hp
 import dash_bootstrap_components as dbc
 from source.library.dash_ui import (
+    create_cohort_conversion_rate_control,
     create_dropdown_control,
     create_checklist_control,
     create_input_control,
@@ -36,7 +38,6 @@ from source.library.dash_utilities import (
     log_variable,
 )
 import source.library.types as t
-from source.library.utilities import create_random_dataframe
 
 from dash_extensions.enrich import DashProxy, Output, Input, State, Serverside, html, dcc, \
     ServersideOutputTransform
@@ -65,6 +66,19 @@ n_bins_month_lookup = {
     1: '1',
     2: '2',
     3: '3',
+}
+min_retention_events_lookup = {
+    1: '1',
+    2: '2',
+    3: '3',
+    4: '4',
+    5: '5',
+    6: '10',
+    7: '25',
+    8: '50',
+    9: '100',
+    10: '500',
+
 }
 bar_mode_options = [
     {'label': 'Stacked', 'value': 'relative'},
@@ -309,6 +323,11 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     options=bar_mode_options,
                                     value='relative',
                                 ),
+                                create_cohort_conversion_rate_control(
+                                    label="Conversion Durations",
+                                    id='cohort_conversion_rate',
+                                    hidden=False,
+                                ),
                                 create_dropdown_control(
                                     label="Sort Categories By",
                                     id='sort_categories',
@@ -332,6 +351,25 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     min=0,
                                     max=10,
                                     marks=top_n_categories_lookup,
+                                ),
+                                create_slider_control(
+                                    label="Min Events for Retention",
+                                    id='min_retention_events',
+                                    hidden=True,
+                                    value=1,
+                                    step=1,
+                                    min=1,
+                                    max=10,
+                                    marks=min_retention_events_lookup,
+                                ),
+                                create_slider_control(
+                                    label="# of Periods",
+                                    id='num_retention_periods',
+                                    hidden=True,
+                                    min=10,
+                                    max=60,
+                                    step=10,
+                                    value=20,
                                 ),
                                 create_slider_control(
                                     label="Bin Months",
@@ -669,7 +707,34 @@ def load_data(  # noqa
             data = pd.read_csv(load_from_url)
         elif triggered == 'load_random_data_button.n_clicks':
             log("Loading DataFrame with random data")
-            data = create_random_dataframe(num_rows=10_000, sporadic_missing=True)
+            # from source.library.utilities import create_random_dataframe
+            # data = create_random_dataframe(num_rows=10_000, sporadic_missing=True)
+            def generate_fake_retention_data() -> pd.DataFrame:
+                import numpy as np
+                base_date = datetime.utcnow() - timedelta(days=100)
+                data = []
+                for user_id in range(100):
+                    for days in range(0, 70, 1):
+                        # only append 5% of the time
+                        event_datetime = base_date + timedelta(days=days + user_id)
+                        if event_datetime > base_date + timedelta(days=100):
+                            continue
+                        if np.random.rand() < 0.5:  # noqa
+                            # print('append', user_id, days)
+                            data.append({
+                                'user_id': user_id,
+                                'datetime': event_datetime,
+                            })
+                        if np.random.rand() < 0.5:  # noqa
+                            # print('append', user_id, days)
+                            data.append({
+                                'user_id': user_id,
+                                'datetime': event_datetime,
+                            })
+                data = pd.DataFrame(data, columns=['user_id', 'datetime'])
+                data['user_id'] = data['user_id'].astype(str)
+                return data
+            data = generate_fake_retention_data()
             log(f"Loaded data w/ {data.shape[0]:,} rows and {data.shape[1]:,} columns")
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
@@ -804,8 +869,12 @@ def filter_data(
     Input('n_bins_slider', 'value'),
     Input('opacity_slider', 'value'),
     Input('top_n_categories_slider', 'value'),
+    Input('min_retention_events_slider', 'value'),
+    Input('num_retention_periods_slider', 'value'),
     Input('hist_func_agg_dropdown', 'value'),
     Input('bar_mode_dropdown', 'value'),
+    Input('cohort_conversion_rate__input', 'value'),
+    Input('cohort_conversion_rate__dropdown', 'value'),
     Input('log_x_y_axis_checklist', 'value'),
     Input('free_x_y_axis_checklist', 'value'),
     Input('show_axes_histogram_checklist', 'value'),
@@ -848,8 +917,12 @@ def update_controls_and_graph(  # noqa
             n_bins: int,
             opacity: float,
             top_n_categories: float,
+            min_retention_events: float,
+            num_retention_periods: float,
             hist_func_agg: str,
             bar_mode: str,
+            cohort_conversion_rate_input: str,
+            cohort_conversion_rate_dropdown: str,
             log_x_y_axis: list[str],
             free_x_y_axis: list[str],
             show_axes_histogram: list[str],
@@ -884,8 +957,12 @@ def update_controls_and_graph(  # noqa
     log_variable('n_bins', n_bins)
     log_variable('opacity', opacity)
     log_variable('top_n_categories', top_n_categories)
+    log_variable('min_retention_events', min_retention_events)
+    log_variable('num_retention_periods', num_retention_periods)
     log_variable('hist_func_agg', hist_func_agg)
     log_variable('bar_mode', bar_mode)
+    log_variable('cohort_conversion_rate_input', cohort_conversion_rate_input)
+    log_variable('cohort_conversion_rate_dropdown', cohort_conversion_rate_dropdown)
     log_variable('log_x_y_axis', log_x_y_axis)
     log_variable('free_x_y_axis', free_x_y_axis)
     log_variable('show_axes_histogram', show_axes_histogram)
@@ -986,7 +1063,7 @@ def update_controls_and_graph(  # noqa
             top_n_categories = top_n_categories_lookup[top_n_categories]
             top_n_categories = None if top_n_categories == 'None' else int(top_n_categories)
             exclude_from_top_n_transformation = []
-            if graph_type == 'bar - count distinct':
+            if graph_type in ['bar - count distinct', 'retention']:
                 exclude_from_top_n_transformation = [y_variable]
             elif graph_type == 'heatmap - count distinct':
                 exclude_from_top_n_transformation = [z_variable]
@@ -1011,6 +1088,11 @@ def update_controls_and_graph(  # noqa
                 generated_code += "\n"
                 generated_code += code
 
+            if cohort_conversion_rate_input:
+                cohort_conversion_rate_input = [
+                    int(x.strip()) for x in cohort_conversion_rate_input.split(',')
+                ]
+            min_retention_events = min_retention_events_lookup[min_retention_events]
             fig, graph_code = generate_graph(
                 data=graph_data,
                 graph_type=graph_type,
@@ -1024,9 +1106,14 @@ def update_controls_and_graph(  # noqa
                 selected_category_order=sort_categories,
                 hist_func_agg=hist_func_agg,
                 bar_mode=bar_mode,
+                date_floor=date_floor,
+                cohort_conversion_rate_snapshots=cohort_conversion_rate_input,
+                cohort_conversion_rate_units=cohort_conversion_rate_dropdown,
                 opacity=opacity,
                 n_bins_month=n_bins_month,
                 n_bins=n_bins,
+                min_retention_events=min_retention_events,
+                num_retention_periods=num_retention_periods,
                 log_x_axis='Log X-Axis' in log_x_y_axis,
                 log_y_axis='Log Y-Axis' in log_x_y_axis,
                 free_x_axis='Free X-Axis' in free_x_y_axis,
@@ -1041,7 +1128,10 @@ def update_controls_and_graph(  # noqa
         if selected_graph_config:
             # update color/size/facet variable options based on graph type
             log_variable('graph_config', selected_graph_config)
-            optional_variables = selected_graph_config['optional_variables']
+            if 'optional_variables' in selected_graph_config:
+                optional_variables = selected_graph_config['optional_variables'] or {}
+            else:
+                optional_variables = {}
             log_variable('optional_variables', optional_variables)
 
             if 'color_variable' in optional_variables:
@@ -1532,6 +1622,7 @@ def update_z_variable_dropdown_style(
     Input('color_variable_dropdown', 'value'),
     Input('size_variable_dropdown', 'value'),
     Input('facet_variable_dropdown', 'value'),
+    Input('graph_type_dropdown', 'value'),
     State('column_types', 'data'),
     prevent_initial_call=True,
 )
@@ -1541,9 +1632,12 @@ def update_categorical_controls_div_style(
         color_variable: str | None,
         size_variable: str | None,
         facet_variable: str | None,
+        graph_type: str,
         column_types: list[str],
     ) -> dict:
     """Toggle the sort-categories div."""
+    if graph_type == 'retention':
+        return {'display': 'none'}, {'display': 'none'}
     if (
         t.is_discrete(x_variable, column_types)
         or t.is_discrete(y_variable, column_types)
@@ -1588,6 +1682,19 @@ def update_n_bins_div_style(
                 return turn_on, turn_off
             return turn_on, turn_on
     return turn_off, turn_off
+
+
+@app.callback(
+    Output('min_retention_events_div', 'style'),
+    Output('num_retention_periods_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_retention_div_style(graph_type: str) -> dict:
+    """Toggle the retention div."""
+    if graph_type == 'retention':
+        return {'display': 'block'}, {'display': 'block'}
+    return {'display': 'none'}, {'display': 'none'}
 
 
 @app.callback(
@@ -1705,6 +1812,17 @@ def update_facet_label_div_style(facet_variable: str | None) -> dict:
         return {'width': '100%', 'display': 'block'}
     return {'display': 'none'}
 
+
+@app.callback(
+    Output('cohort_conversion_rate_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_cohort_conversion_rate_div_style(graph_type: str) -> dict:
+    """Toggle the cohort conversion rate div."""
+    if graph_type == 'cohorted conversion rates':
+        return {'display': 'block'}
+    return {'display': 'none'}
 
 if __name__ == '__main__':
     app.run_server(host=HOST, debug=DEBUG, port=PORT)

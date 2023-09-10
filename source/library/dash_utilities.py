@@ -420,6 +420,43 @@ def get_category_orders(
     return category_orders
 
 
+def plot_retention(
+        graph_data: pd.DataFrame,
+        x_variable:str,
+        y_variable: str,
+        intervals: str,
+        min_events: int,
+        max_periods_to_display: int) -> go.Figure:
+    """Plot retention heatmap."""
+    if intervals not in ['day', 'week', 'month']:
+        raise InvalidConfigurationError(f"Invalid interval selected for retention heatmap ({intervals}).")  # noqa
+
+    from helpsk.conversions import retention_matrix
+    import pandas as pd
+    import plotly.express as px
+
+    graph_data[x_variable] = pd.to_datetime(graph_data[x_variable])
+    retention = retention_matrix(
+        df=graph_data,
+        timestamp=x_variable,
+        unique_id=y_variable,
+        intervals=intervals,
+        min_events=min_events,
+    )
+    columns = [str(x) for x in range(1, max_periods_to_display) if str(x) in retention.columns]
+    retention_data = retention[columns]
+    return px.imshow(
+        retention_data,
+        color_continuous_scale='Greens',
+        text_auto='.1%',
+        labels={'x': intervals.capitalize(), 'y': "Cohort", 'color': "% Retained"},
+        y=retention['cohort'].astype(str).tolist(),
+        template='simple_white',
+        zmin=0,
+        zmax=retention_data.max().max(),
+    )
+
+
 def generate_graph(  # noqa: PLR0912, PLR0915
         data: pd.DataFrame,
         graph_type: str,
@@ -433,9 +470,14 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         selected_category_order: str | None,
         hist_func_agg: str | None,
         bar_mode: str | None,
+        date_floor: str | None,
+        cohort_conversion_rate_snapshots: list[int] | None,
+        cohort_conversion_rate_units: str | None,
         opacity: float | None,
         n_bins_month: int | None,
         n_bins: int | None,
+        min_retention_events: int | None,
+        num_retention_periods: int | None,
         log_x_axis: bool | None,
         log_y_axis: bool | None,
         free_x_axis: bool | None,
@@ -681,7 +723,21 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             labels={graph_labels},
         )
         """)
-        fig
+    elif graph_type == 'retention':
+        graph_code += textwrap.dedent(f"""
+        from helpsk.conversions import retention_matrix
+        import pandas as pd
+        graph_data['{x_variable}'] = pd.to_datetime(graph_data['{x_variable}'])
+        fig = plot_retention(
+            graph_data,
+            x_variable='{x_variable}',
+            y_variable='{y_variable}',
+            intervals='{date_floor}',
+            min_events={min_retention_events},
+            max_periods_to_display={num_retention_periods},
+        )
+        """)
+
     elif graph_type == 'heatmap - count distinct':
         selected_variables = [
             x for x in [x_variable, y_variable, z_variable, facet_variable]
@@ -711,6 +767,10 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         log(x_variable in graph_data.columns)
         log(y_variable in graph_data.columns)
         log(f"{x_variable} (Cohorts)" in graph_data.columns)
+        intervals = [
+            (x, cohort_conversion_rate_units)
+            for x in cohort_conversion_rate_snapshots if x > 0
+        ]
         graph_code += textwrap.dedent(f"""
         from helpsk.conversions import plot_cohorted_conversion_rates
         graph_data['{x_variable}'] = pd.to_datetime(graph_data['{x_variable}'])
@@ -720,7 +780,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             base_timestamp='{x_variable}',
             conversion_timestamp='{y_variable}',
             cohort={f"'{x_variable} (Cohorts)'"},
-            intervals=[(1, 'days'), (7, 'days'), (14, 'days')],
+            intervals={intervals},
             groups={f"'{facet_variable}'" if facet_variable else None},
             category_orders={category_orders},
             current_datetime=None,
