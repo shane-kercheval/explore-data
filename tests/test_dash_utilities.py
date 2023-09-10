@@ -1041,7 +1041,11 @@ def test_generate_graph__all_configurations(  # noqa
                         assert graph_type['name'] in code
 
                 # test with optional parameters
-                optional_variables = graph_type['optional_variables']
+                if 'optional_variables' in graph_type:
+                    optional_variables = graph_type['optional_variables'] or {}
+                else:
+                    optional_variables = {}
+
                 color_variable = optional_variables['color_variable']['types'] if 'color_variable' in optional_variables else None  # noqa
                 size_variable = optional_variables['size_variable']['types'] if 'size_variable' in optional_variables else None  # noqa
                 facet_variable = optional_variables['facet_variable']['types'] if 'facet_variable' in optional_variables else None  # noqa
