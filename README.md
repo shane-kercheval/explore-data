@@ -4,7 +4,7 @@ The data explorer is a plotly dash app that makes exploring datasets easy.
 
 # Running the project
 
-- install docker (or create a virtual environment)
+- install docker
 - navigate to the project directory and run `make docker_run`
 - when the docker container is running, open a web browser and go to http://localhost:8050
 
