@@ -1,5 +1,3 @@
-# project-template
-
 The data explorer is a plotly dash app that makes exploring datasets easy.
 
 ![Loading GIF](https://github.com/shane-kercheval/explore-data/blob/main/explore-data.gif)
