@@ -188,3 +188,4 @@ file_system_backend
 !tests/test_files/datasets/*.csv
 !tests/test_files/datasets/*.pkl
 !data/examples/*.csv
+.snowflake.config
