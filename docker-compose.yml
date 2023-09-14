@@ -9,9 +9,9 @@ services:
     tty: true        # docker run -t
   app:
     build: .
-    working_dir: /code/source/entrypoints
+    working_dir: /code
     volumes:
       - .:/code
     ports:
       - "8050:8050"
-    command: python /code/source/entrypoints/app.py
+    command: python /code/app.py
