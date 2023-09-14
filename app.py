@@ -1,5 +1,4 @@
 """Dash app entry point."""
-from datetime import datetime, timedelta
 import math
 import os
 from dotenv import load_dotenv
@@ -258,11 +257,13 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 ),
                                 dbc.Button(
                                     "Clear",
+                                    className='btn-custom',
                                     id="clear-settings-button",
                                     style={'margin': '10px 20px 0 0'},
                                 ),
                                 dbc.Button(
-                                    "Swap X & Y",
+                                    "Swap X/Y",
+                                    className='btn-custom',
                                     id="swap-x-y-button",
                                     style={'margin': '10px 20px 0 0'},
                                 ),
@@ -281,6 +282,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             dbc.CardBody([
                                 dbc.Button(
                                     "Apply",
+                                    className='btn-custom',
                                     id="filter-apply-button",
                                     style={'margin': '0 20px 20px 0'},
                                 ),
@@ -461,11 +463,13 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             dbc.CardBody([
                                 dbc.Button(
                                     "Apply",
+                                    className='btn-custom',
                                     id="labels-apply-button",
                                     style={'margin': '0 20px 20px 0'},
                                 ),
                                 dbc.Button(
                                     "Clear",
+                                    className='btn-custom',
                                     id="labels-clear-button",
                                     style={'margin': '0 20px 20px 0'},
                                 ),
@@ -738,34 +742,35 @@ def load_data(  # noqa
             data = pd.read_csv(load_from_url)
         elif triggered == 'load_random_data_button.n_clicks':
             log("Loading DataFrame with random data")
-            # from source.library.utilities import create_random_dataframe
-            # data = create_random_dataframe(num_rows=10_000, sporadic_missing=True)
-            def generate_fake_retention_data() -> pd.DataFrame:
-                import numpy as np
-                base_date = datetime.utcnow() - timedelta(days=100)
-                data = []
-                for user_id in range(100):
-                    for days in range(0, 70, 1):
-                        # only append 5% of the time
-                        event_datetime = base_date + timedelta(days=days + user_id)
-                        if event_datetime > base_date + timedelta(days=100):
-                            continue
-                        if np.random.rand() < 0.5:  # noqa
-                            # print('append', user_id, days)
-                            data.append({
-                                'user_id': user_id,
-                                'datetime': event_datetime,
-                            })
-                        if np.random.rand() < 0.5:  # noqa
-                            # print('append', user_id, days)
-                            data.append({
-                                'user_id': user_id,
-                                'datetime': event_datetime,
-                            })
-                data = pd.DataFrame(data, columns=['user_id', 'datetime'])
-                data['user_id'] = data['user_id'].astype(str)
-                return data
-            data = generate_fake_retention_data()
+            from source.library.utilities import create_random_dataframe
+            data = create_random_dataframe(num_rows=10_000, sporadic_missing=True)
+            # def generate_fake_retention_data() -> pd.DataFrame:
+            #     from datetime import datetime, timedelta
+            #     import numpy as np
+            #     base_date = datetime.utcnow() - (days=100)
+            #     data = []
+            #     for user_id in range(100):
+            #         for days in range(0, 70, 1):
+            #             # only append 5% of the time
+            #             event_datetime = base_date + timedelta(days=days + user_id)
+            #             if event_datetime > base_date + timedelta(days=100):
+            #                 continue
+            #             if np.random.rand() < 0.5:
+            #                 # print('append', user_id, days)
+            #                 data.append({
+            #                     'user_id': user_id,
+            #                     'datetime': event_datetime,
+            #                 })
+            #             if np.random.rand() < 0.5:
+            #                 # print('append', user_id, days)
+            #                 data.append({
+            #                     'user_id': user_id,
+            #                     'datetime': event_datetime,
+            #                 })
+            #     data = pd.DataFrame(data, columns=['user_id', 'datetime'])
+            #     data['user_id'] = data['user_id'].astype(str)
+            #     return data
+            # data = generate_fake_retention_data()
             log(f"Loaded data w/ {data.shape[0]:,} rows and {data.shape[1]:,} columns")
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
@@ -1426,7 +1431,6 @@ def update_filter_controls(
 
     components = []
     if selected_filter_columns and data is not None and len(data) > 0:
-        # data = pd.DataFrame(data)
         for column in selected_filter_columns:
             log(f"Creating controls for `{column}`")
             value = []
@@ -1436,11 +1440,12 @@ def update_filter_controls(
 
             if t.is_date(column, column_types):
                 log("Creating date range control")
+                _date_series = pd.to_datetime(data[column])
                 components.append(create_date_range_control(
                     label=column,
                     id=f"filter_control_{column}",
-                    min_value=value[0] if value else data[column].min(),
-                    max_value=value[1] if value else data[column].max(),
+                    min_value=value[0] if value else _date_series.min(),
+                    max_value=value[1] if value else _date_series.max(),
                     component_id={"type": "filter-control-date-range", "index": column},
                 ))
             elif t.is_boolean(column, column_types):
@@ -1464,7 +1469,7 @@ def update_filter_controls(
                 ))
             elif t.get_type(column, column_types) in {t.STRING, t.CATEGORICAL}:
                 log("Creating dropdown control")
-                log_variable('series.unique()', data[column].unique())
+                log_variable('data[column].unique()', data[column].unique())
                 options = sorted(data[column].dropna().unique().tolist())
                 if data[column].isna().any():
                     options.append(MISSING)
