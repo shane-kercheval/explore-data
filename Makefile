@@ -1,3 +1,5 @@
+.PHONY: create_environment install_requirements run_app
+
 ####
 # DOCKER
 ####
@@ -7,14 +9,28 @@ docker_build:
 docker_run: docker_build
 	docker compose -f docker-compose.yml up
 
-app:
+docker_app:
 	docker compose -f docker-compose.yml up --build app
 
-app_client:
+client:
 	open 'http://127.0.0.1:8050'
 
-zsh:
-	docker exec -it data-science-template-bash-1 /bin/zsh
+####
+# Virtual Environment
+####
+create_environment:
+	conda create -n explore_data python=3.11 -y
+
+# activate contda environment via `conda activate explore_data`
+install_requirements:
+	pip install -r requirements.txt
+	pip install -r https://raw.githubusercontent.com/snowflakedb/snowflake-connector-python/v3.0.4/tested_requirements/requirements_311.reqs
+	pip install snowflake-connector-python==v3.0.4
+	pip install "snowflake-connector-python[pandas]"
+
+# activate contda environment via `conda activate explore_data`
+app:
+	python app.py
 
 ####
 # Project
