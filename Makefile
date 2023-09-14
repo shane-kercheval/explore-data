@@ -20,15 +20,12 @@ zsh:
 # Project
 ####
 linting:
-	ruff check source/entrypoints
+	ruff check app.py
 	ruff check source/library
-	# ruff check source/notebooks
-	ruff check source/service
 	ruff check tests
 
 unittests:
 	rm -f tests/test_files/log.log
-	# pytest tests
 	coverage run -m pytest --durations=0 tests
 	coverage html
 
