@@ -1,8 +1,75 @@
+:root {
+    --primary-color: #1d1e20;
+    --secondary-color: #0056b3;
+    --background-color: #f7f7f7;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    padding: 5px 0 0 0;
+}
+
+.container {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+button, .btn-custom {
+    padding: 10px 20px;
+    font-size: 16px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+button:hover, .btn-custom:hover {
+    background-color: var(--secondary-color);
+}
+
+.btn-custom {
+    border-radius: 0 !important;
+}
+
+.dash-table-container .dash-header {
+    font-weight: bold;
+    background-color: rgb(230, 230, 230);
+    font-size: 16px;
+}
+
+.dash-table-container .dash-cell {
+    padding: 10px;
+    font-size: 14px;
+}
+
+input {
+    padding: 10px;
+    border: 1px solid var(--primary-color);
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--background-color);
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--primary-color);
+}
+
 div.graph_panel_section {
     margin: 0 0 10px 0;
     border: none;
-    /* background-color: #f7f7f7;
-    border-radius: 0 0 8px 8px; */
 }
 
 label.graph_panel_section_label {
@@ -11,48 +78,38 @@ label.graph_panel_section_label {
 }
 
 .checkbox-label label {
-    font-weight: bold; /* Makes the label text bold */
-    margin-right: 15px; /* Adds space between the checkbox and its label */
+    font-weight: bold;
+    margin-right: 15px;
 }
 
 .checkbox-label input[type="checkbox"] {
-    margin-right: 5px; /* Adds space between the checkbox and its label */
+    margin-right: 5px;
 }
 
-
-/* Reset some of the browser default styles for better consistency */
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-/* Styling the card header */
 .card-header {
     padding: 8px 16px;
     border: none;
-    background-color: #f7f7f7;
+    background-color: var(--background-color);
     display: flex;
     justify-content: space-between;
     align-items: center;
     border-radius: 8px 8px 0 0;
 }
 
-/* Styling the button to look more like a link */
 .panel_toggle_button.btn {
     font-size: 16px;
     padding: 6px 8px;
     background: none;
     border: none;
-    color: #1d1e20;
-    text-decoration: none; /* No underline by default */
+    color: var(--primary-color);
+    text-decoration: none;
     cursor: pointer;
     transition: color 0.3s ease, text-decoration 0.3s ease;
 }
 
 .panel_toggle_button.btn:hover {
-    color: #0056b3;
-    text-decoration: underline; /* Underline appears on hover */
+    color: var(--secondary-color);
+    text-decoration: underline;
 }
 
 .panel_toggle_button.btn:focus {
@@ -60,26 +117,16 @@ label.graph_panel_section_label {
 }
 
 .panel_toggle_button.btn:active {
-    background: none; /* Ensures the background remains unchanged on active state */
-    box-shadow: none; /* Remove any potential shadow on active state */
+    background: none;
+    box-shadow: none;
 }
 
-.min_max_div {
+.min_max_div, .cohort_snapshots_div {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.min_max_div input {
-    width: 100% !important;
-}
-
-.cohort_snapshots_div {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.cohort_snapshots_div input {
+.min_max_div input, .cohort_snapshots_div input {
     width: 100% !important;
 }
