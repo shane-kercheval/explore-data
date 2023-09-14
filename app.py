@@ -12,6 +12,7 @@ import plotly.express as px
 import plotly.graph_objs as go
 import pandas as pd
 import helpsk.pandas as hp
+from helpsk.database import Snowflake
 import dash_bootstrap_components as dbc
 from source.library.dash_ui import (
     create_cohort_conversion_rate_control,
@@ -42,8 +43,8 @@ import source.library.types as t
 from dash_extensions.enrich import DashProxy, Output, Input, State, Serverside, html, dcc, \
     ServersideOutputTransform
 
-
 load_dotenv()
+
 HOST = os.getenv('HOST')
 DEBUG = os.getenv('DEBUG').lower() == 'true'
 PORT = os.getenv('PORT')
@@ -88,6 +89,10 @@ bar_mode_options = [
 with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_configurations.yml')) as f:  # noqa
     GRAPH_CONFIGS = yaml.safe_load(f)
 
+DEFAULT_QUERIES = ''
+if os.path.isfile('queries.txt'):
+    with open('queries.txt') as f:
+        DEFAULT_QUERIES = f.read()
 
 app = DashProxy(
     __name__,
@@ -111,13 +116,19 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
             html.Br(),
             dbc.Row([
                 dbc.Tabs([
-                    dbc.Tab(label="Generate Random Dataframe", children=[
+                    dbc.Tab(label="Query Snowflake", children=[
                         html.Br(),
                         html.Button(
-                            'Generate',
-                            id='load_random_data_button',
+                            'Query',
+                            id='query_snowflake_button',
                             n_clicks=0,
                             style={'width': '200px', 'margin': '0 8px 0 0'},
+                        ),
+                        html.Br(),html.Br(),
+                        dcc.Textarea(
+                            id='query_snowflake_text',
+                            value=DEFAULT_QUERIES,
+                            style={'width': '100%', 'height': 400, 'padding': '10px'},
                         ),
                     ]),
                     dbc.Tab(label="Load .csv from URL", children=[
@@ -161,6 +172,15 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 # 'margin': '0px',
                             },
                             multiple=False,
+                        ),
+                    ]),
+                    dbc.Tab(label="Generate Random Dataframe", children=[
+                        html.Br(),
+                        html.Button(
+                            'Generate',
+                            id='load_random_data_button',
+                            n_clicks=0,
+                            style={'width': '200px', 'margin': '0 8px 0 0'},
                         ),
                     ]),
                 ]),
@@ -647,17 +667,21 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('original_data', 'data'),
     Output('filtered_data', 'data', allow_duplicate=True),
     Output('column_types', 'data'),
+    Input('query_snowflake_button', 'n_clicks'),
     Input('load_random_data_button', 'n_clicks'),
     Input('load_from_url_button', 'n_clicks'),
     Input('upload-data', 'contents'),
+    State('query_snowflake_text', 'value'),
     State('upload-data', 'filename'),
     State('load_from_url', 'value'),
     prevent_initial_call=True,
 )
 def load_data(  # noqa
+        query_snowflake_button: int,
         load_random_data_button: int,
         load_from_url_button: int,
         upload_data_contents: str,
+        query_snowflake_text: str,
         upload_data_filename: str,
         load_from_url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
@@ -674,14 +698,15 @@ def load_data(  # noqa
     non_numeric_summary = None
     original_data = None
     filtered_data = None
+    log_variable('query_snowflake_button', query_snowflake_button)
+    log_variable('load_random_data_button', load_random_data_button)
+    log_variable('load_from_url_button', load_from_url_button)
 
     if callback_context.triggered:
         triggered = callback_context.triggered[0]['prop_id']
         log_variable('triggered', triggered)
 
         if triggered == 'upload-data.contents':
-            log_variable('load_random_data_button', load_random_data_button)
-            log_variable('load_from_url_button', load_from_url_button)
             log_variable('upload_data_filename', upload_data_filename)
             _, content_string = upload_data_contents.split(',')
             decoded = base64.b64decode(content_string)
@@ -702,6 +727,12 @@ def load_data(  # noqa
                 return html.Div([
                     'There was an error processing this file.',
                 ])
+        elif triggered == 'query_snowflake_button.n_clicks':
+            log("Querying Snowflake")
+            _snowflake_config = '.snowflake.config'
+            assert os.path.isfile(_snowflake_config)
+            with Snowflake.from_config(_snowflake_config, config_key='snowflake') as db:
+                data  = db.query(query_snowflake_text)
         elif triggered == 'load_from_url_button.n_clicks' and load_from_url:
             log("Loading from CSV URL")
             data = pd.read_csv(load_from_url)
@@ -1823,6 +1854,7 @@ def update_cohort_conversion_rate_div_style(graph_type: str) -> dict:
     if graph_type == 'cohorted conversion rates':
         return {'display': 'block'}
     return {'display': 'none'}
+
 
 if __name__ == '__main__':
     app.run_server(host=HOST, debug=DEBUG, port=PORT)
