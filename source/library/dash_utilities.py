@@ -445,16 +445,75 @@ def plot_retention(
     )
     columns = [str(x) for x in range(1, max_periods_to_display) if str(x) in retention.columns]
     retention_data = retention[columns]
-    return px.imshow(
-        retention_data,
-        color_continuous_scale='Greens',
-        text_auto='.1%',
-        labels={'x': intervals.capitalize(), 'y': "Cohort", 'color': "% Retained"},
-        y=retention['cohort'].astype(str).tolist(),
-        template='simple_white',
-        zmin=0,
-        zmax=retention_data.max().max(),
+    # return px.imshow(
+    #     retention_data,
+    #     color_continuous_scale='Greens',
+    #     text_auto='.1%',
+    #     labels={'x': intervals.capitalize(), 'y': "Cohort", 'color': "% Retained"},
+    #     y=retention['cohort'].astype(str).tolist(),
+    #     template='simple_white',
+    #     zmin=0,
+    #     zmax=retention_data.max().max(),
+    # )
+    # Calculate the number of retained IDs for each cell
+    retained_ids_matrix = retention_data.to_numpy() * retention['# of unique ids'].to_numpy()[:, None]  # noqa
+    # Build the hover text
+    hover_text = []
+    for row_index in range(len(retention_data)):
+        row_hover_text = []
+        for column_index in range(len(retention_data.columns)):
+            cohort = retention['cohort'][row_index].strftime('%Y-%m-%d')
+            unique_ids = retention['# of unique ids'][row_index]
+            retained_ids = retained_ids_matrix[row_index, column_index]
+            retention_rate = retention_data.iloc[row_index, column_index]
+            text = (
+                f'Cohort: {cohort} - {intervals.capitalize()} {column_index + 1}<br>'
+                f'# of unique ids: {unique_ids:,.0f}<br>'
+                f'# of retained ids: {retained_ids:,.0f}<br>'
+                f'Retention Rate: {retention_rate:.2%}'
+            )
+            row_hover_text.append(text)
+        hover_text.append(row_hover_text)
+
+    max_retention = retention_data.max().max()
+    fig = go.Figure(
+        data=go.Heatmap(
+            z=retention_data.values,
+            x=retention_data.columns,
+            y=retention['cohort'].astype(str).tolist(),
+            colorscale='Greens',
+            zmin=0,
+            zmax=max_retention,
+            hovertext=hover_text,
+            hoverinfo='text',
+        ),
     )
+    # Generate coordinates for text annotations
+    x_coords = np.tile(retention_data.columns, (len(retention_data), 1))
+    y_coords = np.tile(retention['cohort'].astype(str), (len(retention_data.columns), 1)).T
+
+    def get_text_color(value):  # noqa
+        return 'black' if value < max_retention * 0.5 else 'white'
+
+    text_color = np.vectorize(get_text_color)(retention_data.values)
+    annotations = go.Scatter(
+        x=x_coords.ravel(),
+        y=y_coords.ravel(),
+        text=np.char.mod('%.1f%%', 100 * retention_data.to_numpy()).ravel(),
+        mode='text',
+        hovertext=np.array(hover_text).ravel(),  # set hovertext to hover_text variable
+        hoverinfo='text',  # set hoverinfo to 'text' to display hover text
+        textfont={'color': text_color.ravel()},
+    )
+    fig.add_trace(annotations)
+    fig.update_layout(
+        xaxis_title=intervals.capitalize(),
+        yaxis_title="Cohort",
+        coloraxis_colorbar_title="% Retained",
+        template='simple_white',
+        yaxis_autorange='reversed',
+    )
+    return fig
 
 
 def generate_graph(  # noqa: PLR0912, PLR0915
@@ -794,7 +853,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             height=None,
             width=None,
         )
-        fig.update_yaxes(tickformat=',.1%')
+        fig.update_yaxes(tickformat=',.2%')
         """)
     else:
         raise ValueError(f"Unknown graph type: {graph_type}")
