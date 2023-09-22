@@ -8,6 +8,28 @@ The data explorer is a plotly dash app that makes exploring datasets easy.
 - navigate to the project directory and run `make docker_run`
 - when the docker container is running, open a web browser and go to http://localhost:8050
 
+# Querying Snowflake
+
+## Configuration
+
+- To enable the `Query Snowflake` tab, you must create a configuration file in the format below
+- The name and location of the configuration file can be either of the following:
+    - `.snowflake.config` located in the project directory (same directory as `app.py`)
+    - Any file name/path of your choosing, as long as you set the `SNOWFLAKE_CONFIG_PATH` variable in the `.env` file.
+
+```
+[snowflake]
+user=my.email@address.com
+account=account.id
+authenticator=externalbrowser
+warehouse=WAREHOUSE_NAME
+database=DATABASE_NAME
+```
+
+## Default Queries
+
+You can create a `queries.txt` file to the project directory (same directory as `app.py`) and the content of the file (e.g. default query or queries) will be populated in the text-box used to query Snowflake.
+
 ## Known Issues
 
 - The user needs to refresh the app before loading a different dataset.

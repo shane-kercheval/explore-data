@@ -88,6 +88,8 @@ bar_mode_options = [
 with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_configurations.yml')) as f:  # noqa
     GRAPH_CONFIGS = yaml.safe_load(f)
 
+SNOWFLAKE_CONFIG_PATH = os.getenv('SNOWFLAKE_CONFIG_PATH')
+ENABLE_SNOWFLAKE = os.path.isfile(SNOWFLAKE_CONFIG_PATH)
 DEFAULT_QUERIES = ''
 if os.path.isfile('queries.txt'):
     with open('queries.txt') as f:
@@ -114,8 +116,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
             dcc.Loading(type="default", children=[
             html.Br(),
             dbc.Row([
-                dbc.Tabs([
-                    dbc.Tab(label="Query Snowflake", children=[
+                dbc.Tabs(active_tab='tab-0' if ENABLE_SNOWFLAKE else 'tab-1', children=[
+                    dbc.Tab(label="Query Snowflake", disabled=ENABLE_SNOWFLAKE is False, children=[
                         html.Br(),
                         html.Button(
                             'Query',
@@ -128,6 +130,14 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             id='query_snowflake_text',
                             value=DEFAULT_QUERIES,
                             style={'width': '100%', 'height': 400, 'padding': '10px'},
+                        ),
+                        dbc.Alert(
+                            "Error.",
+                            color="danger",
+                            id="snowflake_error",
+                            dismissable=True,
+                            is_open=False,
+                            fade=False,
                         ),
                     ]),
                     dbc.Tab(label="Load .csv from URL", children=[
@@ -671,6 +681,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('original_data', 'data'),
     Output('filtered_data', 'data', allow_duplicate=True),
     Output('column_types', 'data'),
+    Output('snowflake_error', 'is_open'),
+    Output('snowflake_error', 'children'),
     Input('query_snowflake_button', 'n_clicks'),
     Input('load_random_data_button', 'n_clicks'),
     Input('load_from_url_button', 'n_clicks'),
@@ -702,6 +714,8 @@ def load_data(  # noqa
     non_numeric_summary = None
     original_data = None
     filtered_data = None
+    column_types = None
+    snowflake_error_message = None
     log_variable('query_snowflake_button', query_snowflake_button)
     log_variable('load_random_data_button', load_random_data_button)
     log_variable('load_from_url_button', load_from_url_button)
@@ -709,7 +723,6 @@ def load_data(  # noqa
     if callback_context.triggered:
         triggered = callback_context.triggered[0]['prop_id']
         log_variable('triggered', triggered)
-
         if triggered == 'upload-data.contents':
             log_variable('upload_data_filename', upload_data_filename)
             _, content_string = upload_data_contents.split(',')
@@ -733,10 +746,14 @@ def load_data(  # noqa
                 ])
         elif triggered == 'query_snowflake_button.n_clicks':
             log("Querying Snowflake")
-            _snowflake_config = '.snowflake.config'
-            assert os.path.isfile(_snowflake_config)
-            with Snowflake.from_config(_snowflake_config, config_key='snowflake') as db:
-                data  = db.query(query_snowflake_text)
+            try:
+                with Snowflake.from_config(SNOWFLAKE_CONFIG_PATH, config_key='snowflake') as db:
+                    data  = db.query(query_snowflake_text)
+            except Exception as e:
+                data = None
+                snowflake_error_message = f"{type(e).__name__}: {e}"
+                log_error(snowflake_error_message)
+
         elif triggered == 'load_from_url_button.n_clicks' and load_from_url:
             log("Loading from CSV URL")
             data = pd.read_csv(load_from_url)
@@ -775,46 +792,47 @@ def load_data(  # noqa
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
 
-        column_types = t.get_column_types(data)
-        log_variable('column_types', column_types)
-        log_variable('column_types', column_types)
+        if data is not None:
+            column_types = t.get_column_types(data)
+            log_variable('column_types', column_types)
+            log_variable('column_types', column_types)
 
-        log('creating numeric summary')
-        numeric_summary = hp.numeric_summary(data, return_style=False)
-        if numeric_summary is not None and len(numeric_summary) > 0:
-            numeric_summary = numeric_summary.\
-                reset_index().\
-                rename(columns={'index': 'Column Name'}).\
-                to_dict('records')
-        else:
-            numeric_summary = None
+            log('creating numeric summary')
+            numeric_summary = hp.numeric_summary(data, return_style=False)
+            if numeric_summary is not None and len(numeric_summary) > 0:
+                numeric_summary = numeric_summary.\
+                    reset_index().\
+                    rename(columns={'index': 'Column Name'}).\
+                    to_dict('records')
+            else:
+                numeric_summary = None
 
-        log('creating non-numeric summary')
-        non_numeric_summary = hp.non_numeric_summary(data, return_style=False)
-        if non_numeric_summary is not None and len(non_numeric_summary) > 0:
-            non_numeric_summary = non_numeric_summary.\
-                reset_index().\
-                rename(columns={'index': 'Column Name'}).\
-                to_dict('records')
-        else:
-            non_numeric_summary = None
+            log('creating non-numeric summary')
+            non_numeric_summary = hp.non_numeric_summary(data, return_style=False)
+            if non_numeric_summary is not None and len(non_numeric_summary) > 0:
+                non_numeric_summary = non_numeric_summary.\
+                    reset_index().\
+                    rename(columns={'index': 'Column Name'}).\
+                    to_dict('records')
+            else:
+                non_numeric_summary = None
 
-        x_variable_dropdown = data.columns.to_list()
-        y_variable_dropdown = x_variable_dropdown
-        filter_columns_dropdown = x_variable_dropdown
-        table_uploaded_data = [
-            dcc.Markdown("#### Sample of Data (first 500 rows):"),
-            dash_table.DataTable(
-                id='data_sample_table',
-                data=data.iloc[0:500].to_dict('records'),
-                page_size=20,
-                style_header={
-                    'fontWeight': 'bold',
-                },
-            ),
-        ]
-        original_data = data
-        filtered_data = data
+            x_variable_dropdown = data.columns.to_list()
+            y_variable_dropdown = x_variable_dropdown
+            filter_columns_dropdown = x_variable_dropdown
+            table_uploaded_data = [
+                dcc.Markdown("#### Sample of Data (first 500 rows):"),
+                dash_table.DataTable(
+                    id='data_sample_table',
+                    data=data.iloc[0:500].to_dict('records'),
+                    page_size=20,
+                    style_header={
+                        'fontWeight': 'bold',
+                    },
+                ),
+            ]
+            original_data = data
+            filtered_data = data
 
     return (
         x_variable_dropdown,
@@ -830,6 +848,8 @@ def load_data(  # noqa
         Serverside(original_data),
         Serverside(filtered_data),
         column_types,
+        snowflake_error_message is not None,
+        snowflake_error_message,
     )
 
 
