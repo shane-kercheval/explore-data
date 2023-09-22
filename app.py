@@ -1430,7 +1430,7 @@ def toggle_other_options_panel(n: int, is_open: bool) -> bool:
 
     prevent_initial_call=True,
 )
-def update_filter_controls(
+def update_filter_controls(  # noqa: PLR0912
         selected_filter_columns: list[str],
         filter_columns_cache: dict,
         column_types: list[str],
