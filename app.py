@@ -1489,8 +1489,13 @@ def update_filter_controls(
                 ))
             elif t.get_type(column, column_types) in {t.STRING, t.CATEGORICAL}:
                 log("Creating dropdown control")
-                log_variable('data[column].unique()', data[column].unique())
                 options = sorted(data[column].dropna().unique().tolist())
+                # most likely is an id value of some sort and will cause issues and slow down the
+                # app if there are too many options
+                if len(options) > 1000:
+                    log(f"skipping {column}; too many unique values.")
+                    continue
+                log_variable('data[column].unique()', options)
                 if data[column].isna().any():
                     options.append(MISSING)
                 components.append(create_dropdown_control(
@@ -1603,8 +1608,9 @@ def cache_filter_columns(  # noqa: PLR0912
                     filter_columns_cache[column] = values
                     break
         else:
+            # this can happen if the user selects a column that we won't filter on (e.g. the
+            # column has too many unique values)
             log_error(f"Unknown column type: {column}")
-            raise ValueError(f"Unknown column type: {column}")
 
     log(f"filter_columns_cache: {filter_columns_cache}")
     return filter_columns_cache
