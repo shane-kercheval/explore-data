@@ -976,7 +976,7 @@ def test_generate_graph__all_configurations(  # noqa
                         .dt.to_period('M').dt.start_time
                         .dt.strftime('%Y-%m-%d')
                     )
-                print(x_var, y_var, z_var)
+                # print(x_var, y_var, z_var)
                 # x_var, y_var, z_var = variable_combinations[0]
                 # test with no parameters
                 if graph_type['name'] == 'bar - count distinct' and y_var == x_var:
