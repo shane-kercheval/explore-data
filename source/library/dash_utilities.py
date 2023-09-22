@@ -690,6 +690,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             category_orders={category_orders},
             log_x={log_x_axis},
             log_y={log_y_axis},
+            opacity=0.6,
             title={f'"{title}"' if title else None},
             labels={graph_labels},
         )
