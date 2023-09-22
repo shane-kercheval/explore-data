@@ -771,6 +771,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             (x, cohort_conversion_rate_units)
             for x in cohort_conversion_rate_snapshots if x > 0
         ]
+        cohorted_graph_type = 'line' if bar_mode == 'relative' else 'bar'
         graph_code += textwrap.dedent(f"""
         from helpsk.conversions import plot_cohorted_conversion_rates
         graph_data['{x_variable}'] = pd.to_datetime(graph_data['{x_variable}'])
@@ -784,7 +785,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             groups={f"'{facet_variable}'" if facet_variable else None},
             category_orders={category_orders},
             current_datetime=None,
-            graph_type='bar',
+            graph_type='{cohorted_graph_type}',
             title={f'"{title}"' if title else None},
             facet_col_wrap={num_facet_columns},
             bar_mode={f"'{bar_mode}'" if bar_mode else None},

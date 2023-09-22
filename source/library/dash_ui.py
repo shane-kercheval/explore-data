@@ -190,7 +190,7 @@ def create_min_max_control(
 def create_cohort_conversion_rate_control(
         label: str,
         id: str,  # noqa: A002
-        input_value: str = '7, 14, 30, 90, 180',
+        input_value: str = '1, 7, 14, 30, 90',
         dropdown_options: list[dict] | None = None,
         dropdown_value: str = 'days',
         hidden: bool = False,
