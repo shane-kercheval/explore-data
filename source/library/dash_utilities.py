@@ -854,6 +854,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             width=None,
         )
         fig.update_yaxes(tickformat=',.2%')
+        fig.update_traces(mode='lines+markers')
         """)
     else:
         raise ValueError(f"Unknown graph type: {graph_type}")
