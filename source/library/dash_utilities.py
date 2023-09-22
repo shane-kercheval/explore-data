@@ -433,7 +433,6 @@ def plot_retention(
 
     from helpsk.conversions import retention_matrix
     import pandas as pd
-    import plotly.express as px
 
     graph_data[x_variable] = pd.to_datetime(graph_data[x_variable])
     retention = retention_matrix(
