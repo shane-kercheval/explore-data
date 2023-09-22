@@ -252,6 +252,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     label="Date Floor",
                                     id="date_floor",
                                     hidden=True,
+                                    clearable=False,
                                     options=[
                                         {'label': 'None', 'value': 'None'},
                                         {'label': 'Year', 'value': 'year'},
