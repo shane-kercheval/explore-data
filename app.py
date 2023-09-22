@@ -672,7 +672,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('y_variable_dropdown', 'options'),
     Output('filter_columns_dropdown', 'options'),
     Output('filter_columns_cache', 'data', allow_duplicate=True),
-    Output('dynamic-filter-controls', 'children', allow_duplicate=True),
     Output('visualize_graph', 'figure', allow_duplicate=True),
     Output('visualize_table', 'data', allow_duplicate=True),
     Output('table_uploaded_data', 'children'),
@@ -706,7 +705,6 @@ def load_data(  # noqa
     y_variable_dropdown = []
     filter_columns_dropdown = []
     filter_columns_cache = None
-    dynamic_filter_controls = None
     primary_graph = {}
     visualize_table = None
     table_uploaded_data = None
@@ -839,7 +837,6 @@ def load_data(  # noqa
         y_variable_dropdown,
         filter_columns_dropdown,
         filter_columns_cache,
-        dynamic_filter_controls,
         primary_graph,
         visualize_table,
         table_uploaded_data,
