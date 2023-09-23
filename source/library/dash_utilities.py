@@ -513,6 +513,7 @@ def plot_retention(
         coloraxis_colorbar_title="% Retained",
         template='simple_white',
         yaxis_autorange='reversed',
+        yaxis_type='category',
     )
     return fig
 
