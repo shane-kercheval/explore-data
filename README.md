@@ -26,6 +26,8 @@ warehouse=WAREHOUSE_NAME
 database=DATABASE_NAME
 ```
 
+Note: if `authenticator` is set to `externalbrowser` you will probably not be able to run the app in a docker container, and instead can create a virtual/conda environment.
+
 ## Default Queries
 
 You can create a `queries.txt` file to the project directory (same directory as `app.py`) and the content of the file (e.g. default query or queries) will be populated in the text-box used to query Snowflake.
