@@ -444,6 +444,8 @@ def plot_retention(
     )
     columns = [str(x) for x in range(1, max_periods_to_display) if str(x) in retention.columns]
     retention_data = retention[columns]
+    if 0 in retention_data.shape:
+        return go.Figure()
     # return px.imshow(
     #     retention_data,
     #     color_continuous_scale='Greens',
@@ -853,8 +855,9 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             width=None,
         )
         fig.update_yaxes(tickformat=',.2%')
-        fig.update_traces(mode='lines+markers')
         """)
+        if cohorted_graph_type == 'line':
+            graph_code += "fig.update_traces(mode='lines+markers')\n"
     else:
         raise ValueError(f"Unknown graph type: {graph_type}")
 
