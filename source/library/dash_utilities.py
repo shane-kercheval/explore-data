@@ -316,8 +316,7 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
                     other_category=OTHER,
                 )
 
-        if t.is_date(variable, column_types):
-            assert date_floor
+        if date_floor and t.is_date(variable, column_types):
             # convert the date to the specified date_floor
             if create_cohorts_from and variable == create_cohorts_from[1]:
                 # we don't want to floor or remove anything from y-variable
