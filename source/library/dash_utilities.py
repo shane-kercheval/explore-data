@@ -707,7 +707,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             graph_code += f"fig.update_layout(barmode='{bar_mode}', bargap=0.05)\n"
 
         if t.is_date(x_variable, column_types):
-            graph_code += "fig.update_layout(xaxis_type='category')\n"
+            graph_code += "fig.update_xaxes(type='category')\n"
 
         graph_code += "fig\n"
     elif graph_type in ['bar', 'bar - count distinct']:
