@@ -535,7 +535,6 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         cohort_conversion_rate_snapshots: list[int] | None,
         cohort_conversion_rate_units: str | None,
         opacity: float | None,
-        n_bins_month: int | None,
         n_bins: int | None,
         min_retention_events: int | None,
         num_retention_periods: int | None,
@@ -676,15 +675,6 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         else:
             hist_func_agg = None
 
-        if t.is_date(x_variable, column_types):
-            if n_bins_month:
-                n_bins = None
-                n_bins_month = f"'M{n_bins_month}'"
-            else:
-                n_bins_month = None
-        else:
-            n_bins_month = None
-
         graph_code += textwrap.dedent(f"""
         import plotly.express as px
         fig = px.histogram(
@@ -709,13 +699,12 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             t.is_continuous(x_variable, column_types)
             and bar_mode
             and bar_mode != 'group'
-            ):
+        ):
             # Adjust the bar group gap
             graph_code += f"fig.update_layout(barmode='{bar_mode}', bargap=0.05)\n"
 
-        if n_bins_month:
-            graph_code += f"fig.update_traces(xbins_size={n_bins_month})\n"
-            graph_code += f"fig.update_xaxes(showgrid=True, ticklabelmode='period', dtick={n_bins_month}, tickformat='%b\\n%Y')\n"  # noqa
+        if t.is_date(x_variable, column_types):
+            graph_code += "fig.update_layout(xaxis_type='category')\n"
 
         graph_code += "fig\n"
     elif graph_type in ['bar', 'bar - count distinct']:

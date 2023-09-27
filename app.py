@@ -61,12 +61,6 @@ top_n_categories_lookup = {
     9: '40',
     10: '50',
 }
-n_bins_month_lookup = {
-    0: 'None',
-    1: '1',
-    2: '2',
-    3: '3',
-}
 min_retention_events_lookup = {
     1: '1',
     2: '2',
@@ -254,7 +248,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     hidden=True,
                                     clearable=False,
                                     options=[
-                                        {'label': 'None', 'value': 'None'},
                                         {'label': 'Year', 'value': 'year'},
                                         {'label': 'Quarter', 'value': 'quarter'},
                                         {'label': 'Month', 'value': 'month'},
@@ -403,16 +396,6 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     max=60,
                                     step=10,
                                     value=20,
-                                ),
-                                create_slider_control(
-                                    label="Bin Months",
-                                    id='n_bins_month',
-                                    hidden=True,
-                                    min=0,
-                                    max=3,
-                                    step=1,
-                                    value=0,
-                                    marks=n_bins_month_lookup,
                                 ),
                                 create_slider_control(
                                     label="# of Bins",
@@ -919,7 +902,6 @@ def filter_data(
     Input('graph_type_dropdown', 'options'),
     Input('graph_type_dropdown', 'value'),
     Input('sort_categories_dropdown', 'value'),
-    Input('n_bins_month_slider', 'value'),
     Input('n_bins_slider', 'value'),
     Input('opacity_slider', 'value'),
     Input('top_n_categories_slider', 'value'),
@@ -967,7 +949,6 @@ def update_controls_and_graph(  # noqa
             graph_types: list[dict],
             graph_type: str,
             sort_categories: str,
-            n_bins_month: int,
             n_bins: int,
             opacity: float,
             top_n_categories: float,
@@ -1007,7 +988,6 @@ def update_controls_and_graph(  # noqa
     log_variable('color_variable', color_variable)
     log_variable('size_variable', size_variable)
     log_variable('facet_variable', facet_variable)
-    log_variable('n_bins_month', n_bins_month)
     log_variable('n_bins', n_bins)
     log_variable('opacity', opacity)
     log_variable('top_n_categories', top_n_categories)
@@ -1041,7 +1021,7 @@ def update_controls_and_graph(  # noqa
     numeric_na_removal_markdown = ''
     generated_code = generated_filter_code or ''
     invalid_configuration_alert = False
-    date_floor = None if date_floor == 'None' else date_floor
+    date_floor = None if date_floor == '' else date_floor
 
     try:
         if (
@@ -1164,7 +1144,6 @@ def update_controls_and_graph(  # noqa
                 cohort_conversion_rate_snapshots=cohort_conversion_rate_input,
                 cohort_conversion_rate_units=cohort_conversion_rate_dropdown,
                 opacity=opacity,
-                n_bins_month=n_bins_month,
                 n_bins=n_bins,
                 min_retention_events=min_retention_events,
                 num_retention_periods=num_retention_periods,
@@ -1298,7 +1277,7 @@ def clear_settings(n_clicks: int) -> str:
     """Triggered when the user clicks on the Clear button."""
     log_function('clear_settings')
     log_variable('n_clicks', n_clicks)
-    return None, None, 'None'
+    return None, None, 'month'
 
 
 @app.callback(
@@ -1710,12 +1689,10 @@ def update_categorical_controls_div_style(
 
 
 @app.callback(
-    Output('n_bins_month_div', 'style'),
     Output('n_bins_div', 'style'),
     Input('graph_type_dropdown', 'value'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
-    Input('n_bins_month_slider', 'value'),
     State('column_types', 'data'),
     prevent_initial_call=True,
 )
@@ -1723,7 +1700,6 @@ def update_n_bins_div_style(
         graph_type: str,
         x_variable: str | None,
         y_variable: str | None,
-        n_bins_month: int,
         column_types: dict,
     ) -> dict:
     """Toggle the n-bins div."""
@@ -1735,13 +1711,10 @@ def update_n_bins_div_style(
             and t.is_numeric(y_variable, column_types)
             and graph_type == 'heatmap'
         ):
-        return turn_off, turn_on
-    if graph_type == 'histogram':  # noqa: SIM102
-        if t.is_date(x_variable, column_types):
-            if n_bins_month:
-                return turn_on, turn_off
-            return turn_on, turn_on
-    return turn_off, turn_off
+        return turn_on
+    if graph_type == 'histogram' and t.is_numeric(x_variable, column_types):
+        return turn_on
+    return turn_off
 
 
 @app.callback(
