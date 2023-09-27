@@ -560,7 +560,6 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         data=data,
         selected_variables = list({x_variable, y_variable, z_variable, color_variable, size_variable, facet_variable}),  # noqa
         selected_category_order=selected_category_order,
-        # TODO: dates?
         column_types=column_types,
     )
 
@@ -674,6 +673,10 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
         else:
             hist_func_agg = None
+
+        if t.is_date(x_variable, column_types):
+            # this is need so plotly displays dates in the correct order
+            graph_code += "graph_data.sort_values(x_variable, inplace=True)\n"
 
         graph_code += textwrap.dedent(f"""
         import plotly.express as px

@@ -1021,7 +1021,6 @@ def update_controls_and_graph(  # noqa
     numeric_na_removal_markdown = ''
     generated_code = generated_filter_code or ''
     invalid_configuration_alert = False
-    date_floor = None if date_floor == '' else date_floor
 
     try:
         if (
@@ -1033,6 +1032,9 @@ def update_controls_and_graph(  # noqa
             and (not size_variable or size_variable in data.columns)
             and (not facet_variable or facet_variable in data.columns)
             ):
+            if t.is_date(x_variable, column_types):
+                assert date_floor
+
             ####
             # update graph options
             ####
