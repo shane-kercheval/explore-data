@@ -400,6 +400,12 @@ def get_category_orders(
     category_orders = {}
     if selected_category_order:
         for variable in selected_variables:
+            if t.is_date(variable, column_types):
+                categories = sorted(
+                    data[variable].unique().tolist(),
+                    key=lambda x: str(x),
+                )
+                category_orders[variable] = categories
             if t.is_discrete(variable, column_types) and data[variable].nunique() < 50:
                 if 'category' in selected_category_order:
                     reverse = 'ascending' not in selected_category_order
@@ -673,10 +679,6 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
         else:
             hist_func_agg = None
-
-        if t.is_date(x_variable, column_types):
-            # this is need so plotly displays dates in the correct order
-            graph_code += "graph_data.sort_values(x_variable, inplace=True)\n"
 
         graph_code += textwrap.dedent(f"""
         import plotly.express as px
