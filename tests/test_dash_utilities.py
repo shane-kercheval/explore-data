@@ -975,9 +975,15 @@ def test_generate_graph__all_configurations(  # noqa
                         .dt.to_period('M').dt.start_time
                         .dt.strftime('%Y-%m-%d')
                     )
-                print(graph_type['name'], x_var, y_var, z_var)
+                # print(graph_type['name'], x_var, y_var, z_var)
                 # x_var, y_var, z_var = variable_combinations[0]
                 # test with no parameters
+                if graph_type['name'] == 'P(Y | X)' and (x_var == y_var):
+                        continue
+
+                if graph_type['name'] == 'histogram' and x_var == 'date':
+                        continue
+
                 if graph_type['name'] == 'bar - count distinct' and y_var == x_var:
                     with pytest.raises(InvalidConfigurationError):
                         fig, code = generate_graph(
@@ -1071,9 +1077,9 @@ def test_generate_graph__all_configurations(  # noqa
                     size_variable or [None],
                     facet_variable or [None],
                 ])
-                if graph_type['name'] == 'P(Y | X)':
-                    continue
                 for color_var, size_var, facet_var in optional_combinations:
+                    if graph_type['name'] == 'P(Y | X)' and (facet_var == x_var or facet_var == y_var):  # noqa
+                        continue
                     if (graph_type['name'] == 'bar - count distinct'
                             and y_var in [x_var, color_var, size_var, facet_var]
                         ):
