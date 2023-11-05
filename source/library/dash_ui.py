@@ -234,7 +234,6 @@ def create_cohort_conversion_rate_control(
     )
 
 
-
 def create_date_range_control(
         label: str,
         id: str,  # noqa: A002

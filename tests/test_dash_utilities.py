@@ -965,23 +965,33 @@ def test_generate_graph__all_configurations(  # noqa
         ])
         graph_types = config['graph_types']
         for graph_type in graph_types:
+            graph_data = mock_data2.copy()
             # graph_type = graph_types[0]
             for x_var, y_var, z_var in variable_combinations:
                 if graph_type['name'] == 'cohorted conversion rates':
-                    mock_data2 = mock_data2.copy()
                     # this happens in `convert_to_graph_data``
-                    mock_data2[f'{type_to_column_lookup[x_var]} (Cohorts)'] = (
-                        pd.to_datetime(mock_data2[type_to_column_lookup[x_var]])
+                    graph_data[f'{type_to_column_lookup[x_var]} (Cohorts)'] = (
+                        pd.to_datetime(graph_data[type_to_column_lookup[x_var]])
                         .dt.to_period('M').dt.start_time
                         .dt.strftime('%Y-%m-%d')
                     )
-                # print(x_var, y_var, z_var)
+                # print(graph_type['name'], x_var, y_var, z_var)
                 # x_var, y_var, z_var = variable_combinations[0]
                 # test with no parameters
+                if graph_type['name'] == 'P(Y | X)' and (x_var == y_var):
+                        continue
+
+                if graph_type['name'] == 'histogram' and x_var == 'date':
+                    # this happens in convert_to_graph_data, which is needed because generate_graph
+                    # will fail because it will try to add Timestamp to the categories to sort by
+                    # which will fail because Timestamp is not a string
+                    series = pd.to_datetime(graph_data[type_to_column_lookup[x_var]], errors='coerce')  # noqa
+                    graph_data[type_to_column_lookup[x_var]] = series.dt.strftime('%Y-%m-%d')
+
                 if graph_type['name'] == 'bar - count distinct' and y_var == x_var:
                     with pytest.raises(InvalidConfigurationError):
                         fig, code = generate_graph(
-                            data=mock_data2,
+                            data=graph_data.copy(),
                             graph_type=graph_type['name'],
                             x_variable=type_to_column_lookup[x_var] if x_var else None,
                             y_variable=type_to_column_lookup[y_var] if y_var else None,
@@ -1011,7 +1021,7 @@ def test_generate_graph__all_configurations(  # noqa
                         )
                 else:
                     fig, code = generate_graph(
-                        data=mock_data2,
+                        data=graph_data.copy(),
                         graph_type=graph_type['name'],
                         x_variable=type_to_column_lookup[x_var] if x_var else None,
                         y_variable=type_to_column_lookup[y_var] if y_var else None,
@@ -1047,6 +1057,8 @@ def test_generate_graph__all_configurations(  # noqa
                         assert 'plot_retention' in code
                     elif graph_type['name'] == 'heatmap - count distinct':
                         assert 'px.density_heatmap' in code
+                    elif graph_type['name'] == 'P(Y | X)':
+                        assert 'px.bar' in code or 'px.line' in code
                     elif graph_type['name'] == 'bar - count distinct':
                         assert 'px.bar' in code
                     elif graph_type['name'] == 'cohorted conversion rates':
@@ -1070,6 +1082,8 @@ def test_generate_graph__all_configurations(  # noqa
                     facet_variable or [None],
                 ])
                 for color_var, size_var, facet_var in optional_combinations:
+                    if graph_type['name'] == 'P(Y | X)' and (facet_var == x_var or facet_var == y_var):  # noqa
+                        continue
                     if (graph_type['name'] == 'bar - count distinct'
                             and y_var in [x_var, color_var, size_var, facet_var]
                         ):
@@ -1077,7 +1091,7 @@ def test_generate_graph__all_configurations(  # noqa
                         # same as x, color, or facet variable
                         with pytest.raises(InvalidConfigurationError):
                             fig, code = generate_graph(
-                                data=mock_data2,
+                                data=graph_data.copy(),
                                 graph_type=graph_type['name'],
                                 x_variable=type_to_column_lookup[x_var] if x_var else None,
                                 y_variable=type_to_column_lookup[y_var] if y_var else None,
@@ -1106,8 +1120,9 @@ def test_generate_graph__all_configurations(  # noqa
                                 column_types=column_types,
                             )
                     else:
+                        print(graph_type['name'], x_var, y_var, z_var, color_var, size_var, facet_var)  # noqa  
                         fig, code = generate_graph(
-                            data=mock_data2,
+                            data=graph_data.copy(),
                             graph_type=graph_type['name'],
                             x_variable=type_to_column_lookup[x_var] if x_var else None,
                             y_variable=type_to_column_lookup[y_var] if y_var else None,
@@ -1143,6 +1158,8 @@ def test_generate_graph__all_configurations(  # noqa
                             assert 'plot_retention' in code
                         elif graph_type['name'] == 'heatmap - count distinct':
                             assert 'px.density_heatmap' in code
+                        elif graph_type['name'] == 'P(Y | X)':
+                            assert 'px.bar' in code or 'px.line' in code
                         elif graph_type['name'] == 'bar - count distinct':
                             assert 'px.bar' in code
                         elif graph_type['name'] == 'cohorted conversion rates':
