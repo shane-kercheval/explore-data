@@ -400,12 +400,6 @@ def get_category_orders(
     category_orders = {}
     if selected_category_order:
         for variable in selected_variables:
-            if t.is_date(variable, column_types):
-                categories = sorted(
-                    data[variable].unique().tolist(),
-                    key=lambda x: str(x),
-                )
-                category_orders[variable] = categories
             if t.is_discrete(variable, column_types) and data[variable].nunique() < 50:
                 if 'category' in selected_category_order:
                     reverse = 'ascending' not in selected_category_order
@@ -557,7 +551,6 @@ def generate_graph(  # noqa: PLR0912, PLR0915
     Generate a graph based on the selected variables. Returns the graph and the code.
     The code is a string that can be used to recreate the graph.
     """
-    log("creating fig")
     fig = None
     graph_data = data
     graph_code = ''
@@ -680,6 +673,18 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         else:
             hist_func_agg = None
 
+        if t.is_date(x_variable, column_types):
+            # this is need so plotly displays dates in the correct order
+            # the following code needs to be here rather than get_category_orders because we only
+            # want to do this if we are plotting a histogram
+            # a date is always sorted in ascending order regardless of category/total and
+            # ascending/descending
+            categories = sorted(
+                data[x_variable].unique().tolist(),
+                key=lambda x: str(x),
+            )
+            category_orders[x_variable] = categories
+
         graph_code += textwrap.dedent(f"""
         import plotly.express as px
         fig = px.histogram(
@@ -751,7 +756,6 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         )
         """)
     elif graph_type == 'heatmap':
-
         if t.is_numeric(z_variable, column_types):
             hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
         else:
@@ -793,7 +797,102 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             max_periods_to_display={num_retention_periods},
         )
         """)
+    elif graph_type == 'P(Y | X)':
+        graph_code += textwrap.dedent(f"""
+        import plotly.express as px
+        import pandas as pd
 
+        groupby_variables = {f"['{facet_variable}', '{x_variable}']" if facet_variable else f"['{x_variable}']"}
+        """)  # noqa: E501
+
+        if not n_bins:
+            n_bins = 5
+        if t.is_numeric(x_variable, column_types):
+            graph_code += f"graph_data['{x_variable}'] = pd.cut(graph_data['{x_variable}'], bins={n_bins})\n"  # noqa
+        if t.is_numeric(facet_variable, column_types):
+            graph_code += f"graph_data['{facet_variable}'] = pd.cut(graph_data['{facet_variable}'], bins={n_bins})\n"  # noqa
+
+        graph_code += textwrap.dedent(f"""
+        y_graph_name = 'P({y_variable} | {x_variable})'
+        df = (
+            graph_data
+            .groupby(groupby_variables, observed=False)['{y_variable}']
+            .value_counts(normalize=True)
+            .reset_index(name=y_graph_name)
+        )
+        record_counts = (
+            graph_data
+            .groupby(groupby_variables + ['{y_variable}'], observed=False)
+            .size()
+            .reset_index(name='# Records')
+        )
+        df = pd.merge(
+            df,
+            record_counts,
+            on=groupby_variables + ['{y_variable}'],
+            how='inner',
+        )
+        """)
+
+        if t.is_numeric(x_variable, column_types) or t.is_numeric(facet_variable, column_types):
+            graph_code += "df.sort_values(groupby_variables, inplace=True)\n"
+        if t.is_numeric(x_variable, column_types):
+            graph_code += f"graph_data['{x_variable}'] = graph_data['{x_variable}'].astype('str')\n"  # noqa
+            graph_code += f"df['{x_variable}'] = df['{x_variable}'].astype('str')\n"
+        if t.is_numeric(facet_variable, column_types):
+            graph_code += f"graph_data['{facet_variable}'] = graph_data['{facet_variable}'].astype('str')\n"  # noqa
+            graph_code += f"df['{facet_variable}'] = df['{facet_variable}'].astype('str')\n"
+
+        if t.is_numeric(x_variable, column_types):
+            graph_code += textwrap.dedent(f"""
+            fig = px.line(
+                data_frame=df,
+                x='{x_variable}',
+                y=y_graph_name,
+                color='{y_variable}',
+                facet_col={f"'{facet_variable}'" if facet_variable else None},
+                facet_col_wrap={num_facet_columns},
+                hover_data=['# Records'],
+                title={f'"{title}"' if title else None},
+            )
+            scatter_traces = px.scatter(
+                data_frame=df,
+                x='{x_variable}',
+                y=y_graph_name,
+                color='{y_variable}',
+                size='# Records',
+                facet_col={f"'{facet_variable}'" if facet_variable else None},
+                facet_col_wrap={num_facet_columns},
+                hover_data=['# Records'],
+            )
+            scatter_traces.update_traces(showlegend=False)
+            for trace in scatter_traces.data:
+                fig.add_trace(trace)
+            """)
+        else:
+            graph_code += textwrap.dedent(f"""
+            fig = px.bar(
+                data_frame=df,
+                x='{x_variable}',
+                y=y_graph_name,
+                color='{y_variable}',
+                facet_col={f"'{facet_variable}'" if facet_variable else None},
+                facet_col_wrap={num_facet_columns},
+                barmode='group',
+                hover_data=['# Records'],
+                title={f'"{title}"' if title else None},
+            )
+            """)
+
+        graph_code += textwrap.dedent("""
+        fig.update_yaxes(tickformat=',.1%')
+        fig.for_each_yaxis(lambda y: y.update(title = ''))
+        fig.add_annotation(
+            x=-0.05,y=0.3,
+            text=y_graph_name,
+            textangle=-90, xref="paper", yref="paper"
+        )
+        """)
     elif graph_type == 'heatmap - count distinct':
         selected_variables = [
             x for x in [x_variable, y_variable, z_variable, facet_variable]
@@ -866,8 +965,6 @@ def generate_graph(  # noqa: PLR0912, PLR0915
 
     # TODO: add range slider
     # graph_code += "fig.update_xaxes(rangeslider_visible=True)\n"
-
-    log_variable('graph_code', graph_code)
     if 'Timestamp' in graph_code:
         log("Timestamp found in graph_code")
         raise ValueError(f"Timestamp found in graph_code {graph_code}")

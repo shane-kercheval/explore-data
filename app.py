@@ -1695,6 +1695,7 @@ def update_categorical_controls_div_style(
     Input('graph_type_dropdown', 'value'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
+    Input('facet_variable_dropdown', 'value'),
     State('column_types', 'data'),
     prevent_initial_call=True,
 )
@@ -1702,6 +1703,7 @@ def update_n_bins_div_style(
         graph_type: str,
         x_variable: str | None,
         y_variable: str | None,
+        facet_variable: str | None,
         column_types: dict,
     ) -> dict:
     """Toggle the n-bins div."""
@@ -1715,6 +1717,8 @@ def update_n_bins_div_style(
         ):
         return turn_on
     if graph_type == 'histogram' and t.is_numeric(x_variable, column_types):
+        return turn_on
+    if graph_type == 'P(Y | X)' and t.is_numeric(facet_variable, column_types):
         return turn_on
     return turn_off
 
