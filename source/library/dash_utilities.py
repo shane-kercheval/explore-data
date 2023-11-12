@@ -2,6 +2,7 @@
 import textwrap
 import numpy as np
 import pandas as pd
+from pandas.api.types import is_bool_dtype
 from source.library.utilities import filter_dataframe, to_date
 import source.library.types as t
 import helpsk.pandas as hp
@@ -301,6 +302,8 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
                 if data[variable].isna().any():
                     data[variable] = data[variable].cat.add_categories(MISSING).fillna(MISSING)  # noqa
                     code += f"graph_data['{variable}'] = graph_data['{variable}'].cat.add_categories('{MISSING}').fillna(MISSING)\n"  # noqa
+            elif is_bool_dtype(data[variable]):
+                data[variable] = data[variable].astype(str)
             else:
                 data[variable] = data[variable].fillna(MISSING)
                 code += f"graph_data['{variable}'] = graph_data['{variable}'].fillna('{MISSING}')\n"  # noqa
@@ -890,7 +893,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         fig.add_annotation(
             x=-0.05,y=0.3,
             text=y_graph_name,
-            textangle=-90, xref="paper", yref="paper"
+            textangle=-90, xref="paper", yref="paper",
         )
         """)
     elif graph_type == 'heatmap - count distinct':
