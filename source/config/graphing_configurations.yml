@@ -377,6 +377,15 @@ configurations:
               - boolean
               - string
               - categorical
+      - name: P(Y | X)
+        description: Shows the probability of {{y_variable}} given each value of {{x_variable}}.
+        optional_variables:
+          facet_variable:
+            types:
+              - boolean
+              - string
+              - categorical
+              - numeric
   # non-numeric / non-numeric
   - selected_variables:
       x_variable:
