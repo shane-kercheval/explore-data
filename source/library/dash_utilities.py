@@ -1,5 +1,4 @@
 """Utility functions for dash app."""
-import datetime
 import textwrap
 import numpy as np
 import pandas as pd
