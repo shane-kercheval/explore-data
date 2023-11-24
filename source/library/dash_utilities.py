@@ -1,4 +1,5 @@
 """Utility functions for dash app."""
+import datetime
 import textwrap
 import numpy as np
 import pandas as pd
@@ -537,6 +538,11 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         date_floor: str | None,
         cohort_conversion_rate_snapshots: list[int] | None,
         cohort_conversion_rate_units: str | None,
+        show_record_count: bool | None,
+        cohort_adoption_rate_range: int | None,
+        cohort_adoption_rate_units: str | None,
+        last_n_cohorts: int | None,
+        show_unfinished_cohorts: bool | None,
         opacity: float | None,
         n_bins: int | None,
         min_retention_events: int | None,
@@ -944,6 +950,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             category_orders={category_orders},
             current_datetime=None,
             graph_type='{cohorted_graph_type}',
+            show_num_records={show_record_count},
             title={f'"{title}"' if title else None},
             facet_col_wrap={num_facet_columns},
             bar_mode={f"'{bar_mode}'" if bar_mode else None},
@@ -953,8 +960,35 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         )
         fig.update_yaxes(tickformat=',.2%')
         """)
-        if cohorted_graph_type == 'line':
-            graph_code += "fig.update_traces(mode='lines+markers')\n"
+    elif graph_type == 'cohorted adoption rates':
+        log_variable('columns', graph_data.columns.tolist())
+        log(x_variable in graph_data.columns)
+        log(y_variable in graph_data.columns)
+        log(f"{x_variable} (Cohorts)" in graph_data.columns)
+
+        graph_code += textwrap.dedent(f"""
+        from helpsk.conversions import plot_cohorted_adoption_rates
+        graph_data['{x_variable}'] = pd.to_datetime(graph_data['{x_variable}'])
+        graph_data['{y_variable}'] = pd.to_datetime(graph_data['{y_variable}'])
+        fig = plot_cohorted_adoption_rates(
+            df=graph_data,
+            base_timestamp='{x_variable}',
+            conversion_timestamp='{y_variable}',
+            cohort={f"'{x_variable} (Cohorts)'"},
+            n_units={cohort_adoption_rate_range},
+            units='{cohort_adoption_rate_units}',
+            last_x_cohorts={last_n_cohorts},
+            show_unfinished_cohorts={show_unfinished_cohorts},
+            groups={f"'{facet_variable}'" if facet_variable else None},
+            category_orders={category_orders},
+            current_datetime=None,
+            # title={f'"{title}"' if title else None},
+            facet_col_wrap={num_facet_columns},
+            height=None,
+            width=None,
+        )
+        fig.update_yaxes(tickformat=',.2%')
+        """)
     else:
         raise ValueError(f"Unknown graph type: {graph_type}")
 

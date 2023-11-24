@@ -233,6 +233,54 @@ def create_cohort_conversion_rate_control(
         ],
     )
 
+def create_cohort_adoption_rate_control(
+        label: str,
+        id: str,  # noqa: A002
+        input_value: int = 30,
+        dropdown_options: list[dict] | None = None,
+        dropdown_value: str = 'days',
+        hidden: bool = False,
+        ) -> html.Div:
+    """Create cohorted adoption rate control."""
+    if dropdown_options is None:
+        dropdown_options = [
+            {'label': 'Weeks', 'value': 'weeks'},
+            {'label': 'Days', 'value': 'days'},
+            {'label': 'Hours', 'value': 'hours'},
+            {'label': 'Minutes', 'value': 'minutes'},
+            {'label': 'Seconds', 'value': 'seconds'},
+        ]
+
+    component_id_input = f'{id}__input'
+    component_id_dropdown = f'{id}__dropdown'
+
+    style = {'display': 'none'} if hidden else {}
+    return html.Div(
+        id=f'{id}_div',
+        className=CLASS__GRAPH_PANEL_SECTION,
+        style=style,
+        children=[
+            html.Label(
+                f"{label}:",
+                className=CLASS__GRAPH_PANEL_SECTION + '_label',
+            ),
+            html.Div(className='cohort_adoption_div', children=[
+                daq.NumericInput(
+                    id=component_id_input,
+                    min=0,
+                    max=1000,
+                    value=input_value,
+                ),
+                dcc.Dropdown(
+                    id=component_id_dropdown,
+                    options=dropdown_options,
+                    value=dropdown_value,
+                    clearable=False,
+                ),
+            ]),
+        ],
+    )
+
 
 def create_date_range_control(
         label: str,
