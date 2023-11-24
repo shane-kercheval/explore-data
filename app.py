@@ -14,6 +14,7 @@ import helpsk.pandas as hp
 from helpsk.database import Snowflake
 import dash_bootstrap_components as dbc
 from source.library.dash_ui import (
+    create_cohort_adoption_rate_control,
     create_cohort_conversion_rate_control,
     create_dropdown_control,
     create_checklist_control,
@@ -353,6 +354,32 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     label="Conversion Durations",
                                     id='cohort_conversion_rate',
                                     hidden=False,
+                                ),
+                                create_checklist_control(
+                                    id='show_record_count',
+                                    hidden=True,
+                                    options=['Show Record Count'],
+                                    value=[],
+                                ),
+                                create_cohort_adoption_rate_control(
+                                    label="Adoption Range",
+                                    id='cohort_adoption_rate',
+                                    hidden=False,
+                                ),
+                                create_slider_control(
+                                    label="Last N Cohorts",
+                                    id='last_n_cohorts',
+                                    hidden=True,
+                                    value=15,
+                                    step=5,
+                                    min=5,
+                                    max=30,
+                                ),
+                                create_checklist_control(
+                                    id='show_unfinished_cohorts',
+                                    hidden=True,
+                                    options=['Show Unfinished Cohorts'],
+                                    value=['Show Unfinished Cohorts'],
                                 ),
                                 create_dropdown_control(
                                     label="Sort Categories By",
@@ -911,6 +938,11 @@ def filter_data(
     Input('bar_mode_dropdown', 'value'),
     Input('cohort_conversion_rate__input', 'value'),
     Input('cohort_conversion_rate__dropdown', 'value'),
+    Input('show_record_count_checklist', 'value'),
+    Input('cohort_adoption_rate__input', 'value'),
+    Input('cohort_adoption_rate__dropdown', 'value'),
+    Input('last_n_cohorts_slider', 'value'),
+    Input('show_unfinished_cohorts_checklist', 'value'),
     Input('log_x_y_axis_checklist', 'value'),
     Input('free_x_y_axis_checklist', 'value'),
     Input('show_axes_histogram_checklist', 'value'),
@@ -958,6 +990,11 @@ def update_controls_and_graph(  # noqa
             bar_mode: str,
             cohort_conversion_rate_input: str,
             cohort_conversion_rate_dropdown: str,
+            show_record_count_checklist: list[str],
+            cohort_adoption_rate_input: str,
+            cohort_adoption_rate_dropdown: str,
+            last_n_cohorts_slider: int,
+            show_unfinished_cohorts_checklist: list[str],
             log_x_y_axis: list[str],
             free_x_y_axis: list[str],
             show_axes_histogram: list[str],
@@ -997,6 +1034,11 @@ def update_controls_and_graph(  # noqa
     log_variable('bar_mode', bar_mode)
     log_variable('cohort_conversion_rate_input', cohort_conversion_rate_input)
     log_variable('cohort_conversion_rate_dropdown', cohort_conversion_rate_dropdown)
+    log_variable('show_record_count_checklist', show_record_count_checklist)
+    log_variable('cohort_adoption_rate_input', cohort_adoption_rate_input)
+    log_variable('cohort_adoption_rate_dropdown', cohort_adoption_rate_dropdown)
+    log_variable('last_n_cohorts_slider', last_n_cohorts_slider)
+    log_variable('show_unfinished_cohorts_checklist', show_unfinished_cohorts_checklist)
     log_variable('log_x_y_axis', log_x_y_axis)
     log_variable('free_x_y_axis', free_x_y_axis)
     log_variable('show_axes_histogram', show_axes_histogram)
@@ -1145,6 +1187,11 @@ def update_controls_and_graph(  # noqa
                 date_floor=date_floor,
                 cohort_conversion_rate_snapshots=cohort_conversion_rate_input,
                 cohort_conversion_rate_units=cohort_conversion_rate_dropdown,
+                show_record_count='Show Record Count' in show_record_count_checklist,
+                cohort_adoption_rate_range=cohort_adoption_rate_input,
+                cohort_adoption_rate_units=cohort_adoption_rate_dropdown,
+                last_n_cohorts=last_n_cohorts_slider,
+                show_unfinished_cohorts='Show Unfinished Cohorts' in show_unfinished_cohorts_checklist,  # noqa
                 opacity=opacity,
                 n_bins=n_bins,
                 min_retention_events=min_retention_events,
@@ -1860,6 +1907,54 @@ def update_facet_label_div_style(facet_variable: str | None) -> dict:
 def update_cohort_conversion_rate_div_style(graph_type: str) -> dict:
     """Toggle the cohort conversion rate div."""
     if graph_type == 'cohorted conversion rates':
+        return {'display': 'block'}
+    return {'display': 'none'}
+
+
+@app.callback(
+    Output('show_record_count_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_show_record_count_div_style(graph_type: str) -> dict:
+    """Toggle the show record count div."""
+    if graph_type == 'cohorted conversion rates':
+        return {'display': 'block'}
+    return {'display': 'none'}
+
+
+@app.callback(
+    Output('cohort_adoption_rate_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_cohort_adoption_rate_div_style(graph_type: str) -> dict:
+    """Toggle the cohort adoption rate div."""
+    if graph_type == 'cohorted adoption rates':
+        return {'display': 'block'}
+    return {'display': 'none'}
+
+
+@app.callback(
+    Output('last_n_cohorts_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_last_n_cohorts_div_style(graph_type: str) -> dict:
+    """Toggle the last n cohorts div."""
+    if graph_type == 'cohorted adoption rates':
+        return {'display': 'block'}
+    return {'display': 'none'}
+
+
+@app.callback(
+    Output('show_unfinished_cohorts_div', 'style'),
+    Input('graph_type_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def update_show_unfinished_cohorts_div_style(graph_type: str) -> dict:
+    """Toggle the show unfinished cohorts div."""
+    if graph_type == 'cohorted adoption rates':
         return {'display': 'block'}
     return {'display': 'none'}
 

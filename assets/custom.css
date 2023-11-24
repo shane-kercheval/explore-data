@@ -121,12 +121,12 @@ label.graph_panel_section_label {
     box-shadow: none;
 }
 
-.min_max_div, .cohort_snapshots_div {
+.min_max_div, .cohort_snapshots_div, .cohort_adoption_div {
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
-.min_max_div input, .cohort_snapshots_div input {
+.min_max_div input, .cohort_snapshots_div input, .cohort_adoption_div input {
     width: 100% !important;
 }
