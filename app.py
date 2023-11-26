@@ -147,8 +147,9 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             id='load_from_url',
                             type='text',
                             placeholder='Enter CSV URL',
-                            # value = 'https://raw.githubusercontent.com/plotly/datasets/master/finance-charts-apple.csv',
-                            value='https://raw.githubusercontent.com/shane-kercheval/shiny-explore-dataset/master/shiny-explore-dataset/example_datasets/credit.csv',
+                            value='https://raw.githubusercontent.com/shane-kercheval/explore-data/main/data/credit.csv',
+                            # value='https://raw.githubusercontent.com/plotly/datasets/master/finance-charts-apple.csv',
+                            # value='https://raw.githubusercontent.com/shane-kercheval/shiny-explore-dataset/master/shiny-explore-dataset/example_datasets/credit.csv',
                             # value='https://raw.githubusercontent.com/fivethirtyeight/data/master/bechdel/movies.csv',
                             # value='https://raw.githubusercontent.com/plotly/datasets/master/gapminder_unfiltered.csv',
                             style={
@@ -765,6 +766,8 @@ def load_data(  # noqa
 
         elif triggered == 'load_from_url_button.n_clicks' and load_from_url:
             log("Loading from CSV URL")
+            if 'docs.google.com/spreadsheets' in load_from_url:
+                load_from_url = load_from_url.replace('/edit#gid=', '/export?format=csv&gid=')
             data = pd.read_csv(load_from_url)
         elif triggered == 'load_random_data_button.n_clicks':
             log("Loading DataFrame with random data")
