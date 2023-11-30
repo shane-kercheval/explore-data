@@ -1800,20 +1800,32 @@ def update_opacity_div_style(graph_type: str) -> dict:
 
 @app.callback(
     Output('log_x_y_axis_div', 'style'),
+    Output('log_x_y_axis_checklist', 'value'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
+    Input('log_x_y_axis_checklist', 'value'),
     State('column_types', 'data'),
     prevent_initial_call=True,
 )
 def update_log_x_y_axis_div_style(
         x_variable: str | None,
         y_variable: str | None,
+        log_x_y_axis: list[str],
         column_types: dict,
     ) -> dict:
-    """Toggle the 'log x/y axis' div."""
+    """
+    Toggle the 'log x/y axis' div. If we are showing the div, then don't update the values (i.e.
+    return the same list of current values that is passed in). If we are hiding the div, then
+    return an empty list. This is so that graphs don't attempt to log the x/y axis when the div is
+    hidden.
+
+    The original bug was that if the user selected a numeric variable, and then log transformed the
+    x or y axis, and then selected, for example, a date variable, the log transformation would
+    still be applied to the date variable, both on the x and y axis.
+    """
     if t.is_numeric(x_variable, column_types) or t.is_numeric(y_variable, column_types):
-        return {'display': 'block'}
-    return {'display': 'none'}
+        return {'display': 'block'}, log_x_y_axis
+    return {'display': 'none'}, []
 
 
 @app.callback(
