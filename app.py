@@ -1465,7 +1465,7 @@ def update_controls_and_graph(  # noqa
         # graphing options
         [{'label': x.capitalize(), 'value': x} for x in graph_types],
         graph_type,
-        False,
+        False,  # reset variables_changed_by_ai
         invalid_configuration_alert,
     )
 
