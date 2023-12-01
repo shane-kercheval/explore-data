@@ -501,8 +501,10 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     ),
                                     dcc.Textarea(
                                         id='ai_prompt_textarea',
-                                        value="plot the probability of default given the duration.",
-                                        #value="Plot a 3d scatter the duration of the loan against the amount of the loan and age.",
+                                        value="plot the weekly retention rates of city based on creation date",  # noqa
+                                        # value="plot the weekly conversion rates from creation date to event 1",  # noqa
+                                        # value="plot the probability of default given the duration.",  # noqa
+                                        # value="Plot a 3d scatter the duration of the loan against the amount of the loan and age.",  # noqa
                                         style={'width': '100%', 'height': 200, 'padding': '10px'},
                                     ),
                                 ]),
@@ -881,6 +883,7 @@ def load_data(  # noqa
     Output('size_variable_dropdown', 'value', allow_duplicate=True),
     Output('facet_variable_dropdown', 'value', allow_duplicate=True),
     Output('graph_type_dropdown', 'value', allow_duplicate=True),
+    Output('date_floor_dropdown', 'value', allow_duplicate=True),
     Output('variables_changed_by_ai', 'data', allow_duplicate=True),
     Output('ai_prompt_textarea', 'value'),  # this is simply to make the progress bar work
     # i.e. (dcc.Loading)
@@ -905,11 +908,14 @@ def apply_temporary_settings(n_clicks: int, ai_prompt: str, column_types: dict) 
             variables = {k:v for k, v in config['selected_variables'].items() if v is not None}
             required_variables = list(variables.keys())
             for graph_type in config['graph_types']:
-                if 'agent_description' not in graph_type:
+                if 'agent' not in graph_type:
                     continue
                 # description = graph_type['info']
-                agent_description = graph_type['agent_description']
-                agent_description = agent_description.strip() if agent_description else ''
+                if graph_type['agent'] and 'description' in graph_type['agent']:
+                    agent_description = graph_type['agent']['description']
+                    agent_description = agent_description.strip()
+                else:
+                    agent_description = ''
                 description = f"({graph_type['name']}) {graph_type['description']} {agent_description}"
                 for var, types in variables.items():
                     replacement = f" axis variable (which can be a column of type {', '.join(types)})"
@@ -942,6 +948,17 @@ def apply_temporary_settings(n_clicks: int, ai_prompt: str, column_types: dict) 
                             break
                     else:
                         inputs[k]['enum'] = valid_column_names
+
+                if graph_type['agent'] and 'variables' in graph_type['agent']:
+                    for agent_var in graph_type['agent']['variables']:
+                        assert len(agent_var) == 1
+                        agent_var_name = next(iter(agent_var.keys()))
+                        inputs[agent_var_name] = {
+                            'type': 'string',
+                            'description': agent_var[agent_var_name]['description'],
+                            'enum': agent_var[agent_var_name]['options'],
+                        }
+
                 if valid_graph:
                     # inputs = {'inputs': inputs}
                     tool = Tool(
@@ -961,6 +978,7 @@ def apply_temporary_settings(n_clicks: int, ai_prompt: str, column_types: dict) 
     size_variable = None
     facet_variable = None
     graph_type = None
+    date_floor = None
     variables_changed_by_ai = False
 
     if ai_prompt:
@@ -1007,6 +1025,8 @@ def apply_temporary_settings(n_clicks: int, ai_prompt: str, column_types: dict) 
                 size_variable = args['size_variable']
             if 'facet_variable' in args and args['facet_variable'] in column_types:
                 facet_variable = args['facet_variable']
+            if 'date_floor' in args:
+                date_floor = args['date_floor']
 
             graph_type = tool.graph_name
 
@@ -1025,6 +1045,7 @@ def apply_temporary_settings(n_clicks: int, ai_prompt: str, column_types: dict) 
         size_variable,
         facet_variable,
         graph_type,
+        date_floor,
         variables_changed_by_ai,
         ai_prompt,
     )

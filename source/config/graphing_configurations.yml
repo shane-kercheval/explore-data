@@ -17,7 +17,8 @@ configurations:
     graph_types:
       - name: box
         description: Shows the distribution of {{x_variable}}.
-        agent_description: Boxplots are useful for understanding the distribution of the data and identifying outliers.
+        agent:
+          description: Boxplots are useful for understanding the distribution of the data and identifying outliers.
         # info: Shows a box-plot of a single numeric variable. It is useful for understanding the distribution of the data and identifying outliers. There are options to add a color variable and/or facet (group by) variable.
         optional_variables:
           color_variable:
@@ -34,7 +35,8 @@ configurations:
               - categorical
       - name: histogram
         description: Shows the distribution of {{x_variable}}.
-        agent_description: Histograms are useful for understanding the distribution of at a more granular level compared to boxplots.
+        agent:
+          description: Histograms are useful for understanding the distribution of at a more granular level compared to boxplots.
         # info: Shows a histogram of a single numeric variable. It is useful for understanding the distribution of the data. There are options to add a color variable and/or facet (group by) variable.
         optional_variables:
           color_variable:
@@ -170,7 +172,7 @@ configurations:
     graph_types:
       - name: scatter
         description: Shows the relationship between {{x_variable}} and {{y_variable}}.
-        agent_description:
+        agent:
         # info: Scatter plot of the relationship between two numeric variables.  There are options to add a color variable, size variable, and/or facet (group by) variable.
         optional_variables:
           color_variable:
@@ -240,7 +242,8 @@ configurations:
     graph_types:
       - name: scatter-3d
         description: Shows the relationship between {{x_variable}}, {{y_variable}}, and {{z_variable}}.
-        agent_description: A 3D scatter plot is the best option when there are three numeric variables.
+        agent:
+          description: A 3D scatter plot is the best option when there are three numeric variables.
         optional_variables:
           color_variable:
             types:
@@ -262,7 +265,8 @@ configurations:
     graph_types:
       - name: histogram
         description: Shows the counts of {{x_variable}}.
-        agent_description: Histograms are useful for understanding the distribution of counts of non-numeric data.
+        agent:
+          description: Histograms are useful for understanding the distribution of counts of non-numeric data.
         optional_variables:
           color_variable:
             types:
@@ -313,7 +317,7 @@ configurations:
     graph_types:
       - name: histogram
         description: Shows the sum of {{y_variable}} across each value of {{x_variable}}.
-        agent_description:
+        agent:
         optional_variables:
           color_variable:
             types:
@@ -416,7 +420,7 @@ configurations:
               - categorical
       - name: P(Y | X)
         description: Shows the probability of {{y_variable}} given each value of {{x_variable}}.
-        agent_description:
+        agent:
         optional_variables:
           facet_variable:
             types:
@@ -426,7 +430,7 @@ configurations:
               - numeric
       - name: bar - count distinct
         description: Shows the count of unique values of {{y_variable}} for each {{x_variable}}.
-        agent_description:
+        agent:
         optional_variables:
           color_variable:
             types:
@@ -453,7 +457,8 @@ configurations:
     graph_types:
       - name: heatmap
         description: Heatmap of the aggregation of {{x_variable}}, {{y_variable}}, and {{z_variable}}.
-        agent_description: This plot shows the aggregation of a numeric variable across two non-numeric variables.
+        agent:
+          description: This plot shows the aggregation of a numeric variable across two non-numeric variables.
         optional_variables:
           facet_variable:
             types:
@@ -477,7 +482,8 @@ configurations:
     graph_types:
       - name: heatmap - count distinct
         description: Heatmap showing the count of distinct values of {{z_variable}} for each combination of {{x_variable}}, {{y_variable}}.
-        agent_description: This plot shows the count of distinct values of a non-numeric variable across two non-numeric variables.
+        agent:
+          description: This plot shows the count of distinct values of a non-numeric variable across two non-numeric variables.
         optional_variables:
           facet_variable:
             types:
@@ -492,7 +498,17 @@ configurations:
     graph_types:
       - name: histogram
         description: Shows record counts based on {{x_variable}}.
-        agent_description: This plot is a time-series of record counts based on the date variable.
+        agent:
+          description: This plot is a time-series of record counts based on the date variable.
+          variables:
+            - date_floor:
+                description: This is the time period that the records will be aggregated into. Use `month` as the default value.
+                options:
+                  - day
+                  - week
+                  - month
+                  - quarter
+                  - year
         optional_variables:
           color_variable:
             types:
@@ -515,7 +531,17 @@ configurations:
     graph_types:
       - name: histogram
         description: Shows the aggregation of {{y_variable}} based across {{x_variable}}.
-        agent_description: This plot is a time-series of the aggregation of a numeric variable based on the date variable.
+        agent:
+          description: This plot is a time-series of the aggregation of a numeric variable based on the date variable.
+          variables:
+            - date_floor:
+                description: This is the time period that the records will be aggregated into. Use `month` as the default value.
+                options:
+                  - day
+                  - week
+                  - month
+                  - quarter
+                  - year
         optional_variables:
           color_variable:
             types:
@@ -590,7 +616,17 @@ configurations:
     graph_types:
       - name: bar - count distinct
         description: Shows the count of unique values of {{y_variable}} for each {{x_variable}}.
-        agent_description:
+        agent:
+          description: This plot is a time series that shows the count of unique values of a non-numeric variable across a date variable.
+          variables:
+            - date_floor:
+                description: This is the time period that the records will be aggregated into. Use `month` as the default value.
+                options:
+                  - day
+                  - week
+                  - month
+                  - quarter
+                  - year
         optional_variables:
           color_variable:
             types:
@@ -604,7 +640,16 @@ configurations:
               - categorical
       - name: retention
         description: Shows the retention rate of {{y_variable}} for each cohort in {{x_variable}}.
-        agent_description:
+        agent:
+          variables:
+            - date_floor:
+                description: This is the time period that will create the cohorts. Use `month` as the default value.
+                options:
+                  - day
+                  - week
+                  - month
+                  - quarter
+                  - year
   # date / date
   - selected_variables:
       x_variable:
@@ -614,7 +659,17 @@ configurations:
     graph_types:
       - name: cohorted conversion rates
         description: Shows the cohorted conversion rates from {{x_variable}} to {{y_variable}} at various durations relative to {{x_variable}}.
-        agent_description: This plot shows the conversion rates as various snapshots in time relative to the date variable.
+        agent:
+          description: This plot is a time series that shows the conversion rates as various snapshots in time relative to the date variable.
+          variables:
+            - date_floor:
+                description: This is the time period that will create the cohorts. Use `month` as the default value.
+                options:
+                  - day
+                  - week
+                  - month
+                  - quarter
+                  - year
         optional_variables:
           facet_variable:
             types:
@@ -623,7 +678,17 @@ configurations:
               - categorical
       - name: cohorted adoption rates
         description: Shows the cohorted adoption rates from {{x_variable}} to {{y_variable}}.
-        agent_description: This plot shows the adoption rate curves for each cohort.
+        agent:
+          description: This plot shows the adoption rate curves for each cohort.
+          variables:
+            - date_floor:
+                description: This is the time period that will create the cohorts. Use `month` as the default value.
+                options:
+                  - day
+                  - week
+                  - month
+                  - quarter
+                  - year
         optional_variables:
           facet_variable:
             types:
