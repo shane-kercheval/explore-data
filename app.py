@@ -109,6 +109,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     dcc.Store(id='filter_columns_cache'),
     dcc.Store(id='generated_filter_code'),
     dcc.Store(id='column_types'),
+    dcc.Store(id='variables_changed_by_ai'),
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
             dcc.Loading(type="default", children=[
@@ -500,7 +501,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     ),
                                     dcc.Textarea(
                                         id='ai_prompt_textarea',
-                                        value="Plot a 3d scatter the duration of the loan against the amount of the loan and age.",
+                                        value="plot the probability of default given the duration.",
+                                        #value="Plot a 3d scatter the duration of the loan against the amount of the loan and age.",
                                         style={'width': '100%', 'height': 200, 'padding': '10px'},
                                     ),
                                 ]),
@@ -878,6 +880,8 @@ def load_data(  # noqa
     Output('color_variable_dropdown', 'value', allow_duplicate=True),
     Output('size_variable_dropdown', 'value', allow_duplicate=True),
     Output('facet_variable_dropdown', 'value', allow_duplicate=True),
+    Output('graph_type_dropdown', 'value', allow_duplicate=True),
+    Output('variables_changed_by_ai', 'data', allow_duplicate=True),
     Output('ai_prompt_textarea', 'value'),  # this is simply to make the progress bar work
     # i.e. (dcc.Loading)
     Input('ai-apply-button', 'n_clicks'),
@@ -940,12 +944,14 @@ def apply_temporary_settings(n_clicks: int, ai_prompt: str, column_types: dict) 
                         inputs[k]['enum'] = valid_column_names
                 if valid_graph:
                     # inputs = {'inputs': inputs}
-                    tools.append(Tool(
+                    tool = Tool(
                         name=str(uuid.uuid4()),
                         description=description,
                         inputs=inputs,
                         required=required_variables,
-                    ))
+                    )
+                    tool.graph_name = graph_type['name']
+                    tools.append(tool)
         return tools
 
     x_variable = None
@@ -954,59 +960,55 @@ def apply_temporary_settings(n_clicks: int, ai_prompt: str, column_types: dict) 
     color_variable = None
     size_variable = None
     facet_variable = None
-    if not ai_prompt:
-        return (
-            x_variable,
-            y_variable,
-            z_variable,
-            color_variable,
-            size_variable,
-            facet_variable,
-            ai_prompt,
+    graph_type = None
+    variables_changed_by_ai = False
+
+    if ai_prompt:
+        tools = build_tools_from_graph_configs(GRAPH_CONFIGS['configurations'], column_types)
+        agent = OpenAIFunctions(
+            model_name='gpt-3.5-turbo-1106',
+            tools=tools,
         )
+        formatted_colum_names = '\n'.join([f"{k}: {v}" for k, v in column_types.items()])
+        template = dedent(f"""
+        The user is asking to create a plot based on the following column names and types. Infer the correct column names and the correct axes from the users question. Choose a tool that uses all of the columns listed by the user. Prioritize the required columns.
 
-    tools = build_tools_from_graph_configs(GRAPH_CONFIGS['configurations'], column_types)
-    agent = OpenAIFunctions(
-        model_name='gpt-3.5-turbo-1106',
-        tools=tools,
-    )
-    formatted_colum_names = '\n'.join([f"{k}: {v}" for k, v in column_types.items()])
-    template = dedent(f"""
-    The user is asking to create a plot based on the following column names and types. Infer the correct column names and the correct axes from the users question. Choose a tool that uses all of the columns listed by the user. Prioritize the required columns.
+        Valid columns and types:
 
-    Valid columns and types:
+        ```
+        {formatted_colum_names}
+        ```
 
-    ```
-    {formatted_colum_names}
-    ```
+        User's question:
+        
+        {ai_prompt}
+        """)  # noqa
+        log_variable('OpenAI template', template)
+        response = agent(template)
 
-    User's question:
-    
-    {ai_prompt}
-    """)  # noqa
-    log_variable('OpenAI template', template)
-    response = agent(template)
+        log(f"Agent Cost:           ${agent.history()[0].cost:.5f}")
+        log(f"Agent Tokens:          {agent.history()[0].total_tokens:,}")
+        log(f"Agent Prompt Tokens:   {agent.history()[0].input_tokens:,}")
+        log(f"Agent Response Tokens: {agent.history()[0].response_tokens:,}")
 
-    log(f"Agent Cost:           ${agent.history()[0].cost:.5f}")
-    log(f"Agent Tokens:          {agent.history()[0].total_tokens:,}")
-    log(f"Agent Prompt Tokens:   {agent.history()[0].input_tokens:,}")
-    log(f"Agent Response Tokens: {agent.history()[0].response_tokens:,}")
+        if response:
+            tool, args = response[0]
+            log_variable('OpenAI functions args', args)
+            variables_changed_by_ai = True
+            if 'x_variable' in args and args['x_variable'] in column_types:
+                x_variable = args['x_variable']
+            if 'y_variable' in args and args['y_variable'] in column_types:
+                y_variable = args['y_variable']
+            if 'z_variable' in args and args['z_variable'] in column_types:
+                z_variable = args['z_variable']
+            if 'color_variable' in args and args['color_variable'] in column_types:
+                color_variable = args['color_variable']
+            if 'size_variable' in args and args['size_variable'] in column_types:
+                size_variable = args['size_variable']
+            if 'facet_variable' in args and args['facet_variable'] in column_types:
+                facet_variable = args['facet_variable']
 
-    if response:
-        _, args = response[0]
-        log_variable('OpenAI functions args', args)
-        if 'x_variable' in args and args['x_variable'] in column_types:
-            x_variable = args['x_variable']
-        if 'y_variable' in args and args['y_variable'] in column_types:
-            y_variable = args['y_variable']
-        if 'z_variable' in args and args['z_variable'] in column_types:
-            z_variable = args['z_variable']
-        if 'color_variable' in args and args['color_variable'] in column_types:
-            color_variable = args['color_variable']
-        if 'size_variable' in args and args['size_variable'] in column_types:
-            size_variable = args['size_variable']
-        if 'facet_variable' in args and args['facet_variable'] in column_types:
-            facet_variable = args['facet_variable']
+            graph_type = tool.graph_name
 
     log_variable('x_variable', x_variable)
     log_variable('y_variable', y_variable)
@@ -1014,7 +1016,7 @@ def apply_temporary_settings(n_clicks: int, ai_prompt: str, column_types: dict) 
     log_variable('color_variable', color_variable)
     log_variable('size_variable', size_variable)
     log_variable('facet_variable', facet_variable)
-
+    log_variable('graph_type', graph_type)
     return (
         x_variable,
         y_variable,
@@ -1022,6 +1024,8 @@ def apply_temporary_settings(n_clicks: int, ai_prompt: str, column_types: dict) 
         color_variable,
         size_variable,
         facet_variable,
+        graph_type,
+        variables_changed_by_ai,
         ai_prompt,
     )
 
@@ -1069,6 +1073,7 @@ def filter_data(
     Output('facet_variable_dropdown', 'value'),
     Output('graph_type_dropdown', 'options'),
     Output('graph_type_dropdown', 'value'),
+    Output('variables_changed_by_ai', 'data'),
     Output('invalid_configuration_alert', 'is_open'),
 
     # INPUTS
@@ -1122,6 +1127,7 @@ def filter_data(
     State('color_label_input', 'value'),
     State('size_label_input', 'value'),
     State('facet_label_input', 'value'),
+    State('variables_changed_by_ai', 'data'),
     prevent_initial_call=True,
 )
 def update_controls_and_graph(  # noqa
@@ -1175,6 +1181,7 @@ def update_controls_and_graph(  # noqa
             color_label_input: str | None,
             size_label_input: str | None,
             facet_label_input: str | None,
+            variables_changed_by_ai: bool | None,
         ) -> tuple[go.Figure, dict]:
     """
     Triggered when the user selects columns from the dropdown.
@@ -1258,8 +1265,16 @@ def update_controls_and_graph(  # noqa
             # update graph_type if it's not valid (not in list) or if a new x/y variable has been
             # selected
             if (
-                graph_type not in graph_types
-                or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown', 'z_variable_dropdown']  # noqa
+                (
+                    graph_type not in graph_types
+                    # we want to return it to the default graph if the user changes selections
+                    # e.g. if we select numeric and then numeric, we want a scatter not histogram
+                    # (and we don't want to manually have to select scatter each time, it should
+                    # display the first option in the config)
+                    or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown', 'z_variable_dropdown']  # noqa
+                )
+                # we don't want to override the value if it was changed by the AI
+                and not variables_changed_by_ai
             ):
                 graph_type = graph_types[0]
 
@@ -1450,6 +1465,7 @@ def update_controls_and_graph(  # noqa
         # graphing options
         [{'label': x.capitalize(), 'value': x} for x in graph_types],
         graph_type,
+        False,
         invalid_configuration_alert,
     )
 
