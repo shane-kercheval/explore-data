@@ -1,10 +1,12 @@
 """Dash app entry point."""
-import math
-import os
 from dotenv import load_dotenv
-import base64
+import uuid
+import os
+import math
 import io
 import yaml
+import base64
+from textwrap import dedent
 from dash import ctx, callback_context, dash_table
 from dash.dependencies import ALL
 import plotly.express as px
@@ -38,10 +40,11 @@ from source.library.dash_utilities import (
     log_function,
     log_variable,
 )
-import source.library.types as t
-
 from dash_extensions.enrich import DashProxy, Output, Input, State, Serverside, html, dcc, \
     ServersideOutputTransform
+from llm_workflow.agents import Tool, OpenAIFunctions
+import source.library.types as t
+
 
 load_dotenv()
 
@@ -210,6 +213,11 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         ),
                         dbc.Collapse(id="collapse-variables", is_open=True, children=[
                             dbc.CardBody([
+                                #  dbc.Button(
+                                #     "TEMP",
+                                #     className='btn-custom',
+                                #     id="TEMP-settings-button",
+                                # ),
                                 create_dropdown_control(
                                     label="X variable",
                                     id="x_variable",
@@ -470,6 +478,32 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     step=1,
                                     value=3,
                                 ),
+                            ]),
+                        ]),
+                    ]),
+                    dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
+                        dbc.CardHeader(
+                            dbc.Button(
+                                "AI (Beta)",
+                                id="panel-ai-toggle",
+                                className="panel_toggle_button",
+                            ),
+                        ),
+                        dbc.Collapse(id="collapse-ai", is_open=False, children=[
+                            dbc.CardBody([
+                                dcc.Loading(type="default", children=[
+                                    dbc.Button(
+                                        "Do AI Stuff",
+                                        className='btn-custom',
+                                        id="ai-apply-button",
+                                        style={'margin': '0 20px 20px 0'},
+                                    ),
+                                    dcc.Textarea(
+                                        id='ai_prompt_textarea',
+                                        value="Plot a 3d scatter the duration of the loan against the amount of the loan and age.",
+                                        style={'width': '100%', 'height': 200, 'padding': '10px'},
+                                    ),
+                                ]),
                             ]),
                         ]),
                     ]),
@@ -773,33 +807,6 @@ def load_data(  # noqa
             log("Loading DataFrame with random data")
             from source.library.utilities import create_random_dataframe
             data = create_random_dataframe(num_rows=10_000, sporadic_missing=True)
-            # def generate_fake_retention_data() -> pd.DataFrame:
-            #     from datetime import datetime, timedelta
-            #     import numpy as np
-            #     base_date = datetime.utcnow() - (days=100)
-            #     data = []
-            #     for user_id in range(100):
-            #         for days in range(0, 70, 1):
-            #             # only append 5% of the time
-            #             event_datetime = base_date + timedelta(days=days + user_id)
-            #             if event_datetime > base_date + timedelta(days=100):
-            #                 continue
-            #             if np.random.rand() < 0.5:
-            #                 # print('append', user_id, days)
-            #                 data.append({
-            #                     'user_id': user_id,
-            #                     'datetime': event_datetime,
-            #                 })
-            #             if np.random.rand() < 0.5:
-            #                 # print('append', user_id, days)
-            #                 data.append({
-            #                     'user_id': user_id,
-            #                     'datetime': event_datetime,
-            #                 })
-            #     data = pd.DataFrame(data, columns=['user_id', 'datetime'])
-            #     data['user_id'] = data['user_id'].astype(str)
-            #     return data
-            # data = generate_fake_retention_data()
             log(f"Loaded data w/ {data.shape[0]:,} rows and {data.shape[1]:,} columns")
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
@@ -863,6 +870,160 @@ def load_data(  # noqa
         snowflake_error_message,
     )
 
+
+@app.callback(
+    Output('x_variable_dropdown', 'value', allow_duplicate=True),
+    Output('y_variable_dropdown', 'value', allow_duplicate=True),
+    Output('z_variable_dropdown', 'value', allow_duplicate=True),
+    Output('color_variable_dropdown', 'value', allow_duplicate=True),
+    Output('size_variable_dropdown', 'value', allow_duplicate=True),
+    Output('facet_variable_dropdown', 'value', allow_duplicate=True),
+    Output('ai_prompt_textarea', 'value'),  # this is simply to make the progress bar work
+    # i.e. (dcc.Loading)
+    Input('ai-apply-button', 'n_clicks'),
+    State('ai_prompt_textarea', 'value'),
+    State('column_types', 'data'),
+    prevent_initial_call=True,
+)
+def apply_temporary_settings(n_clicks: int, ai_prompt: str, column_types: dict) -> tuple:
+    def build_tools_from_graph_configs(configs: dict, column_types: dict) -> list[Tool]:
+        # TODO: need to add graph_type in order to support e.g. P( y | x ) chart
+        # TODO: i might have to add graph_type as another variable in yaml since it's not always
+        # valid. Only certain graphs need to specify the graph_type. Actually i'm not sure that
+        # is True.. i think i can just pass graph_type in the same way as x_variable, etc.
+        # I just need to add it to the inputs dict or extract it from the tool name. or something
+        # BUT there are other variables like `Aggregation:` (sum, avg, etc.) that are not always
+        # valid.
+        #TODO: would also be nice to specify monthly/weekly/daily etc. for date variables
+        tools = []
+        for config in configs:
+            # config = configs[0]
+            variables = {k:v for k, v in config['selected_variables'].items() if v is not None}
+            required_variables = list(variables.keys())
+            for graph_type in config['graph_types']:
+                if 'agent_description' not in graph_type:
+                    continue
+                # description = graph_type['info']
+                agent_description = graph_type['agent_description']
+                agent_description = agent_description.strip() if agent_description else ''
+                description = f"({graph_type['name']}) {graph_type['description']} {agent_description}"
+                for var, types in variables.items():
+                    replacement = f" axis variable (which can be a column of type {', '.join(types)})"
+                    description = description.replace(
+                        f"{{{{{var}}}}}",
+                        f"{var.replace('_variable',replacement)}"
+                    ).strip()
+                # description = f"({graph_type['name']}) "
+
+                # graph_type = config['graph_types'][0]
+                if 'optional_variables' in graph_type:
+                    optional_variables = graph_type['optional_variables']
+                    variables.update({k:v['types'] for k, v in optional_variables.items() if v is not None})
+                # print(f"variables: {variables}")
+                # print(f"required_variables: {required_variables}")
+                valid_graph = True
+                inputs = {}
+                for k, valid_column_types in variables.items():
+                    valid_column_names = [n for n, t in column_types.items() if t in valid_column_types]
+                    inputs[k] = {
+                        'type': 'string',
+                        'description': f"{k.replace('_variable', ' axis')} that supports {', '.join(valid_column_types)} columns",   # noqa
+                    }
+                    if len(valid_column_names) == 0:
+                        if k in required_variables:
+                            # if there are no valid columns that support the corresponding types and the
+                            # variable is required (e.g. there are no dates columns in the dataset and a
+                            # date is required for the graph), then skip this graph/tool altogether
+                            valid_graph = False
+                            break
+                    else:
+                        inputs[k]['enum'] = valid_column_names
+                if valid_graph:
+                    # inputs = {'inputs': inputs}
+                    tools.append(Tool(
+                        name=str(uuid.uuid4()),
+                        description=description,
+                        inputs=inputs,
+                        required=required_variables,
+                    ))
+        return tools
+
+    x_variable = None
+    y_variable = None
+    z_variable = None
+    color_variable = None
+    size_variable = None
+    facet_variable = None
+    if not ai_prompt:
+        return (
+            x_variable,
+            y_variable,
+            z_variable,
+            color_variable,
+            size_variable,
+            facet_variable,
+            ai_prompt,
+        )
+
+    tools = build_tools_from_graph_configs(GRAPH_CONFIGS['configurations'], column_types)
+    agent = OpenAIFunctions(
+        model_name='gpt-3.5-turbo-1106',
+        tools=tools,
+    )
+    formatted_colum_names = '\n'.join([f"{k}: {v}" for k, v in column_types.items()])
+    template = dedent(f"""
+    The user is asking to create a plot based on the following column names and types. Infer the correct column names and the correct axes from the users question. Choose a tool that uses all of the columns listed by the user. Prioritize the required columns.
+
+    Valid columns and types:
+
+    ```
+    {formatted_colum_names}
+    ```
+
+    User's question:
+    
+    {ai_prompt}
+    """)  # noqa
+    log_variable('OpenAI template', template)
+    response = agent(template)
+
+    log(f"Agent Cost:           ${agent.history()[0].cost:.5f}")
+    log(f"Agent Tokens:          {agent.history()[0].total_tokens:,}")
+    log(f"Agent Prompt Tokens:   {agent.history()[0].input_tokens:,}")
+    log(f"Agent Response Tokens: {agent.history()[0].response_tokens:,}")
+
+    if response:
+        _, args = response[0]
+        log_variable('OpenAI functions args', args)
+        if 'x_variable' in args and args['x_variable'] in column_types:
+            x_variable = args['x_variable']
+        if 'y_variable' in args and args['y_variable'] in column_types:
+            y_variable = args['y_variable']
+        if 'z_variable' in args and args['z_variable'] in column_types:
+            z_variable = args['z_variable']
+        if 'color_variable' in args and args['color_variable'] in column_types:
+            color_variable = args['color_variable']
+        if 'size_variable' in args and args['size_variable'] in column_types:
+            size_variable = args['size_variable']
+        if 'facet_variable' in args and args['facet_variable'] in column_types:
+            facet_variable = args['facet_variable']
+
+    log_variable('x_variable', x_variable)
+    log_variable('y_variable', y_variable)
+    log_variable('z_variable', z_variable)
+    log_variable('color_variable', color_variable)
+    log_variable('size_variable', size_variable)
+    log_variable('facet_variable', facet_variable)
+
+    return (
+        x_variable,
+        y_variable,
+        z_variable,
+        color_variable,
+        size_variable,
+        facet_variable,
+        ai_prompt,
+    )
 
 @app.callback(
     Output('filtered_data', 'data'),
@@ -1437,6 +1598,19 @@ def toggle_graph_options_panel(n: int, is_open: bool) -> bool:
         return not is_open
     return is_open
 
+@app.callback(
+    Output("collapse-ai", "is_open"),
+    Input("panel-ai-toggle", "n_clicks"),
+    State("collapse-ai", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_ai_panel(n: int, is_open: bool) -> bool:
+    """Toggle the ai panel."""
+    log_function('toggle_ai_panel')
+    if n:
+        return not is_open
+    return is_open
+
 
 @app.callback(
     Output("collapse-other-options", "is_open"),
@@ -1687,22 +1861,24 @@ def update_bar_mode_div_style(graph_type: str, color_variable: str | None) -> di
     Output('z_variable_dropdown', 'value'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
+    Input('z_variable_dropdown', 'value'),
     State('column_types', 'data'),
     prevent_initial_call=True,
 )
 def update_z_variable_dropdown_style(
         x_variable: str | None,
         y_variable: str | None,
+        z_variable: str | None,
         column_types: dict,
     ) -> tuple[dict, list, str]:
     """Toggle the z-variable dropdown."""
     numeric_columns = t.get_numeric_columns(column_types)
     if t.is_numeric(x_variable, column_types) and t.is_numeric(y_variable, column_types):
-        return {'display': 'block'}, numeric_columns, None
+        return {'display': 'block'}, numeric_columns, z_variable
     if t.is_discrete(x_variable, column_types) and t.is_discrete(y_variable, column_types):
         options = [x for x, y in column_types.items() if y != t.DATE]
-        return {'display': 'block'}, options, None
-    return {'display': 'none'}, [], None
+        return {'display': 'block'}, options, z_variable
+    return {'display': 'none'}, [], z_variable
 
 
 @app.callback(

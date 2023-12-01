@@ -604,6 +604,7 @@ configurations:
               - categorical
       - name: retention
         description: Shows the retention rate of {{y_variable}} for each cohort in {{x_variable}}.
+        agent_description:
   # date / date
   - selected_variables:
       x_variable:
