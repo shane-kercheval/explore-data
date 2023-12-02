@@ -1828,7 +1828,7 @@ def test_build_tools_from_graph_configs__credit(graphing_configurations: dict, c
     assert config['agent'] and 'description' in config['agent']  # noqa
     # get the tool
     tool = tools[0]
-    config['agent']['description'] in tool.description
+    assert config['agent']['description'] in tool.description
     assert '{{x_variable}}' in config['description']
     assert '{{x_variable}}' not in tool.description
     assert set(tool.inputs.keys()) == {'x_variable', 'color_variable', 'facet_variable'}
@@ -1847,6 +1847,57 @@ def test_build_tools_from_graph_configs__credit(graphing_configurations: dict, c
     file_path = os.path.join(
         os.getenv('PROJECT_PATH'),
         'tests/test_files/utilities/test_build_tools_from_graph_configs__credit.yml',
+    )
+    with open(file_path, 'w') as _handle:
+        yaml.dump([t.to_dict() for t in tools], _handle)
+
+
+def test_build_tools_from_graph_configs__conversions(graphing_configurations: dict, conversions_data: pd.DataFrame):  # noqa
+    column_types = t.get_column_types(conversions_data)
+    tools = build_tools_from_graph_configs(graphing_configurations, column_types)
+    # test an individual tool
+    # gets date/None config
+    config = [
+        c for c in graphing_configurations
+        if c['selected_variables'] == {'x_variable': ['date'], 'y_variable': None}
+    ]
+    assert len(config) == 1
+    config = config[0]
+    # default date graph should have agent & description/variables (i.e. date_floor)
+    assert config['graph_types'][0]['name'] == 'histogram'
+    config = config['graph_types'][0]
+    assert config['agent']
+    assert'description' in config['agent']
+    assert'variables' in config['agent']
+    # get the tool associated with date/None
+    tool = [
+        t for t in tools
+        if 'Shows record counts over time based on' in t.description
+    ]
+    assert len(tool) == 1
+    tool = tool[0]
+    assert config['agent']['description'] in tool.description
+    assert '{{x_variable}}' in config['description']
+    assert '{{x_variable}}' not in tool.description
+    assert set(tool.inputs.keys()) == {'x_variable', 'color_variable', 'facet_variable', 'date_floor'}  # noqa
+    assert tool.required == ['x_variable']
+    for tool_input in tool.inputs.values():
+        assert 'type' in tool_input
+        assert tool_input['type'] == 'string'
+        assert 'description' in tool_input
+        assert tool_input['description']
+        assert isinstance(tool_input['description'], str)
+        assert 'enum' in tool_input
+        assert tool_input['enum']
+        assert isinstance(tool_input['enum'], list)
+
+    assert config['agent']['variables'][0]['date_floor']['description'] == tool.inputs['date_floor']['description']  # noqa
+    assert config['agent']['variables'][0]['date_floor']['options'] == tool.inputs['date_floor']['enum']  # noqa
+
+    # let's save all the dicts to a file so that we can monitor anything that changes
+    file_path = os.path.join(
+        os.getenv('PROJECT_PATH'),
+        'tests/test_files/utilities/test_build_tools_from_graph_configs__conversions.yml',
     )
     with open(file_path, 'w') as _handle:
         yaml.dump([t.to_dict() for t in tools], _handle)

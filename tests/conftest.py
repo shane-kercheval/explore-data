@@ -82,7 +82,7 @@ def credit_data() -> pd.DataFrame:
 
 
 @pytest.fixture()
-def conversion_data() -> pd.DataFrame:
+def conversions_data() -> pd.DataFrame:
     """Load conversion dataset."""
     return pd.read_csv(os.path.join(os.getenv('PROJECT_PATH'), 'data/conversions.csv'))
 

@@ -1,0 +1,728 @@
+- description: (box) Shows the distribution of x axis variable (which can be a column
+    of type numeric). Boxplots are useful for understanding the distribution of the
+    data and identifying outliers.
+  name: af29cc84-f86b-4fc7-aa24-945922539bce
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports date, boolean, string, categorical columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      facet_variable:
+        description: facet axis that supports date, boolean, string, categorical columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports numeric columns
+        enum:
+        - amount
+        type: string
+    required: &id001
+    - x_variable
+    type: object
+- description: (histogram) Shows the distribution of x axis variable (which can be
+    a column of type numeric). Histograms are useful for understanding the distribution
+    of at a more granular level compared to boxplots.
+  name: a288eb04-1017-4400-a5ca-c0a6277e802b
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports date, boolean, string, categorical columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      facet_variable:
+        description: facet axis that supports date, boolean, string, categorical columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports numeric columns
+        enum:
+        - amount
+        type: string
+    required: *id001
+    type: object
+- description: (scatter) Shows the relationship between x axis variable (which can
+    be a column of type numeric) and y axis variable (which can be a column of type
+    numeric).
+  name: ac79f0d1-9068-46c9-aa10-1ec85e36fef1
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports numeric, date, boolean, string, categorical
+          columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - amount
+        - continent
+        - country
+        - city
+        type: string
+      facet_variable:
+        description: facet axis that supports date, boolean, string, categorical columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      size_variable:
+        description: size axis that supports numeric columns
+        enum:
+        - amount
+        type: string
+      x_variable:
+        description: x axis that supports numeric columns
+        enum:
+        - amount
+        type: string
+      y_variable:
+        description: y axis that supports numeric columns
+        enum:
+        - amount
+        type: string
+    required:
+    - x_variable
+    - y_variable
+    type: object
+- description: (scatter-3d) Shows the relationship between x axis variable (which
+    can be a column of type numeric), y axis variable (which can be a column of type
+    numeric), and z axis variable (which can be a column of type numeric). A 3D scatter
+    plot is the best option when there are three numeric variables.
+  name: e523819b-1688-4f69-b3b0-4e059eb28563
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports numeric, date, boolean, string, categorical
+          columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - amount
+        - continent
+        - country
+        - city
+        type: string
+      size_variable:
+        description: size axis that supports numeric columns
+        enum:
+        - amount
+        type: string
+      x_variable:
+        description: x axis that supports numeric columns
+        enum:
+        - amount
+        type: string
+      y_variable:
+        description: y axis that supports numeric columns
+        enum:
+        - amount
+        type: string
+      z_variable:
+        description: z axis that supports numeric columns
+        enum:
+        - amount
+        type: string
+    required:
+    - x_variable
+    - y_variable
+    - z_variable
+    type: object
+- description: (histogram) Shows the counts of x axis variable (which can be a column
+    of type boolean, string, categorical). Histograms are useful for understanding
+    the distribution of counts of non-numeric data.
+  name: dc958e39-16ec-4b16-b5c7-33e8d833c05b
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports numeric, date, boolean, string, categorical
+          columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - amount
+        - continent
+        - country
+        - city
+        type: string
+      facet_variable:
+        description: facet axis that supports date, boolean, string, categorical columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+    required:
+    - x_variable
+    type: object
+- description: (histogram) Shows the sum of y axis variable (which can be a column
+    of type numeric) across each value of x axis variable (which can be a column of
+    type boolean, string, categorical).
+  name: ea9c470f-0e84-4915-b3f0-40e48f44b1ea
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports numeric, date, boolean, string, categorical
+          columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - amount
+        - continent
+        - country
+        - city
+        type: string
+      facet_variable:
+        description: facet axis that supports date, boolean, string, categorical columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      y_variable:
+        description: y axis that supports numeric columns
+        enum:
+        - amount
+        type: string
+    required:
+    - x_variable
+    - y_variable
+    type: object
+- description: (P(Y | X)) Shows the probability of y axis variable (which can be a
+    column of type boolean, string, categorical) given each value of x axis variable
+    (which can be a column of type boolean, string, categorical).
+  name: 4ac87f47-2ccd-47fa-8242-a48830da9f06
+  parameters:
+    properties:
+      facet_variable:
+        description: facet axis that supports boolean, string, categorical, numeric
+          columns
+        enum:
+        - lead_source
+        - amount
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      y_variable:
+        description: y axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+    required: &id002
+    - x_variable
+    - y_variable
+    type: object
+- description: (bar - count distinct) Shows the count of unique values of y axis variable
+    (which can be a column of type boolean, string, categorical) for each x axis variable
+    (which can be a column of type boolean, string, categorical).
+  name: fd4910d6-bd02-4419-b931-aa21139500c5
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      facet_variable:
+        description: facet axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      y_variable:
+        description: y axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+    required: *id002
+    type: object
+- description: (heatmap) Heatmap of the aggregation of x axis variable (which can
+    be a column of type boolean, string, categorical), y axis variable (which can
+    be a column of type boolean, string, categorical), and z axis variable (which
+    can be a column of type numeric). This plot shows the aggregation of a numeric
+    variable across two non-numeric variables.
+  name: 9a38d4ce-ee7c-418e-9974-8bb33b7111b6
+  parameters:
+    properties:
+      facet_variable:
+        description: facet axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      y_variable:
+        description: y axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      z_variable:
+        description: z axis that supports numeric columns
+        enum:
+        - amount
+        type: string
+    required:
+    - x_variable
+    - y_variable
+    - z_variable
+    type: object
+- description: (heatmap - count distinct) Heatmap showing the count of distinct values
+    of z axis variable (which can be a column of type boolean, string, categorical)
+    for each combination of x axis variable (which can be a column of type boolean,
+    string, categorical), y axis variable (which can be a column of type boolean,
+    string, categorical). This plot shows the count of distinct values of a non-numeric
+    variable across two non-numeric variables.
+  name: 2d717600-bf8c-4f40-b3e7-1a23a8276607
+  parameters:
+    properties:
+      facet_variable:
+        description: facet axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      y_variable:
+        description: y axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      z_variable:
+        description: z axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+    required:
+    - x_variable
+    - y_variable
+    - z_variable
+    type: object
+- description: (histogram) Shows record counts over time based on x axis variable
+    (which can be a column of type date). This plot is a time-series of record counts
+    based on the date variable.
+  name: c2037331-5dfb-49b4-8234-0c22ff2cf50e
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports date, boolean, string, categorical columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      date_floor:
+        description: This is the time period that the records will be aggregated into.
+          Use `month` as the default value.
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        type: string
+      facet_variable:
+        description: facet axis that supports date, boolean, string, categorical columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports date columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        type: string
+    required:
+    - x_variable
+    type: object
+- description: (histogram) Shows the aggregation of y axis variable (which can be
+    a column of type numeric) based across x axis variable (which can be a column
+    of type date). This plot is a time-series of the aggregation of a numeric variable
+    based on the date variable.
+  name: b9ec57ea-9f8a-4580-bed3-c20cb6badfca
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports date, boolean, string, categorical columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      date_floor:
+        description: This is the time period that the records will be aggregated into.
+          Use `month` as the default value.
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        type: string
+      facet_variable:
+        description: facet axis that supports date, boolean, string, categorical columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports date columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        type: string
+      y_variable:
+        description: y axis that supports numeric columns
+        enum:
+        - amount
+        type: string
+    required:
+    - x_variable
+    - y_variable
+    type: object
+- description: (bar - count distinct) Shows the count of unique values of y axis variable
+    (which can be a column of type boolean, string, categorical) for each x axis variable
+    (which can be a column of type date). This plot is a time series that shows the
+    count of unique values of a non-numeric variable across a date variable.
+  name: 965a4446-bf34-4bba-89c9-6b32d86bcd1e
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      date_floor:
+        description: This is the time period that the records will be aggregated into.
+          Use `month` as the default value.
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        type: string
+      facet_variable:
+        description: facet axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports date columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        type: string
+      y_variable:
+        description: y axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+    required: &id003
+    - x_variable
+    - y_variable
+    type: object
+- description: (retention) Shows the retention rate of y axis variable (which can
+    be a column of type boolean, string, categorical) for each cohort in x axis variable
+    (which can be a column of type date).
+  name: 546c6655-6612-4a4a-8faf-588d6e530c48
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      date_floor:
+        description: This is the time period that will create the cohorts. Use `month`
+          as the default value.
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        type: string
+      facet_variable:
+        description: facet axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports date columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        type: string
+      y_variable:
+        description: y axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+    required: *id003
+    type: object
+- description: (cohorted conversion rates) Shows the cohorted conversion rates from
+    x axis variable (which can be a column of type date) to y axis variable (which
+    can be a column of type date) at various durations relative to x axis variable
+    (which can be a column of type date). This plot is a time series that shows the
+    conversion rates as various snapshots in time relative to the date variable.
+  name: efef2e43-7c16-4012-9a20-da9c0fec87b5
+  parameters:
+    properties:
+      date_floor:
+        description: This is the time period that will create the cohorts. Use `month`
+          as the default value.
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        type: string
+      facet_variable:
+        description: facet axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports date columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        type: string
+      y_variable:
+        description: y axis that supports date columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        type: string
+    required: &id004
+    - x_variable
+    - y_variable
+    type: object
+- description: (cohorted adoption rates) Shows the cohorted adoption rates from x
+    axis variable (which can be a column of type date) to y axis variable (which can
+    be a column of type date). This plot shows the adoption rate curves for each cohort.
+  name: 19f9ef78-b970-435a-b32f-167e04178329
+  parameters:
+    properties:
+      date_floor:
+        description: This is the time period that will create the cohorts. Use `month`
+          as the default value.
+        enum:
+        - day
+        - week
+        - month
+        - quarter
+        - year
+        type: string
+      facet_variable:
+        description: facet axis that supports boolean, string, categorical columns
+        enum:
+        - lead_source
+        - continent
+        - country
+        - city
+        type: string
+      x_variable:
+        description: x axis that supports date columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        type: string
+      y_variable:
+        description: y axis that supports date columns
+        enum:
+        - create_date_time
+        - conversion_event_1
+        - conversion_event_2
+        - conversion_event_3
+        type: string
+    required: *id004
+    type: object

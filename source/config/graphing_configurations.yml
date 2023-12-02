@@ -497,7 +497,7 @@ configurations:
       y_variable:
     graph_types:
       - name: histogram
-        description: Shows record counts based on {{x_variable}}.
+        description: Shows record counts over time based on {{x_variable}}.
         agent:
           description: This plot is a time-series of record counts based on the date variable.
           variables:
