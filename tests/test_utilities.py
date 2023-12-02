@@ -1812,6 +1812,11 @@ def test_create_random_dataframe():  # noqa
     assert len(create_random_dataframe(500, sporadic_missing=True)) == 500
 
 def test_build_tools_from_graph_configs__credit(graphing_configurations: dict, credit_data: pd.DataFrame):  # noqa
+    """
+    This test has a few checks to make sure that the graphing configurations are being translated
+    into tools correctly. However, it is not exhaustive. The structure or information may change.
+    I write the tools to a yml file so that when I run the test, I can see what has changed.
+    """  # noqa: D404
     column_types = t.get_column_types(credit_data)
     tools = build_tools_from_graph_configs(graphing_configurations, column_types)
     # test an individual tool
@@ -1853,6 +1858,11 @@ def test_build_tools_from_graph_configs__credit(graphing_configurations: dict, c
 
 
 def test_build_tools_from_graph_configs__conversions(graphing_configurations: dict, conversions_data: pd.DataFrame):  # noqa
+    """
+    This test has a few checks to make sure that the graphing configurations are being translated
+    into tools correctly. However, it is not exhaustive. The structure or information may change.
+    I write the tools to a yml file so that when I run the test, I can see what has changed.
+    """  # noqa: D404
     column_types = t.get_column_types(conversions_data)
     tools = build_tools_from_graph_configs(graphing_configurations, column_types)
     # test an individual tool
