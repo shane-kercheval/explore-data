@@ -1471,8 +1471,9 @@ def update_correlations_graph(data: pd.DataFrame) -> go.Figure:
 
 
 @app.callback(
-    Output('x_variable_dropdown', 'value'),
-    Output('y_variable_dropdown', 'value'),
+    Output('x_variable_dropdown', 'value', allow_duplicate=True),
+    Output('y_variable_dropdown', 'value', allow_duplicate=True),
+    Output('z_variable_dropdown', 'value', allow_duplicate=True),
     Output('date_floor_dropdown', 'value'),
     Input('clear-settings-button', 'n_clicks'),
     prevent_initial_call=True,
@@ -1481,7 +1482,7 @@ def clear_settings(n_clicks: int) -> str:
     """Triggered when the user clicks on the Clear button."""
     log_function('clear_settings')
     log_variable('n_clicks', n_clicks)
-    return None, None, 'month'
+    return None, None, None, 'month'
 
 
 @app.callback(
