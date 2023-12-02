@@ -71,9 +71,20 @@ def mock_data2() -> pd.DataFrame:
 @pytest.fixture()
 def graphing_configurations() -> dict:
     """Load graphing configurations from yaml file."""
-    os.getcwd()
     with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_configurations.yml')) as f:  # noqa
         return yaml.safe_load(f)['configurations']
+
+
+@pytest.fixture()
+def credit_data() -> pd.DataFrame:
+    """Load credit dataset."""
+    return pd.read_csv(os.path.join(os.getenv('PROJECT_PATH'), 'data/credit.csv'))
+
+
+@pytest.fixture()
+def conversion_data() -> pd.DataFrame:
+    """Load conversion dataset."""
+    return pd.read_csv(os.path.join(os.getenv('PROJECT_PATH'), 'data/conversions.csv'))
 
 
 @pytest.fixture()

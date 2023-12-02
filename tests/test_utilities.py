@@ -1,10 +1,14 @@
 """Test utilities.py."""
+import os
 import numpy as np
 import pytest
 import pandas as pd
 from datetime import date, datetime
+
+import yaml
 import source.library.types as t
 from source.library.utilities import (
+    build_tools_from_graph_configs,
     dataframe_columns_to_datetime,
     filter_dataframe,
     to_date,
@@ -1806,3 +1810,43 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
 def test_create_random_dataframe():  # noqa
     assert len(create_random_dataframe(500, sporadic_missing=False)) == 500
     assert len(create_random_dataframe(500, sporadic_missing=True)) == 500
+
+def test_build_tools_from_graph_configs__credit(graphing_configurations: dict, credit_data: pd.DataFrame):  # noqa
+    column_types = t.get_column_types(credit_data)
+    tools = build_tools_from_graph_configs(graphing_configurations, column_types)
+    # test an individual tool
+    # gets numeric/non-umeric config
+    config = [
+        c for c in graphing_configurations
+        if c['selected_variables'] == {'x_variable': ['numeric'], 'y_variable': None}
+    ]
+    assert len(config) == 1
+    config = config[0]
+    # boxplot should have agent & description
+    assert config['graph_types'][0]['name'] == 'box'
+    config = config['graph_types'][0]
+    assert config['agent'] and 'description' in config['agent']  # noqa
+    # get the tool
+    tool = tools[0]
+    config['agent']['description'] in tool.description
+    assert '{{x_variable}}' in config['description']
+    assert '{{x_variable}}' not in tool.description
+    assert set(tool.inputs.keys()) == {'x_variable', 'color_variable', 'facet_variable'}
+    assert tool.required == ['x_variable']
+    for tool_input in tool.inputs.values():
+        assert 'type' in tool_input
+        assert tool_input['type'] == 'string'
+        assert 'description' in tool_input
+        assert tool_input['description']
+        assert isinstance(tool_input['description'], str)
+        assert 'enum' in tool_input
+        assert tool_input['enum']
+        assert isinstance(tool_input['enum'], list)
+
+    # let's save all the dicts to a file so that we can monitor anything that changes
+    file_path = os.path.join(
+        os.getenv('PROJECT_PATH'),
+        'tests/test_files/utilities/test_build_tools_from_graph_configs__credit.yml',
+    )
+    with open(file_path, 'w') as _handle:
+        yaml.dump([t.to_dict() for t in tools], _handle)

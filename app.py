@@ -1,6 +1,5 @@
 """Dash app entry point."""
 from dotenv import load_dotenv
-import uuid
 import os
 import math
 import io
@@ -40,9 +39,10 @@ from source.library.dash_utilities import (
     log_function,
     log_variable,
 )
+from source.library.utilities import build_tools_from_graph_configs
 from dash_extensions.enrich import DashProxy, Output, Input, State, Serverside, html, dcc, \
     ServersideOutputTransform
-from llm_workflow.agents import Tool, OpenAIFunctions
+from llm_workflow.agents import OpenAIFunctions
 import source.library.types as t
 
 
@@ -890,87 +890,24 @@ def load_data(  # noqa
     Input('ai-apply-button', 'n_clicks'),
     State('ai_prompt_textarea', 'value'),
     State('column_types', 'data'),
+    State('date_floor_dropdown', 'value'),
     prevent_initial_call=True,
 )
-def apply_temporary_settings(n_clicks: int, ai_prompt: str, column_types: dict) -> tuple:
-    def build_tools_from_graph_configs(configs: dict, column_types: dict) -> list[Tool]:
-        # TODO: need to add graph_type in order to support e.g. P( y | x ) chart
-        # TODO: i might have to add graph_type as another variable in yaml since it's not always
-        # valid. Only certain graphs need to specify the graph_type. Actually i'm not sure that
-        # is True.. i think i can just pass graph_type in the same way as x_variable, etc.
-        # I just need to add it to the inputs dict or extract it from the tool name. or something
-        # BUT there are other variables like `Aggregation:` (sum, avg, etc.) that are not always
-        # valid.
-        #TODO: would also be nice to specify monthly/weekly/daily etc. for date variables
-        tools = []
-        for config in configs:
-            # config = configs[0]
-            variables = {k:v for k, v in config['selected_variables'].items() if v is not None}
-            required_variables = list(variables.keys())
-            for graph_type in config['graph_types']:
-                if 'agent' not in graph_type:
-                    continue
-                # description = graph_type['info']
-                if graph_type['agent'] and 'description' in graph_type['agent']:
-                    agent_description = graph_type['agent']['description']
-                    agent_description = agent_description.strip()
-                else:
-                    agent_description = ''
-                description = f"({graph_type['name']}) {graph_type['description']} {agent_description}"
-                for var, types in variables.items():
-                    replacement = f" axis variable (which can be a column of type {', '.join(types)})"
-                    description = description.replace(
-                        f"{{{{{var}}}}}",
-                        f"{var.replace('_variable',replacement)}"
-                    ).strip()
-                # description = f"({graph_type['name']}) "
+def set_variables_from_ai(
+        n_clicks: int,  # noqa: ARG001
+        ai_prompt: str,
+        column_types: dict,
+        date_floor: str,
+        ) -> tuple:
+    """
+    Triggered when the user clicks on the AI button, which uses the OpenAI "functions" (i.e. agent)
+    to infer the correct graph settings based on the user's question.
 
-                # graph_type = config['graph_types'][0]
-                if 'optional_variables' in graph_type:
-                    optional_variables = graph_type['optional_variables']
-                    variables.update({k:v['types'] for k, v in optional_variables.items() if v is not None})
-                # print(f"variables: {variables}")
-                # print(f"required_variables: {required_variables}")
-                valid_graph = True
-                inputs = {}
-                for k, valid_column_types in variables.items():
-                    valid_column_names = [n for n, t in column_types.items() if t in valid_column_types]
-                    inputs[k] = {
-                        'type': 'string',
-                        'description': f"{k.replace('_variable', ' axis')} that supports {', '.join(valid_column_types)} columns",   # noqa
-                    }
-                    if len(valid_column_names) == 0:
-                        if k in required_variables:
-                            # if there are no valid columns that support the corresponding types and the
-                            # variable is required (e.g. there are no dates columns in the dataset and a
-                            # date is required for the graph), then skip this graph/tool altogether
-                            valid_graph = False
-                            break
-                    else:
-                        inputs[k]['enum'] = valid_column_names
-
-                if graph_type['agent'] and 'variables' in graph_type['agent']:
-                    for agent_var in graph_type['agent']['variables']:
-                        assert len(agent_var) == 1
-                        agent_var_name = next(iter(agent_var.keys()))
-                        inputs[agent_var_name] = {
-                            'type': 'string',
-                            'description': agent_var[agent_var_name]['description'],
-                            'enum': agent_var[agent_var_name]['options'],
-                        }
-
-                if valid_graph:
-                    # inputs = {'inputs': inputs}
-                    tool = Tool(
-                        name=str(uuid.uuid4()),
-                        description=description,
-                        inputs=inputs,
-                        required=required_variables,
-                    )
-                    tool.graph_name = graph_type['name']
-                    tools.append(tool)
-        return tools
-
+    Note: Unlike other variables, if the date_floor isn't specified by the AI, then we want to use
+    the current value. A) the AI may mistakenly not return the date_floor, and B) leaving the
+    current value won't affect the non-date graphs (unlike leaving the current value of other
+    variables).
+    """
     x_variable = None
     y_variable = None
     z_variable = None
@@ -978,7 +915,6 @@ def apply_temporary_settings(n_clicks: int, ai_prompt: str, column_types: dict) 
     size_variable = None
     facet_variable = None
     graph_type = None
-    date_floor = None
     variables_changed_by_ai = False
 
     if ai_prompt:

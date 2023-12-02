@@ -1,0 +1,642 @@
+- description: (box) Shows the distribution of x axis variable (which can be a column
+    of type numeric). Boxplots are useful for understanding the distribution of the
+    data and identifying outliers.
+  name: 1fff2e66-2e62-455a-a3cb-6e5311086128
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports date, boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      facet_variable:
+        description: facet axis that supports date, boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      x_variable:
+        description: x axis that supports numeric columns
+        enum:
+        - months_loan_duration
+        - amount
+        - percent_of_income
+        - years_at_residence
+        - age
+        - existing_loans_count
+        - dependents
+        type: string
+    required: &id001
+    - x_variable
+    type: object
+- description: (histogram) Shows the distribution of x axis variable (which can be
+    a column of type numeric). Histograms are useful for understanding the distribution
+    of at a more granular level compared to boxplots.
+  name: ab7f65da-3f73-4652-99a8-236744c53dc4
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports date, boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      facet_variable:
+        description: facet axis that supports date, boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      x_variable:
+        description: x axis that supports numeric columns
+        enum:
+        - months_loan_duration
+        - amount
+        - percent_of_income
+        - years_at_residence
+        - age
+        - existing_loans_count
+        - dependents
+        type: string
+    required: *id001
+    type: object
+- description: (scatter) Shows the relationship between x axis variable (which can
+    be a column of type numeric) and y axis variable (which can be a column of type
+    numeric).
+  name: 37ea560a-e065-4743-a385-fe04c0e87e23
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports numeric, date, boolean, string, categorical
+          columns
+        enum:
+        - checking_balance
+        - months_loan_duration
+        - credit_history
+        - purpose
+        - amount
+        - savings_balance
+        - employment_duration
+        - percent_of_income
+        - years_at_residence
+        - age
+        - other_credit
+        - housing
+        - existing_loans_count
+        - job
+        - dependents
+        - phone
+        - default
+        type: string
+      facet_variable:
+        description: facet axis that supports date, boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      size_variable:
+        description: size axis that supports numeric columns
+        enum:
+        - months_loan_duration
+        - amount
+        - percent_of_income
+        - years_at_residence
+        - age
+        - existing_loans_count
+        - dependents
+        type: string
+      x_variable:
+        description: x axis that supports numeric columns
+        enum:
+        - months_loan_duration
+        - amount
+        - percent_of_income
+        - years_at_residence
+        - age
+        - existing_loans_count
+        - dependents
+        type: string
+      y_variable:
+        description: y axis that supports numeric columns
+        enum:
+        - months_loan_duration
+        - amount
+        - percent_of_income
+        - years_at_residence
+        - age
+        - existing_loans_count
+        - dependents
+        type: string
+    required:
+    - x_variable
+    - y_variable
+    type: object
+- description: (scatter-3d) Shows the relationship between x axis variable (which
+    can be a column of type numeric), y axis variable (which can be a column of type
+    numeric), and z axis variable (which can be a column of type numeric). A 3D scatter
+    plot is the best option when there are three numeric variables.
+  name: 23114d13-1fac-4884-b6b0-9eb6bafb9410
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports numeric, date, boolean, string, categorical
+          columns
+        enum:
+        - checking_balance
+        - months_loan_duration
+        - credit_history
+        - purpose
+        - amount
+        - savings_balance
+        - employment_duration
+        - percent_of_income
+        - years_at_residence
+        - age
+        - other_credit
+        - housing
+        - existing_loans_count
+        - job
+        - dependents
+        - phone
+        - default
+        type: string
+      size_variable:
+        description: size axis that supports numeric columns
+        enum:
+        - months_loan_duration
+        - amount
+        - percent_of_income
+        - years_at_residence
+        - age
+        - existing_loans_count
+        - dependents
+        type: string
+      x_variable:
+        description: x axis that supports numeric columns
+        enum:
+        - months_loan_duration
+        - amount
+        - percent_of_income
+        - years_at_residence
+        - age
+        - existing_loans_count
+        - dependents
+        type: string
+      y_variable:
+        description: y axis that supports numeric columns
+        enum:
+        - months_loan_duration
+        - amount
+        - percent_of_income
+        - years_at_residence
+        - age
+        - existing_loans_count
+        - dependents
+        type: string
+      z_variable:
+        description: z axis that supports numeric columns
+        enum:
+        - months_loan_duration
+        - amount
+        - percent_of_income
+        - years_at_residence
+        - age
+        - existing_loans_count
+        - dependents
+        type: string
+    required:
+    - x_variable
+    - y_variable
+    - z_variable
+    type: object
+- description: (histogram) Shows the counts of x axis variable (which can be a column
+    of type boolean, string, categorical). Histograms are useful for understanding
+    the distribution of counts of non-numeric data.
+  name: 644836fd-2bda-437d-8434-c8fd0575206a
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports numeric, date, boolean, string, categorical
+          columns
+        enum:
+        - checking_balance
+        - months_loan_duration
+        - credit_history
+        - purpose
+        - amount
+        - savings_balance
+        - employment_duration
+        - percent_of_income
+        - years_at_residence
+        - age
+        - other_credit
+        - housing
+        - existing_loans_count
+        - job
+        - dependents
+        - phone
+        - default
+        type: string
+      facet_variable:
+        description: facet axis that supports date, boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      x_variable:
+        description: x axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+    required:
+    - x_variable
+    type: object
+- description: (histogram) Shows the sum of y axis variable (which can be a column
+    of type numeric) across each value of x axis variable (which can be a column of
+    type boolean, string, categorical).
+  name: c5724c6a-383a-4527-ad80-27f1f032f1e7
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports numeric, date, boolean, string, categorical
+          columns
+        enum:
+        - checking_balance
+        - months_loan_duration
+        - credit_history
+        - purpose
+        - amount
+        - savings_balance
+        - employment_duration
+        - percent_of_income
+        - years_at_residence
+        - age
+        - other_credit
+        - housing
+        - existing_loans_count
+        - job
+        - dependents
+        - phone
+        - default
+        type: string
+      facet_variable:
+        description: facet axis that supports date, boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      x_variable:
+        description: x axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      y_variable:
+        description: y axis that supports numeric columns
+        enum:
+        - months_loan_duration
+        - amount
+        - percent_of_income
+        - years_at_residence
+        - age
+        - existing_loans_count
+        - dependents
+        type: string
+    required:
+    - x_variable
+    - y_variable
+    type: object
+- description: (P(Y | X)) Shows the probability of y axis variable (which can be a
+    column of type boolean, string, categorical) given each value of x axis variable
+    (which can be a column of type boolean, string, categorical).
+  name: 2dbb2811-3c91-48f8-8b82-14324f3fd30a
+  parameters:
+    properties:
+      facet_variable:
+        description: facet axis that supports boolean, string, categorical, numeric
+          columns
+        enum:
+        - checking_balance
+        - months_loan_duration
+        - credit_history
+        - purpose
+        - amount
+        - savings_balance
+        - employment_duration
+        - percent_of_income
+        - years_at_residence
+        - age
+        - other_credit
+        - housing
+        - existing_loans_count
+        - job
+        - dependents
+        - phone
+        - default
+        type: string
+      x_variable:
+        description: x axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      y_variable:
+        description: y axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+    required: &id002
+    - x_variable
+    - y_variable
+    type: object
+- description: (bar - count distinct) Shows the count of unique values of y axis variable
+    (which can be a column of type boolean, string, categorical) for each x axis variable
+    (which can be a column of type boolean, string, categorical).
+  name: 059e0c94-eaa3-4659-a696-7512a8f7d231
+  parameters:
+    properties:
+      color_variable:
+        description: color axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      facet_variable:
+        description: facet axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      x_variable:
+        description: x axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      y_variable:
+        description: y axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+    required: *id002
+    type: object
+- description: (heatmap) Heatmap of the aggregation of x axis variable (which can
+    be a column of type boolean, string, categorical), y axis variable (which can
+    be a column of type boolean, string, categorical), and z axis variable (which
+    can be a column of type numeric). This plot shows the aggregation of a numeric
+    variable across two non-numeric variables.
+  name: 00147377-0386-4302-8abb-5c103247b646
+  parameters:
+    properties:
+      facet_variable:
+        description: facet axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      x_variable:
+        description: x axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      y_variable:
+        description: y axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      z_variable:
+        description: z axis that supports numeric columns
+        enum:
+        - months_loan_duration
+        - amount
+        - percent_of_income
+        - years_at_residence
+        - age
+        - existing_loans_count
+        - dependents
+        type: string
+    required:
+    - x_variable
+    - y_variable
+    - z_variable
+    type: object
+- description: (heatmap - count distinct) Heatmap showing the count of distinct values
+    of z axis variable (which can be a column of type boolean, string, categorical)
+    for each combination of x axis variable (which can be a column of type boolean,
+    string, categorical), y axis variable (which can be a column of type boolean,
+    string, categorical). This plot shows the count of distinct values of a non-numeric
+    variable across two non-numeric variables.
+  name: 4397b049-4ccb-4f31-ab7f-f57bfb100e21
+  parameters:
+    properties:
+      facet_variable:
+        description: facet axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      x_variable:
+        description: x axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      y_variable:
+        description: y axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+      z_variable:
+        description: z axis that supports boolean, string, categorical columns
+        enum:
+        - checking_balance
+        - credit_history
+        - purpose
+        - savings_balance
+        - employment_duration
+        - other_credit
+        - housing
+        - job
+        - phone
+        - default
+        type: string
+    required:
+    - x_variable
+    - y_variable
+    - z_variable
+    type: object

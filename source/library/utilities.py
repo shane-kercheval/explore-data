@@ -1,8 +1,10 @@
 """Misc utilities."""
+import uuid
 from datetime import datetime, date, timedelta
 import numpy as np
 import pandas as pd
 import source.library.types as t
+from llm_workflow.agents import Tool
 
 
 def is_series_datetime(series: pd.Series) -> bool:
@@ -204,3 +206,74 @@ def filter_dataframe(
     local_vars = locals()
     exec(code, globals(), local_vars)
     return local_vars['graph_data'], code
+
+
+def build_tools_from_graph_configs(configs: dict, column_types: dict) -> list[Tool]:  # noqa
+    """TODO."""
+    # TODO: `Aggregation:` (sum, avg, etc.)
+    tools = []
+    for config in configs:
+        variables = {k:v for k, v in config['selected_variables'].items() if v is not None}
+        required_variables = list(variables.keys())
+        for graph_type in config['graph_types']:
+            if 'agent' not in graph_type:
+                continue
+            # description = graph_type['info']
+            if graph_type['agent'] and 'description' in graph_type['agent']:
+                agent_description = graph_type['agent']['description']
+                agent_description = agent_description.strip()
+            else:
+                agent_description = ''
+            description = f"({graph_type['name']}) {graph_type['description']} {agent_description}"
+            for var, types in variables.items():
+                replacement = f" axis variable (which can be a column of type {', '.join(types)})"
+                description = description.replace(
+                    f"{{{{{var}}}}}",
+                    f"{var.replace('_variable',replacement)}",
+                ).strip()
+            if 'optional_variables' in graph_type:
+                optional_variables = graph_type['optional_variables']
+                variables.update({
+                    k:v['types'] for k, v in optional_variables.items() if v is not None
+                })
+            valid_graph = True
+            inputs = {}
+            for k, valid_column_types in variables.items():
+                valid_column_names = [
+                    n for n, t in column_types.items() if t in valid_column_types
+                ]
+                inputs[k] = {
+                    'type': 'string',
+                    'description': f"{k.replace('_variable', ' axis')} that supports {', '.join(valid_column_types)} columns",   # noqa
+                }
+                if len(valid_column_names) == 0:
+                    if k in required_variables:
+                        # if there are no valid columns that support the corresponding types and
+                        # the variable is required (e.g. there are no dates columns in the dataset
+                        # and a date is required for the graph), then skip this graph/tool
+                        # altogether
+                        valid_graph = False
+                        break
+                else:
+                    inputs[k]['enum'] = valid_column_names
+
+            if graph_type['agent'] and 'variables' in graph_type['agent']:
+                for agent_var in graph_type['agent']['variables']:
+                    assert len(agent_var) == 1
+                    agent_var_name = next(iter(agent_var.keys()))
+                    inputs[agent_var_name] = {
+                        'type': 'string',
+                        'description': agent_var[agent_var_name]['description'],
+                        'enum': agent_var[agent_var_name]['options'],
+                    }
+
+            if valid_graph:
+                tool = Tool(
+                    name=str(uuid.uuid4()),
+                    description=description,
+                    inputs=inputs,
+                    required=required_variables,
+                )
+                tool.graph_name = graph_type['name']
+                tools.append(tool)
+    return tools
