@@ -532,7 +532,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         facet_variable: str | None,
         num_facet_columns: int | None,
         selected_category_order: str | None,
-        hist_func_agg: str | None,
+        numeric_aggregation: str | None,
         bar_mode: str | None,
         date_floor: str | None,
         cohort_conversion_rate_snapshots: list[int] | None,
@@ -677,9 +677,9 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             bar_mode = 'relative'
 
         if t.is_numeric(y_variable, column_types):
-            hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
+            numeric_aggregation = f"'{numeric_aggregation}'" if numeric_aggregation else None
         else:
-            hist_func_agg = None
+            numeric_aggregation = None
 
         if t.is_date(x_variable, column_types):
             # this is need so plotly displays dates in the correct order
@@ -702,7 +702,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             color={f"'{color_variable}'" if color_variable else None},
             opacity={opacity},
             nbins={n_bins},
-            histfunc={hist_func_agg},
+            histfunc={numeric_aggregation},
             barmode={f"'{bar_mode}'" if bar_mode else None},
             facet_col={f"'{facet_variable}'" if facet_variable else None},
             facet_col_wrap={num_facet_columns},
@@ -765,9 +765,9 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         """)
     elif graph_type == 'heatmap':
         if t.is_numeric(z_variable, column_types):
-            hist_func_agg = f"'{hist_func_agg}'" if hist_func_agg else None
+            numeric_aggregation = f"'{numeric_aggregation}'" if numeric_aggregation else None
         else:
-            hist_func_agg = None
+            numeric_aggregation = None
 
         graph_code += textwrap.dedent(f"""
         import plotly.express as px
@@ -779,7 +779,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             facet_col={f"'{facet_variable}'" if facet_variable else None},
             facet_col_wrap={num_facet_columns},
             category_orders={category_orders},
-            histfunc={hist_func_agg},
+            histfunc={numeric_aggregation},
             nbinsx={n_bins},
             nbinsy={n_bins},
             log_x={log_x_axis},

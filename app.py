@@ -334,7 +334,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 ),
                                 create_dropdown_control(
                                     label="Aggregation",
-                                    id='hist_func_agg',
+                                    id='numeric_aggregation',
                                     hidden=False,
                                     multi=False,
                                     clearable=False,
@@ -501,7 +501,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     ),
                                     dcc.Textarea(
                                         id='ai_prompt_textarea',
-                                        value="plot the weekly retention rates of city based on creation date",  # noqa
+                                        value="Plot the average amount across checking account.",  # noqa
+                                        # value="plot the weekly retention rates of city based on creation date",  # noqa
                                         # value="plot the weekly conversion rates from creation date to event 1",  # noqa
                                         # value="plot the probability of default given the duration.",  # noqa
                                         # value="Plot a 3d scatter the duration of the loan against the amount of the loan and age.",  # noqa
@@ -884,6 +885,7 @@ def load_data(  # noqa
     Output('facet_variable_dropdown', 'value', allow_duplicate=True),
     Output('graph_type_dropdown', 'value', allow_duplicate=True),
     Output('date_floor_dropdown', 'value', allow_duplicate=True),
+    Output('numeric_aggregation_dropdown', 'value', allow_duplicate=True),
     Output('variables_changed_by_ai', 'data', allow_duplicate=True),
     Output('ai_prompt_textarea', 'value'),  # this is simply to make the progress bar work
     # i.e. (dcc.Loading)
@@ -891,6 +893,7 @@ def load_data(  # noqa
     State('ai_prompt_textarea', 'value'),
     State('column_types', 'data'),
     State('date_floor_dropdown', 'value'),
+    State('numeric_aggregation_dropdown', 'value'),
     prevent_initial_call=True,
 )
 def set_variables_from_ai(
@@ -898,6 +901,7 @@ def set_variables_from_ai(
         ai_prompt: str,
         column_types: dict,
         date_floor: str,
+        numeric_aggregation: str,
         ) -> tuple:
     """
     Triggered when the user clicks on the AI button, which uses the OpenAI "functions" (i.e. agent)
@@ -963,6 +967,8 @@ def set_variables_from_ai(
                 facet_variable = args['facet_variable']
             if 'date_floor' in args:
                 date_floor = args['date_floor']
+            if 'numeric_aggregation' in args:
+                numeric_aggregation = args['numeric_aggregation']
 
             graph_type = tool.graph_name
 
@@ -982,6 +988,7 @@ def set_variables_from_ai(
         facet_variable,
         graph_type,
         date_floor,
+        numeric_aggregation,
         variables_changed_by_ai,
         ai_prompt,
     )
@@ -1060,7 +1067,7 @@ def filter_data(
     Input('top_n_categories_slider', 'value'),
     Input('min_retention_events_slider', 'value'),
     Input('num_retention_periods_slider', 'value'),
-    Input('hist_func_agg_dropdown', 'value'),
+    Input('numeric_aggregation_dropdown', 'value'),
     Input('bar_mode_dropdown', 'value'),
     Input('cohort_conversion_rate__input', 'value'),
     Input('cohort_conversion_rate__dropdown', 'value'),
@@ -1113,7 +1120,7 @@ def update_controls_and_graph(  # noqa
             top_n_categories: float,
             min_retention_events: float,
             num_retention_periods: float,
-            hist_func_agg: str,
+            numeric_aggregation: str,
             bar_mode: str,
             cohort_conversion_rate_input: str,
             cohort_conversion_rate_dropdown: str,
@@ -1158,7 +1165,7 @@ def update_controls_and_graph(  # noqa
     log_variable('top_n_categories', top_n_categories)
     log_variable('min_retention_events', min_retention_events)
     log_variable('num_retention_periods', num_retention_periods)
-    log_variable('hist_func_agg', hist_func_agg)
+    log_variable('numeric_aggregation', numeric_aggregation)
     log_variable('bar_mode', bar_mode)
     log_variable('cohort_conversion_rate_input', cohort_conversion_rate_input)
     log_variable('cohort_conversion_rate_dropdown', cohort_conversion_rate_dropdown)
@@ -1318,7 +1325,7 @@ def update_controls_and_graph(  # noqa
                 facet_variable=facet_variable,
                 num_facet_columns=num_facet_columns,
                 selected_category_order=sort_categories,
-                hist_func_agg=hist_func_agg,
+                numeric_aggregation=numeric_aggregation,
                 bar_mode=bar_mode,
                 date_floor=date_floor,
                 cohort_conversion_rate_snapshots=cohort_conversion_rate_input,
@@ -1793,14 +1800,14 @@ def cache_filter_columns(  # noqa: PLR0912
 
 
 @app.callback(
-    Output('hist_func_agg_div', 'style'),
+    Output('numeric_aggregation_div', 'style'),
     Input('graph_type_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
     Input('z_variable_dropdown', 'value'),
     State('column_types', 'data'),
     prevent_initial_call=True,
 )
-def update_hist_func_agg_div_style(
+def update_numeric_aggregation_div_style(
         graph_type: str,
         y_variable: str | None,
         z_variable: str | None,

@@ -1856,7 +1856,6 @@ def test_build_tools_from_graph_configs__credit(graphing_configurations: dict, c
     with open(file_path, 'w') as _handle:
         yaml.dump([t.to_dict() for t in tools], _handle)
 
-
 def test_build_tools_from_graph_configs__conversions(graphing_configurations: dict, conversions_data: pd.DataFrame):  # noqa
     """
     This test has a few checks to make sure that the graphing configurations are being translated
