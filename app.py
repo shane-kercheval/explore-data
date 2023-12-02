@@ -1,10 +1,11 @@
 """Dash app entry point."""
-import math
-import os
 from dotenv import load_dotenv
-import base64
+import os
+import math
 import io
 import yaml
+import base64
+from textwrap import dedent
 from dash import ctx, callback_context, dash_table
 from dash.dependencies import ALL
 import plotly.express as px
@@ -38,10 +39,12 @@ from source.library.dash_utilities import (
     log_function,
     log_variable,
 )
-import source.library.types as t
-
+from source.library.utilities import build_tools_from_graph_configs
 from dash_extensions.enrich import DashProxy, Output, Input, State, Serverside, html, dcc, \
     ServersideOutputTransform
+from llm_workflow.agents import OpenAIFunctions
+import source.library.types as t
+
 
 load_dotenv()
 
@@ -85,6 +88,9 @@ with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_config
 
 SNOWFLAKE_CONFIG_PATH = os.getenv('SNOWFLAKE_CONFIG_PATH')
 ENABLE_SNOWFLAKE = os.path.isfile(SNOWFLAKE_CONFIG_PATH)
+HAS_OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') is not None
+AI_PLACEHOLDER = "Describe the graph you want to create." if HAS_OPENAI_API_KEY \
+    else "Add 'OPENAI_API_KEY=<TOKEN>' with your OpenAI token to the .env file to enable AI. Restart docker and app and try again."  # noqa
 DEFAULT_QUERIES = ''
 if os.path.isfile('queries.txt'):
     with open('queries.txt') as f:
@@ -106,6 +112,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     dcc.Store(id='filter_columns_cache'),
     dcc.Store(id='generated_filter_code'),
     dcc.Store(id='column_types'),
+    dcc.Store(id='variables_changed_by_ai'),
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
             dcc.Loading(type="default", children=[
@@ -210,6 +217,11 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         ),
                         dbc.Collapse(id="collapse-variables", is_open=True, children=[
                             dbc.CardBody([
+                                #  dbc.Button(
+                                #     "TEMP",
+                                #     className='btn-custom',
+                                #     id="TEMP-settings-button",
+                                # ),
                                 create_dropdown_control(
                                     label="X variable",
                                     id="x_variable",
@@ -325,7 +337,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                 ),
                                 create_dropdown_control(
                                     label="Aggregation",
-                                    id='hist_func_agg',
+                                    id='numeric_aggregation',
                                     hidden=False,
                                     multi=False,
                                     clearable=False,
@@ -470,6 +482,34 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     step=1,
                                     value=3,
                                 ),
+                            ]),
+                        ]),
+                    ]),
+                    dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
+                        dbc.CardHeader(
+                            dbc.Button(
+                                "AI (Beta)",
+                                id="panel-ai-toggle",
+                                className="panel_toggle_button",
+                            ),
+                        ),
+                        dbc.Collapse(id="collapse-ai", is_open=False, children=[
+                            dbc.CardBody([
+                                dcc.Loading(type="default", children=[
+                                    dbc.Button(
+                                        "Generate Graph",
+                                        className='btn-custom',
+                                        id="ai-apply-button",
+                                        style={'margin': '0 20px 20px 0'},
+                                        disabled=not HAS_OPENAI_API_KEY,
+                                    ),
+                                    dcc.Textarea(
+                                        id='ai_prompt_textarea',
+                                        placeholder = AI_PLACEHOLDER,
+                                        style={'width': '100%', 'height': 200, 'padding': '10px'},
+                                        disabled=not HAS_OPENAI_API_KEY,
+                                    ),
+                                ]),
                             ]),
                         ]),
                     ]),
@@ -773,33 +813,6 @@ def load_data(  # noqa
             log("Loading DataFrame with random data")
             from source.library.utilities import create_random_dataframe
             data = create_random_dataframe(num_rows=10_000, sporadic_missing=True)
-            # def generate_fake_retention_data() -> pd.DataFrame:
-            #     from datetime import datetime, timedelta
-            #     import numpy as np
-            #     base_date = datetime.utcnow() - (days=100)
-            #     data = []
-            #     for user_id in range(100):
-            #         for days in range(0, 70, 1):
-            #             # only append 5% of the time
-            #             event_datetime = base_date + timedelta(days=days + user_id)
-            #             if event_datetime > base_date + timedelta(days=100):
-            #                 continue
-            #             if np.random.rand() < 0.5:
-            #                 # print('append', user_id, days)
-            #                 data.append({
-            #                     'user_id': user_id,
-            #                     'datetime': event_datetime,
-            #                 })
-            #             if np.random.rand() < 0.5:
-            #                 # print('append', user_id, days)
-            #                 data.append({
-            #                     'user_id': user_id,
-            #                     'datetime': event_datetime,
-            #                 })
-            #     data = pd.DataFrame(data, columns=['user_id', 'datetime'])
-            #     data['user_id'] = data['user_id'].astype(str)
-            #     return data
-            # data = generate_fake_retention_data()
             log(f"Loaded data w/ {data.shape[0]:,} rows and {data.shape[1]:,} columns")
         else:
             raise ValueError(f"Unknown trigger: {triggered}")
@@ -865,6 +878,123 @@ def load_data(  # noqa
 
 
 @app.callback(
+    Output('x_variable_dropdown', 'value', allow_duplicate=True),
+    Output('y_variable_dropdown', 'value', allow_duplicate=True),
+    Output('z_variable_dropdown', 'value', allow_duplicate=True),
+    Output('color_variable_dropdown', 'value', allow_duplicate=True),
+    Output('size_variable_dropdown', 'value', allow_duplicate=True),
+    Output('facet_variable_dropdown', 'value', allow_duplicate=True),
+    Output('graph_type_dropdown', 'value', allow_duplicate=True),
+    Output('date_floor_dropdown', 'value', allow_duplicate=True),
+    Output('numeric_aggregation_dropdown', 'value', allow_duplicate=True),
+    Output('variables_changed_by_ai', 'data', allow_duplicate=True),
+    Output('ai_prompt_textarea', 'value'),  # this is simply to make the progress bar work
+    # i.e. (dcc.Loading)
+    Input('ai-apply-button', 'n_clicks'),
+    State('ai_prompt_textarea', 'value'),
+    State('column_types', 'data'),
+    State('date_floor_dropdown', 'value'),
+    State('numeric_aggregation_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def set_variables_from_ai(
+        n_clicks: int,  # noqa: ARG001
+        ai_prompt: str,
+        column_types: dict,
+        date_floor: str,
+        numeric_aggregation: str,
+        ) -> tuple:
+    """
+    Triggered when the user clicks on the AI button, which uses the OpenAI "functions" (i.e. agent)
+    to infer the correct graph settings based on the user's question.
+
+    Note: Unlike other variables, if the date_floor isn't specified by the AI, then we want to use
+    the current value. A) the AI may mistakenly not return the date_floor, and B) leaving the
+    current value won't affect the non-date graphs (unlike leaving the current value of other
+    variables).
+    """
+    x_variable = None
+    y_variable = None
+    z_variable = None
+    color_variable = None
+    size_variable = None
+    facet_variable = None
+    graph_type = None
+    variables_changed_by_ai = False
+
+    if ai_prompt:
+        tools = build_tools_from_graph_configs(GRAPH_CONFIGS['configurations'], column_types)
+        agent = OpenAIFunctions(
+            model_name='gpt-3.5-turbo-1106',
+            tools=tools,
+        )
+        formatted_colum_names = '\n'.join([f"{k}: {v}" for k, v in column_types.items()])
+        template = dedent(f"""
+        The user is asking to create a plot based on the following column names and types. Infer the correct column names and the correct axes from the users question. Choose a tool that uses all of the columns listed by the user. Prioritize the required columns.
+
+        Valid columns and types:
+
+        ```
+        {formatted_colum_names}
+        ```
+
+        User's question:
+        
+        {ai_prompt}
+        """)  # noqa
+        log_variable('OpenAI template', template)
+        response = agent(template)
+
+        log(f"Agent Cost:           ${agent.history()[0].cost:.5f}")
+        log(f"Agent Tokens:          {agent.history()[0].total_tokens:,}")
+        log(f"Agent Prompt Tokens:   {agent.history()[0].input_tokens:,}")
+        log(f"Agent Response Tokens: {agent.history()[0].response_tokens:,}")
+
+        if response:
+            tool, args = response[0]
+            log_variable('OpenAI functions args', args)
+            variables_changed_by_ai = True
+            if 'x_variable' in args and args['x_variable'] in column_types:
+                x_variable = args['x_variable']
+            if 'y_variable' in args and args['y_variable'] in column_types:
+                y_variable = args['y_variable']
+            if 'z_variable' in args and args['z_variable'] in column_types:
+                z_variable = args['z_variable']
+            if 'color_variable' in args and args['color_variable'] in column_types:
+                color_variable = args['color_variable']
+            if 'size_variable' in args and args['size_variable'] in column_types:
+                size_variable = args['size_variable']
+            if 'facet_variable' in args and args['facet_variable'] in column_types:
+                facet_variable = args['facet_variable']
+            if 'date_floor' in args:
+                date_floor = args['date_floor']
+            if 'numeric_aggregation' in args:
+                numeric_aggregation = args['numeric_aggregation']
+
+            graph_type = tool.graph_name
+
+    log_variable('x_variable', x_variable)
+    log_variable('y_variable', y_variable)
+    log_variable('z_variable', z_variable)
+    log_variable('color_variable', color_variable)
+    log_variable('size_variable', size_variable)
+    log_variable('facet_variable', facet_variable)
+    log_variable('graph_type', graph_type)
+    return (
+        x_variable,
+        y_variable,
+        z_variable,
+        color_variable,
+        size_variable,
+        facet_variable,
+        graph_type,
+        date_floor,
+        numeric_aggregation,
+        variables_changed_by_ai,
+        ai_prompt,
+    )
+
+@app.callback(
     Output('filtered_data', 'data'),
     Output('visualize_filter_info', 'children'),
     Output('generated_filter_code', 'data'),
@@ -908,6 +1038,7 @@ def filter_data(
     Output('facet_variable_dropdown', 'value'),
     Output('graph_type_dropdown', 'options'),
     Output('graph_type_dropdown', 'value'),
+    Output('variables_changed_by_ai', 'data'),
     Output('invalid_configuration_alert', 'is_open'),
 
     # INPUTS
@@ -937,7 +1068,7 @@ def filter_data(
     Input('top_n_categories_slider', 'value'),
     Input('min_retention_events_slider', 'value'),
     Input('num_retention_periods_slider', 'value'),
-    Input('hist_func_agg_dropdown', 'value'),
+    Input('numeric_aggregation_dropdown', 'value'),
     Input('bar_mode_dropdown', 'value'),
     Input('cohort_conversion_rate__input', 'value'),
     Input('cohort_conversion_rate__dropdown', 'value'),
@@ -961,6 +1092,7 @@ def filter_data(
     State('color_label_input', 'value'),
     State('size_label_input', 'value'),
     State('facet_label_input', 'value'),
+    State('variables_changed_by_ai', 'data'),
     prevent_initial_call=True,
 )
 def update_controls_and_graph(  # noqa
@@ -989,7 +1121,7 @@ def update_controls_and_graph(  # noqa
             top_n_categories: float,
             min_retention_events: float,
             num_retention_periods: float,
-            hist_func_agg: str,
+            numeric_aggregation: str,
             bar_mode: str,
             cohort_conversion_rate_input: str,
             cohort_conversion_rate_dropdown: str,
@@ -1014,6 +1146,7 @@ def update_controls_and_graph(  # noqa
             color_label_input: str | None,
             size_label_input: str | None,
             facet_label_input: str | None,
+            variables_changed_by_ai: bool | None,
         ) -> tuple[go.Figure, dict]:
     """
     Triggered when the user selects columns from the dropdown.
@@ -1033,7 +1166,7 @@ def update_controls_and_graph(  # noqa
     log_variable('top_n_categories', top_n_categories)
     log_variable('min_retention_events', min_retention_events)
     log_variable('num_retention_periods', num_retention_periods)
-    log_variable('hist_func_agg', hist_func_agg)
+    log_variable('numeric_aggregation', numeric_aggregation)
     log_variable('bar_mode', bar_mode)
     log_variable('cohort_conversion_rate_input', cohort_conversion_rate_input)
     log_variable('cohort_conversion_rate_dropdown', cohort_conversion_rate_dropdown)
@@ -1097,8 +1230,16 @@ def update_controls_and_graph(  # noqa
             # update graph_type if it's not valid (not in list) or if a new x/y variable has been
             # selected
             if (
-                graph_type not in graph_types
-                or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown', 'z_variable_dropdown']  # noqa
+                (
+                    graph_type not in graph_types
+                    # we want to return it to the default graph if the user changes selections
+                    # e.g. if we select numeric and then numeric, we want a scatter not histogram
+                    # (and we don't want to manually have to select scatter each time, it should
+                    # display the first option in the config)
+                    or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown', 'z_variable_dropdown']  # noqa
+                )
+                # we don't want to override the value if it was changed by the AI
+                and not variables_changed_by_ai
             ):
                 graph_type = graph_types[0]
 
@@ -1185,7 +1326,7 @@ def update_controls_and_graph(  # noqa
                 facet_variable=facet_variable,
                 num_facet_columns=num_facet_columns,
                 selected_category_order=sort_categories,
-                hist_func_agg=hist_func_agg,
+                numeric_aggregation=numeric_aggregation,
                 bar_mode=bar_mode,
                 date_floor=date_floor,
                 cohort_conversion_rate_snapshots=cohort_conversion_rate_input,
@@ -1289,6 +1430,7 @@ def update_controls_and_graph(  # noqa
         # graphing options
         [{'label': x.capitalize(), 'value': x} for x in graph_types],
         graph_type,
+        False,  # reset variables_changed_by_ai
         invalid_configuration_alert,
     )
 
@@ -1433,6 +1575,19 @@ def toggle_filter_panel(n: int, is_open: bool) -> bool:
 def toggle_graph_options_panel(n: int, is_open: bool) -> bool:
     """Toggle the graph-options panel."""
     log_function('toggle_graph_options_panel')
+    if n:
+        return not is_open
+    return is_open
+
+@app.callback(
+    Output("collapse-ai", "is_open"),
+    Input("panel-ai-toggle", "n_clicks"),
+    State("collapse-ai", "is_open"),
+    prevent_initial_call=True,
+)
+def toggle_ai_panel(n: int, is_open: bool) -> bool:
+    """Toggle the ai panel."""
+    log_function('toggle_ai_panel')
     if n:
         return not is_open
     return is_open
@@ -1646,14 +1801,14 @@ def cache_filter_columns(  # noqa: PLR0912
 
 
 @app.callback(
-    Output('hist_func_agg_div', 'style'),
+    Output('numeric_aggregation_div', 'style'),
     Input('graph_type_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
     Input('z_variable_dropdown', 'value'),
     State('column_types', 'data'),
     prevent_initial_call=True,
 )
-def update_hist_func_agg_div_style(
+def update_numeric_aggregation_div_style(
         graph_type: str,
         y_variable: str | None,
         z_variable: str | None,
@@ -1687,22 +1842,24 @@ def update_bar_mode_div_style(graph_type: str, color_variable: str | None) -> di
     Output('z_variable_dropdown', 'value'),
     Input('x_variable_dropdown', 'value'),
     Input('y_variable_dropdown', 'value'),
+    Input('z_variable_dropdown', 'value'),
     State('column_types', 'data'),
     prevent_initial_call=True,
 )
 def update_z_variable_dropdown_style(
         x_variable: str | None,
         y_variable: str | None,
+        z_variable: str | None,
         column_types: dict,
     ) -> tuple[dict, list, str]:
     """Toggle the z-variable dropdown."""
     numeric_columns = t.get_numeric_columns(column_types)
     if t.is_numeric(x_variable, column_types) and t.is_numeric(y_variable, column_types):
-        return {'display': 'block'}, numeric_columns, None
+        return {'display': 'block'}, numeric_columns, z_variable
     if t.is_discrete(x_variable, column_types) and t.is_discrete(y_variable, column_types):
         options = [x for x, y in column_types.items() if y != t.DATE]
-        return {'display': 'block'}, options, None
-    return {'display': 'none'}, [], None
+        return {'display': 'block'}, options, z_variable
+    return {'display': 'none'}, [], z_variable
 
 
 @app.callback(

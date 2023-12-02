@@ -2,11 +2,27 @@ The data explorer is a plotly dash app that makes exploring datasets easy.
 
 ![Loading GIF](https://github.com/shane-kercheval/explore-data/blob/main/explore-data.gif)
 
+# AI Generated Graphs
+
+![Loading GIF](https://github.com/shane-kercheval/explore-data/blob/main/ai-generated.gif)
+
+This app uses OpenAI Functions to transform a description of a plot to the correct variable selections within the app. In order to enable this functionality, you must update the `.env` file with your OpenAI API token with the entry: `OPENAI_API_KEY=<YOUR TOKEN>`.
+
 # Running the project
+
+## Docker
 
 - install docker
 - navigate to the project directory and run `make docker_run`
 - when the docker container is running, open a web browser and go to http://localhost:8050
+
+## Conda
+
+- install conda
+- run the command `make create_environment` which will create conda environment named `explore_data`
+- run the command `conda activate explore_data`
+- run the command `make install_requirements`
+- run the command `python app.py`
 
 # Querying Snowflake
 
@@ -26,7 +42,7 @@ warehouse=WAREHOUSE_NAME
 database=DATABASE_NAME
 ```
 
-Note: if `authenticator` is set to `externalbrowser` you will probably not be able to run the app in a docker container, and instead can create a virtual/conda environment.
+Note: if `authenticator` is set to `externalbrowser` you will probably not be able to run the app in a docker container, and instead can create a virtual/conda environment. Follow the steps in the `Running the project -> Conda` section above.
 
 ## Default Queries
 
