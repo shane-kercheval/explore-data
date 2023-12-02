@@ -40,13 +40,21 @@ from source.library.dash_utilities import (
     log_variable,
 )
 from source.library.utilities import build_tools_from_graph_configs
-from dash_extensions.enrich import DashProxy, Output, Input, State, Serverside, html, dcc, \
-    ServersideOutputTransform
+from dash_extensions.enrich import (
+    DashProxy,
+    Output,
+    Input,
+    State,
+    Serverside,
+    html,
+    dcc,
+    ServersideOutputTransform,
+)
 from llm_workflow.agents import OpenAIFunctions
 import source.library.types as t
 
 
-load_dotenv()
+load_dotenv()  # load environment variables from .env file
 
 HOST = os.getenv('HOST')
 DEBUG = os.getenv('DEBUG').lower() == 'true'
@@ -86,11 +94,12 @@ bar_mode_options = [
 with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_configurations.yml')) as f:  # noqa
     GRAPH_CONFIGS = yaml.safe_load(f)
 
+ENABLE_AI = os.getenv('OPENAI_API_KEY') is not None
+AI_PLACEHOLDER = "Describe the graph you want to create." if ENABLE_AI \
+    else "Add 'OPENAI_API_KEY=<TOKEN>' with your OpenAI token to the .env file to enable AI. Restart docker and app and try again."  # noqa
+
 SNOWFLAKE_CONFIG_PATH = os.getenv('SNOWFLAKE_CONFIG_PATH')
 ENABLE_SNOWFLAKE = os.path.isfile(SNOWFLAKE_CONFIG_PATH)
-HAS_OPENAI_API_KEY = os.getenv('OPENAI_API_KEY') is not None
-AI_PLACEHOLDER = "Describe the graph you want to create." if HAS_OPENAI_API_KEY \
-    else "Add 'OPENAI_API_KEY=<TOKEN>' with your OpenAI token to the .env file to enable AI. Restart docker and app and try again."  # noqa
 DEFAULT_QUERIES = ''
 if os.path.isfile('queries.txt'):
     with open('queries.txt') as f:
@@ -501,13 +510,13 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                         className='btn-custom',
                                         id="ai-apply-button",
                                         style={'margin': '0 20px 20px 0'},
-                                        disabled=not HAS_OPENAI_API_KEY,
+                                        disabled=not ENABLE_AI,
                                     ),
                                     dcc.Textarea(
                                         id='ai_prompt_textarea',
                                         placeholder = AI_PLACEHOLDER,
                                         style={'width': '100%', 'height': 200, 'padding': '10px'},
-                                        disabled=not HAS_OPENAI_API_KEY,
+                                        disabled=not ENABLE_AI,
                                     ),
                                 ]),
                             ]),
@@ -993,6 +1002,7 @@ def set_variables_from_ai(
         variables_changed_by_ai,
         ai_prompt,
     )
+
 
 @app.callback(
     Output('filtered_data', 'data'),
