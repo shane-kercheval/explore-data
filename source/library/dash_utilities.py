@@ -300,7 +300,7 @@ def convert_to_graph_data(  # noqa: PLR0912, PLR0915
             log(f"filling na for {variable}")
             if data[variable].dtype.name == 'category':
                 if data[variable].isna().any():
-                    data[variable] = data[variable].cat.add_categories(MISSING).fillna(MISSING)  # noqa
+                    data[variable] = data[variable].cat.add_categories(MISSING).fillna(MISSING)
                     code += f"graph_data['{variable}'] = graph_data['{variable}'].cat.add_categories('{MISSING}').fillna(MISSING)\n"  # noqa
             elif is_bool_dtype(data[variable]):
                 data[variable] = data[variable].astype(str)
@@ -449,16 +449,6 @@ def plot_retention(
     retention_data = retention[columns]
     if 0 in retention_data.shape:
         return go.Figure()
-    # return px.imshow(
-    #     retention_data,
-    #     color_continuous_scale='Greens',
-    #     text_auto='.1%',
-    #     labels={'x': intervals.capitalize(), 'y': "Cohort", 'color': "% Retained"},
-    #     y=retention['cohort'].astype(str).tolist(),
-    #     template='simple_white',
-    #     zmin=0,
-    #     zmax=retention_data.max().max(),
-    # )
     # Calculate the number of retained IDs for each cell
     retained_ids_matrix = retention_data.to_numpy() * retention['# of unique ids'].to_numpy()[:, None]  # noqa
     # Build the hover text

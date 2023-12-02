@@ -994,6 +994,7 @@ def set_variables_from_ai(
         ai_prompt,
     )
 
+
 @app.callback(
     Output('filtered_data', 'data'),
     Output('visualize_filter_info', 'children'),
