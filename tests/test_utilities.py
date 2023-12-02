@@ -1819,6 +1819,17 @@ def test_build_tools_from_graph_configs__credit(graphing_configurations: dict, c
     """  # noqa: D404
     column_types = t.get_column_types(credit_data)
     tools = build_tools_from_graph_configs(graphing_configurations, column_types)
+    for tool in tools:
+        assert tool.description
+        assert isinstance(tool.description, str)
+        assert len(tool.description) > 0
+        assert tool.inputs
+        assert isinstance(tool.inputs, dict)
+        assert len(tool.inputs) > 0
+        assert tool.required
+        assert isinstance(tool.required, list)
+        assert len(tool.required) > 0
+
     # test an individual tool
     # gets numeric/non-umeric config
     config = [
@@ -1864,6 +1875,17 @@ def test_build_tools_from_graph_configs__conversions(graphing_configurations: di
     """  # noqa: D404
     column_types = t.get_column_types(conversions_data)
     tools = build_tools_from_graph_configs(graphing_configurations, column_types)
+    for tool in tools:
+        assert tool.description
+        assert isinstance(tool.description, str)
+        assert len(tool.description) > 0
+        assert tool.inputs
+        assert isinstance(tool.inputs, dict)
+        assert len(tool.inputs) > 0
+        assert tool.required
+        assert isinstance(tool.required, list)
+        assert len(tool.required) > 0
+
     # test an individual tool
     # gets date/None config
     config = [
