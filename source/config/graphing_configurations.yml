@@ -316,7 +316,7 @@ configurations:
         - numeric
     graph_types:
       - name: histogram
-        description: Shows the sum of {{y_variable}} across each value of {{x_variable}}.
+        description: Shows the aggregation of {{y_variable}} across each value of {{x_variable}}.
         agent:
           variables:
             - numeric_aggregation:
@@ -367,7 +367,7 @@ configurations:
         - categorical
     graph_types:
       - name: histogram
-        description: Shows the sum of {{x_variable}} across each value of {{y_variable}}.
+        description: Shows the aggregation of {{x_variable}} across each value of {{y_variable}}.
         optional_variables:
           color_variable:
             types:
