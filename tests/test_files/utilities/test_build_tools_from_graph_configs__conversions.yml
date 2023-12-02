@@ -1,7 +1,7 @@
 - description: (box) Shows the distribution of x axis variable (which can be a column
     of type numeric). Boxplots are useful for understanding the distribution of the
     data and identifying outliers.
-  name: 73b5b791-c8af-4583-84d1-1c3cce244700
+  name: a228a3b6-6ad9-4b65-b74b-543aa4f37f23
   parameters:
     properties:
       color_variable:
@@ -39,7 +39,7 @@
 - description: (histogram) Shows the distribution of x axis variable (which can be
     a column of type numeric). Histograms are useful for understanding the distribution
     of at a more granular level compared to boxplots.
-  name: 7037561b-1f48-4096-a158-af6e237cf59c
+  name: a70d60a2-a537-47e2-93f7-4354ee7a22f1
   parameters:
     properties:
       color_variable:
@@ -76,7 +76,7 @@
 - description: (scatter) Shows the relationship between x axis variable (which can
     be a column of type numeric) and y axis variable (which can be a column of type
     numeric).
-  name: 7b49eece-22a4-4bd5-93bb-3ad72d77edea
+  name: c4556c89-6286-48cc-8205-4a71a5926918
   parameters:
     properties:
       color_variable:
@@ -128,7 +128,7 @@
     can be a column of type numeric), y axis variable (which can be a column of type
     numeric), and z axis variable (which can be a column of type numeric). A 3D scatter
     plot is the best option when there are three numeric variables.
-  name: 37d99ca2-bd69-4009-9768-3ba94967917b
+  name: 2d6e02fd-955a-44fb-bcaf-57ac84aec386
   parameters:
     properties:
       color_variable:
@@ -173,7 +173,7 @@
 - description: (histogram) Shows the counts of x axis variable (which can be a column
     of type boolean, string, categorical). Histograms are useful for understanding
     the distribution of counts of non-numeric data.
-  name: 76d5c0ed-5bf5-4b9c-9e39-1d4f0ff6de44
+  name: 89d4b1f2-be3c-41a6-8282-2823a6d2e83f
   parameters:
     properties:
       color_variable:
@@ -213,10 +213,10 @@
     required:
     - x_variable
     type: object
-- description: (histogram) Shows the sum of y axis variable (which can be a column
-    of type numeric) across each value of x axis variable (which can be a column of
-    type boolean, string, categorical).
-  name: 2e98ff23-c5e1-4e92-9349-e257098aa9aa
+- description: (histogram) Shows the aggregation of y axis variable (which can be
+    a column of type numeric) across each value of x axis variable (which can be a
+    column of type boolean, string, categorical).
+  name: c60f05ed-8622-458e-be48-9568416de497
   parameters:
     properties:
       color_variable:
@@ -274,7 +274,7 @@
 - description: (P(Y | X)) Shows the probability of y axis variable (which can be a
     column of type boolean, string, categorical) given each value of x axis variable
     (which can be a column of type boolean, string, categorical).
-  name: ec08d710-d7e1-4f44-a078-d9455a00417d
+  name: 9f344516-88a6-4897-afc3-a7db1b9ee0dc
   parameters:
     properties:
       facet_variable:
@@ -310,7 +310,7 @@
 - description: (bar - count distinct) Shows the count of unique values of y axis variable
     (which can be a column of type boolean, string, categorical) for each x axis variable
     (which can be a column of type boolean, string, categorical).
-  name: 787f81eb-c2e0-426b-82f8-e3356d70bb6e
+  name: c29e8b4c-99bf-4507-97e6-f81ecb487a9e
   parameters:
     properties:
       color_variable:
@@ -352,7 +352,7 @@
     be a column of type boolean, string, categorical), and z axis variable (which
     can be a column of type numeric). This plot shows the aggregation of a numeric
     variable across two non-numeric variables.
-  name: 13927389-2b42-49ef-8db0-46d0075163f3
+  name: e0689da9-a66c-4ff8-8048-cf652d780d90
   parameters:
     properties:
       facet_variable:
@@ -404,7 +404,7 @@
     string, categorical), y axis variable (which can be a column of type boolean,
     string, categorical). This plot shows the count of distinct values of a non-numeric
     variable across two non-numeric variables.
-  name: 5f20a62f-8e9a-4c8e-a660-8661faa7b34b
+  name: b69884ae-97a1-41f7-8952-4c0d9e149858
   parameters:
     properties:
       facet_variable:
@@ -447,7 +447,7 @@
 - description: (histogram) Shows record counts over time based on x axis variable
     (which can be a column of type date). This plot is a time-series of record counts
     based on the date variable.
-  name: ed658545-8cf3-4216-884b-c288b75c67fa
+  name: d0c84667-e58e-4018-9f91-0aeb7744e872
   parameters:
     properties:
       color_variable:
@@ -499,7 +499,7 @@
     a column of type numeric) based across x axis variable (which can be a column
     of type date). This plot is a time-series of the aggregation of a numeric variable
     based on the date variable.
-  name: 00dfc5fc-08e1-4f36-a6b8-a8b2bdd7ab68
+  name: e2692448-2693-4604-bccd-7c7b516e74c1
   parameters:
     properties:
       color_variable:
@@ -566,7 +566,7 @@
     (which can be a column of type boolean, string, categorical) for each x axis variable
     (which can be a column of type date). This plot is a time series that shows the
     count of unique values of a non-numeric variable across a date variable.
-  name: 705db13b-35c6-42c5-b3c1-6bf78706858e
+  name: 86918090-f8f9-4e49-a6b5-cc2dfad2bc56
   parameters:
     properties:
       color_variable:
@@ -618,7 +618,7 @@
 - description: (retention) Shows the retention rate of y axis variable (which can
     be a column of type boolean, string, categorical) for each cohort in x axis variable
     (which can be a column of type date).
-  name: a06b464f-f7f0-428d-90b3-4dcb4ac2296a
+  name: 1bfa8bb4-024d-4c4e-97fc-daca9f8e1720
   parameters:
     properties:
       color_variable:
@@ -670,7 +670,7 @@
     can be a column of type date) at various durations relative to x axis variable
     (which can be a column of type date). This plot is a time series that shows the
     conversion rates as various snapshots in time relative to the date variable.
-  name: 61b0d423-e48c-4e87-8d3c-d99e93611e7c
+  name: a8b54f9b-27ed-4e5d-9498-0a5ff07c0781
   parameters:
     properties:
       date_floor:
@@ -714,7 +714,7 @@
 - description: (cohorted adoption rates) Shows the cohorted adoption rates from x
     axis variable (which can be a column of type date) to y axis variable (which can
     be a column of type date). This plot shows the adoption rate curves for each cohort.
-  name: e0361fa6-a292-4016-9852-2b1f2e5fb02a
+  name: 04519ea6-2616-442b-894e-01f245703590
   parameters:
     properties:
       date_floor:

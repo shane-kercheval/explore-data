@@ -1,7 +1,7 @@
 - description: (box) Shows the distribution of x axis variable (which can be a column
     of type numeric). Boxplots are useful for understanding the distribution of the
     data and identifying outliers.
-  name: e4f5e595-1893-4587-85d2-68876d58049f
+  name: 19751f3e-96af-4aab-9c16-5b54e4f7ee62
   parameters:
     properties:
       color_variable:
@@ -49,7 +49,7 @@
 - description: (histogram) Shows the distribution of x axis variable (which can be
     a column of type numeric). Histograms are useful for understanding the distribution
     of at a more granular level compared to boxplots.
-  name: 90d1f737-0ce5-4cf9-88c0-3a56702bcd06
+  name: 078e9a83-492a-4515-b4d4-780c0943c40a
   parameters:
     properties:
       color_variable:
@@ -96,7 +96,7 @@
 - description: (scatter) Shows the relationship between x axis variable (which can
     be a column of type numeric) and y axis variable (which can be a column of type
     numeric).
-  name: 28dab3e2-e31b-4b14-ba40-95385eebaa5a
+  name: 91413b1e-937f-479c-aa88-ac042844329d
   parameters:
     properties:
       color_variable:
@@ -176,7 +176,7 @@
     can be a column of type numeric), y axis variable (which can be a column of type
     numeric), and z axis variable (which can be a column of type numeric). A 3D scatter
     plot is the best option when there are three numeric variables.
-  name: acee11a5-8e8e-4016-a2a9-f703d0dfd7a6
+  name: 98c68eed-658d-4b2c-b117-cfbe9edbf199
   parameters:
     properties:
       color_variable:
@@ -253,7 +253,7 @@
 - description: (histogram) Shows the counts of x axis variable (which can be a column
     of type boolean, string, categorical). Histograms are useful for understanding
     the distribution of counts of non-numeric data.
-  name: c6bffc15-2b95-4a9c-a031-308b0e5966a6
+  name: 2a89cd22-2da2-4360-9380-a36be1929755
   parameters:
     properties:
       color_variable:
@@ -309,10 +309,10 @@
     required:
     - x_variable
     type: object
-- description: (histogram) Shows the sum of y axis variable (which can be a column
-    of type numeric) across each value of x axis variable (which can be a column of
-    type boolean, string, categorical).
-  name: d4419ce1-009b-4c42-934c-28557b408fba
+- description: (histogram) Shows the aggregation of y axis variable (which can be
+    a column of type numeric) across each value of x axis variable (which can be a
+    column of type boolean, string, categorical).
+  name: 99535121-8979-4dc6-8aae-0c748f86b2b2
   parameters:
     properties:
       color_variable:
@@ -392,7 +392,7 @@
 - description: (P(Y | X)) Shows the probability of y axis variable (which can be a
     column of type boolean, string, categorical) given each value of x axis variable
     (which can be a column of type boolean, string, categorical).
-  name: 686af982-9428-43b5-8306-093aa8ec6e08
+  name: e66b88b3-4c8d-4cd3-9f23-3c7274e02c1e
   parameters:
     properties:
       facet_variable:
@@ -452,7 +452,7 @@
 - description: (bar - count distinct) Shows the count of unique values of y axis variable
     (which can be a column of type boolean, string, categorical) for each x axis variable
     (which can be a column of type boolean, string, categorical).
-  name: c700a17e-d4f4-4ae1-a599-9871235af033
+  name: 5bb74459-45b5-4fb2-bd06-71810d577bfd
   parameters:
     properties:
       color_variable:
@@ -518,7 +518,7 @@
     be a column of type boolean, string, categorical), and z axis variable (which
     can be a column of type numeric). This plot shows the aggregation of a numeric
     variable across two non-numeric variables.
-  name: e019a558-6075-4890-9180-9983a1f0f6d6
+  name: 93e6cd1b-2739-4804-b601-c87183f45f55
   parameters:
     properties:
       facet_variable:
@@ -594,7 +594,7 @@
     string, categorical), y axis variable (which can be a column of type boolean,
     string, categorical). This plot shows the count of distinct values of a non-numeric
     variable across two non-numeric variables.
-  name: 8e8a979c-a9cd-4c07-8c6b-78b9d047544d
+  name: 81968d6a-32af-45a0-8294-dd91ab267a98
   parameters:
     properties:
       facet_variable:
