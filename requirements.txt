@@ -5,6 +5,7 @@ dash_daq
 dash-extensions
 helpsk
 jupyter-contrib-nbextensions
+llm-workflow
 notebook
 numpy
 pandas
