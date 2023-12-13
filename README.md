@@ -22,6 +22,7 @@ This app uses OpenAI Functions to transform a description of a plot to the corre
 - run the command `make create_environment` which will create conda environment named `explore_data`
 - run the command `conda activate explore_data`
 - run the command `make install_requirements`
+- update the `PROJECT_PATH` variable in the `.env` file to the directory of the `explore-data` folder e.g. `PROJECT_PATH=/Users/shanekercheval/repos/explore-data`
 - run the command `python app.py`
 
 # Querying Snowflake
