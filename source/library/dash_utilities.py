@@ -946,6 +946,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             opacity={opacity},
             height=None,
             width=None,
+            free_y_axis=False,
         )
         fig.update_yaxes(tickformat=',.2%')
         """)
@@ -975,6 +976,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             facet_col_wrap={num_facet_columns},
             height=None,
             width=None,
+            free_y_axis=False,
         )
         fig.update_yaxes(tickformat=',.2%')
         """)
