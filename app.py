@@ -2137,7 +2137,7 @@ def update_last_n_cohorts_div_style(graph_type: str) -> dict:
 )
 def update_show_unfinished_cohorts_div_style(graph_type: str) -> dict:
     """Toggle the show unfinished cohorts div."""
-    if graph_type == 'cohorted adoption rates':
+    if graph_type in ['cohorted adoption rates', 'retention']:
         return {'display': 'block'}
     return {'display': 'none'}
 

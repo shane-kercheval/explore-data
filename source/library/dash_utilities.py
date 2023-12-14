@@ -425,26 +425,38 @@ def get_category_orders(
 
 def plot_retention(
         graph_data: pd.DataFrame,
-        x_variable:str,
-        y_variable: str,
+        time_series:str,
+        unique_id: str,
         intervals: str,
         min_events: int,
-        max_periods_to_display: int) -> go.Figure:
-    """Plot retention heatmap."""
+        max_periods_to_display: int,
+        show_unfinished_cohorts: bool) -> go.Figure:
+    """Plot retention heatmap based on ."""
     if intervals not in ['day', 'week', 'month']:
         raise InvalidConfigurationError(f"Invalid interval selected for retention heatmap ({intervals}).")  # noqa
 
     from helpsk.conversions import retention_matrix
     import pandas as pd
 
-    graph_data[x_variable] = pd.to_datetime(graph_data[x_variable])
+    graph_data[time_series] = pd.to_datetime(graph_data[time_series])
     retention = retention_matrix(
         df=graph_data,
-        timestamp=x_variable,
-        unique_id=y_variable,
+        timestamp=time_series,
+        unique_id=unique_id,
         intervals=intervals,
         min_events=min_events,
     )
+    retention = retention[retention['1'].notna()]
+
+    if not show_unfinished_cohorts:
+        # remove last row and last column
+        retention = retention.iloc[:-1, :-1]
+        # for columns "2" and above, remove the last non-na value
+        for column in range(2, retention.shape[1] - 2):
+            column = str(column)
+            retention[column].last_valid_index()
+            retention.loc[retention[column].last_valid_index(), column] = np.nan
+
     columns = [str(x) for x in range(1, max_periods_to_display) if str(x) in retention.columns]
     retention_data = retention[columns]
     if 0 in retention_data.shape:
@@ -788,11 +800,12 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         graph_data['{x_variable}'] = pd.to_datetime(graph_data['{x_variable}'])
         fig = plot_retention(
             graph_data,
-            x_variable='{x_variable}',
-            y_variable='{y_variable}',
+            time_series='{x_variable}',
+            unique_id='{y_variable}',
             intervals='{date_floor}',
             min_events={min_retention_events},
             max_periods_to_display={num_retention_periods},
+            show_unfinished_cohorts={show_unfinished_cohorts},
         )
         """)
     elif graph_type == 'P(Y | X)':
