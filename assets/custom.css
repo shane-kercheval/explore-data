@@ -30,6 +30,11 @@ button, .btn-custom {
     transition: background-color 0.3s ease;
 }
 
+button:disabled {
+    color: black !important;
+    background-color: lightgray !important;
+}
+
 button:hover, .btn-custom:hover {
     background-color: var(--secondary-color);
 }

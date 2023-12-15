@@ -286,13 +286,19 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     "Clear",
                                     className='btn-custom',
                                     id="clear-settings-button",
-                                    style={'margin': '10px 20px 0 0'},
+                                    style={'margin': '10px 10px 0 0', 'padding': '10px 10px'},
                                 ),
                                 dbc.Button(
-                                    "Swap X/Y",
+                                    "X<->Y",
                                     className='btn-custom',
                                     id="swap-x-y-button",
-                                    style={'margin': '10px 20px 0 0'},
+                                    style={'margin': '10px 10px 0 0', 'padding': '10px 10px'},
+                                ),
+                                dbc.Button(
+                                    "C<->F",
+                                    className='btn-custom',
+                                    id="swap-color-facet-button",
+                                    style={'margin': '10px 10px 0 0', 'padding': '10px 10px'},
                                 ),
                             ]),
                         ]),
@@ -1498,6 +1504,43 @@ def swap_x_y_variables(n_clicks: int, x_variable: str | None, y_variable: str | 
     log_function('Swap X/Y Variables')
     log_variable('n_clicks', n_clicks)
     return y_variable, x_variable
+
+@app.callback(
+    Output('color_variable_dropdown', 'value', allow_duplicate=True),
+    Output('facet_variable_dropdown', 'value', allow_duplicate=True),
+    Input('swap-color-facet-button', 'n_clicks'),
+    State('color_variable_dropdown', 'value'),
+    State('facet_variable_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def swap_color_facet_variables(
+        n_clicks: int,
+        color_variable: str | None,
+        facet_variable: str | None) -> str:
+    """Triggered when the user clicks on the Clear button."""
+    log_function('Swap Color/Facet Variables')
+    log_variable('n_clicks', n_clicks)
+    return facet_variable, color_variable
+
+# disable the swap color and facet button if there is no color or facet variable
+@app.callback(
+    Output('swap-color-facet-button', 'disabled'),
+    Input('color_variable_dropdown', 'value'),
+    Input('facet_variable_dropdown', 'value'),
+    prevent_initial_call=True,
+)
+def disable_swap_color_facet_button(
+        color_variable: str | None,
+        facet_variable: str | None) -> bool:
+    """Triggered when the user clicks on the Clear button."""
+    log_function('disable_swap_color_facet_button')
+    log_variable('color_variable', color_variable)
+    log_variable('facet_variable', facet_variable)
+    # disable if color is missing or facet is missing
+    return (
+        (not color_variable or color_variable == 'None')
+        or (not facet_variable or facet_variable == 'None')
+    )
 
 
 @app.callback(
