@@ -1505,6 +1505,7 @@ def swap_x_y_variables(n_clicks: int, x_variable: str | None, y_variable: str | 
     log_variable('n_clicks', n_clicks)
     return y_variable, x_variable
 
+
 @app.callback(
     Output('color_variable_dropdown', 'value', allow_duplicate=True),
     Output('facet_variable_dropdown', 'value', allow_duplicate=True),
@@ -1521,6 +1522,7 @@ def swap_color_facet_variables(
     log_function('Swap Color/Facet Variables')
     log_variable('n_clicks', n_clicks)
     return facet_variable, color_variable
+
 
 # disable the swap color and facet button if there is no color or facet variable
 @app.callback(
