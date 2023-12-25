@@ -11,6 +11,7 @@ numpy
 pandas
 plotly
 plotly-express
+pyarrow
 pytest
 python-dateutil
 python-dotenv
