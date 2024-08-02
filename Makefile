@@ -18,17 +18,18 @@ client:
 ####
 # Virtual Environment
 ####
+# conda remove --name explore_data --all
 create_environment:
-	conda create -n explore_data python=3.11 -y
+	conda env create -f environment.yaml
 
 # activate contda environment via `conda activate explore_data`
-install_requirements:
-	pip install -r requirements.txt
-	pip install -r https://raw.githubusercontent.com/snowflakedb/snowflake-connector-python/v3.0.4/tested_requirements/requirements_311.reqs
-	pip install snowflake-connector-python==v3.0.4
-	pip install "snowflake-connector-python[pandas]"
+# install_requirements:
+# 	pip install -r requirements.txt
+# 	pip install -r https://raw.githubusercontent.com/snowflakedb/snowflake-connector-python/v3.0.4/tested_requirements/requirements_311.reqs
+# 	pip install snowflake-connector-python==v3.0.4
+# 	pip install "snowflake-connector-python[pandas]"
 
-# activate contda environment via `conda activate explore_data`
+# activate conda environment via `conda activate explore_data`
 app:
 	python app.py
 

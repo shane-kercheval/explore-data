@@ -1,0 +1,27 @@
+name: explore_data
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - coverage
+  - dash
+  - dash-extensions
+  - notebook
+  - numpy
+  - pandas
+  - plotly
+  - pyarrow
+  - pytest
+  - python-dateutil
+  - python-dotenv
+  - PyYAML
+  - ruff
+  - pip
+  - pip:
+    - plotly-express
+    - llm-workflow
+    - jupyter-contrib-nbextensions
+    - helpsk
+    - dash_daq
+    - dash_bootstrap_components
