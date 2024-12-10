@@ -3,51 +3,36 @@
 ####
 # DOCKER
 ####
-docker_build:
-	docker compose -f docker-compose.yml build
+# docker_build:
+# 	docker compose -f docker-compose.yml build
 
-docker_run: docker_build
-	docker compose -f docker-compose.yml up
+# docker_run: docker_build
+# 	docker compose -f docker-compose.yml up
 
-docker_app:
-	docker compose -f docker-compose.yml up --build app
+# docker_app:
+# 	docker compose -f docker-compose.yml up --build app
 
-client:
-	open 'http://127.0.0.1:8050'
+# client:
+# 	open 'http://127.0.0.1:8050'
 
-####
-# Virtual Environment
-####
-# conda remove --name explore_data --all
-create_environment:
-	conda env create -f environment.yaml
-
-# activate contda environment via `conda activate explore_data`
-# install_requirements:
-# 	pip install -r requirements.txt
-# 	pip install -r https://raw.githubusercontent.com/snowflakedb/snowflake-connector-python/v3.0.4/tested_requirements/requirements_311.reqs
-# 	pip install snowflake-connector-python==v3.0.4
-# 	pip install "snowflake-connector-python[pandas]"
-
-# activate conda environment via `conda activate explore_data`
-app:
-	python app.py
+run-app:
+	uv run python app.py
 
 ####
 # Project
 ####
 linting:
-	ruff check app.py
-	ruff check source/library
-	ruff check tests
+	uv run ruff check app.py
+	uv run ruff check source/library
+	uv run ruff check tests
 
 unittests:
 	rm -f tests/test_files/log.log
-	coverage run -m pytest --durations=0 tests
-	coverage html
+	uv run coverage run -m pytest --durations=0 tests
+	uv run coverage html
 
 doctests:
-	python -m doctest source/library/utilities.py
+	uv run python -m doctest source/library/utilities.py
 
 tests: linting unittests doctests
 

@@ -20,7 +20,7 @@ def generate_combinations(lists: list[list[str]]) -> list[tuple]:
     return list(product(*lists))
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data1() -> pd.DataFrame:
     """Create a dataframe with various data types."""
     return pd.DataFrame({
@@ -41,7 +41,7 @@ def mock_data1() -> pd.DataFrame:
         'dates_with_missing': [pd.NaT, datetime(2023, 8, 15).date(), datetime(2023, 9, 1).date()],
     })
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data2() -> pd.DataFrame:
     """Create a dataframe with various data types."""
     return pd.DataFrame({
@@ -68,56 +68,56 @@ def mock_data2() -> pd.DataFrame:
         'datetimes_with_missing2': pd.to_datetime([None, '2023-01-02 02:02:02', np.nan, '2023-01-04 04:04:04', '2023-01-05 05:05:05']),  # noqa
     })
 
-@pytest.fixture()
+@pytest.fixture
 def graphing_configurations() -> dict:
     """Load graphing configurations from yaml file."""
     with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_configurations.yml')) as f:  # noqa
         return yaml.safe_load(f)['configurations']
 
 
-@pytest.fixture()
+@pytest.fixture
 def credit_data() -> pd.DataFrame:
     """Load credit dataset."""
     return pd.read_csv(os.path.join(os.getenv('PROJECT_PATH'), 'data/credit.csv'))
 
 
-@pytest.fixture()
+@pytest.fixture
 def conversions_data() -> pd.DataFrame:
     """Load conversion dataset."""
     return pd.read_csv(os.path.join(os.getenv('PROJECT_PATH'), 'data/conversions.csv'))
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data2_all_columns(mock_data2: pd.DataFrame) -> list[str]:
     """Returns all_columns for mock_data2."""
     return mock_data2.columns.tolist()
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data2_numeric_columns(mock_data2: pd.DataFrame) -> list[str]:
     """Returns numeric_columns for mock_data2."""
     return hp.get_numeric_columns(mock_data2)
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data2_date_columns(mock_data2: pd.DataFrame) -> list[str]:
     """Returns date_columns for mock_data2."""
     return hp.get_date_columns(mock_data2)
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data2_string_columns(mock_data2: pd.DataFrame) -> list[str]:
     """Returns string_columns for mock_data2."""
     return hp.get_string_columns(mock_data2)
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data2_categorical_columns(mock_data2: pd.DataFrame) -> list[str]:
     """Returns categorical_columns for mock_data2."""
     return hp.get_categorical_columns(mock_data2)
 
 
-@pytest.fixture()
+@pytest.fixture
 def mock_data2_boolean_columns(mock_data2: pd.DataFrame, mock_data2_all_columns: str) -> list[str]:
     """Returns boolean_columns for mock_data2."""
     return [x for x in mock_data2_all_columns if hp.is_series_bool(mock_data2[x])]

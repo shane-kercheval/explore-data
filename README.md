@@ -10,20 +10,8 @@ This app uses OpenAI Functions to transform a description of a plot to the corre
 
 # Running the project
 
-## Docker
-
-- install docker
-- navigate to the project directory and run `make docker_run`
-- when the docker container is running, open a web browser and go to http://localhost:8050
-
-## Conda
-
-- install conda
-- run the command `make create_environment` which will create conda environment named `explore_data`
-- run the command `conda activate explore_data`
-- run the command `make install_requirements`
-- update the `PROJECT_PATH` variable in the `.env` file to the directory of the `explore-data` folder e.g. `PROJECT_PATH=/Users/shanekercheval/repos/explore-data`
-- run the command `python app.py`
+- `pip install uv`
+- `make run-app`
 
 # Querying Snowflake
 
