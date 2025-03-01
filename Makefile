@@ -15,7 +15,7 @@
 # client:
 # 	open 'http://127.0.0.1:8050'
 
-run-app:
+run:
 	uv run python app.py
 
 ####
