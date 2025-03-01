@@ -98,8 +98,15 @@ ENABLE_AI = os.getenv('OPENAI_API_KEY') is not None
 AI_PLACEHOLDER = "Describe the graph you want to create." if ENABLE_AI \
     else "Add 'OPENAI_API_KEY=<TOKEN>' with your OpenAI token to the .env file to enable AI. Restart docker and app and try again."  # noqa
 
-SNOWFLAKE_CONFIG_PATH = os.getenv('SNOWFLAKE_CONFIG_PATH')
-ENABLE_SNOWFLAKE = os.path.isfile(SNOWFLAKE_CONFIG_PATH)
+SNOWFLAKE_USER=os.getenv('SNOWFLAKE_USER')
+SNOWFLAKE_ACCOUNT=os.getenv('SNOWFLAKE_ACCOUNT')
+SNOWFLAKE_AUTHENTICATOR=os.getenv('SNOWFLAKE_AUTHENTICATOR')
+SNOWFLAKE_WAREHOUSE=os.getenv('SNOWFLAKE_WAREHOUSE')
+SNOWFLAKE_DATABASE=os.getenv('SNOWFLAKE_DATABASE')
+
+ENABLE_SNOWFLAKE = SNOWFLAKE_USER and SNOWFLAKE_ACCOUNT and SNOWFLAKE_AUTHENTICATOR \
+    and SNOWFLAKE_WAREHOUSE and SNOWFLAKE_DATABASE
+
 DEFAULT_QUERIES = ''
 if os.path.isfile('queries.txt'):
     with open('queries.txt') as f:
@@ -814,8 +821,16 @@ def load_data(  # noqa
         elif triggered == 'query_snowflake_button.n_clicks':
             log("Querying Snowflake")
             try:
-                with Snowflake.from_config(SNOWFLAKE_CONFIG_PATH, config_key='snowflake') as db:
-                    data  = db.query(query_snowflake_text)
+                # with Snowflake.from_config(SNOWFLAKE_CONFIG_PATH, config_key='snowflake') as db:
+                snowflake = Snowflake(
+                    user=SNOWFLAKE_USER,
+                    account=SNOWFLAKE_ACCOUNT,
+                    authenticator=SNOWFLAKE_AUTHENTICATOR,
+                    warehouse=SNOWFLAKE_WAREHOUSE,
+                    database=SNOWFLAKE_DATABASE,
+                )
+                with snowflake:
+                    data  = snowflake.query(query_snowflake_text)
             except Exception as e:
                 data = None
                 snowflake_error_message = f"{type(e).__name__}: {e}"
@@ -942,25 +957,17 @@ def set_variables_from_ai(
     if ai_prompt:
         tools = build_tools_from_graph_configs(GRAPH_CONFIGS['configurations'], column_types)
         agent = OpenAIFunctions(
-            model_name='gpt-3.5-turbo-1106',
+            model_name='gpt-4o-mini',
             tools=tools,
         )
         formatted_colum_names = '\n'.join([f"{k}: {v}" for k, v in column_types.items()])
-        template = dedent(f"""
-        The user is asking to create a plot based on the following column names and types. Infer the correct column names and the correct axes from the users question. Choose a tool that uses all of the columns listed by the user. Prioritize the required columns.
+        # read in prompt from source/config/ai_prompt.txt
+        with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/ai_prompt.txt')) as f:
+            prompt = f.read().strip()
+        prompt += f"\n\n[VALID COLUMNS AND TYPES]:\n\n{formatted_colum_names}\n\n[USER'S QUESTION]:\n\n{ai_prompt}\n"  # noqa: E501
 
-        Valid columns and types:
-
-        ```
-        {formatted_colum_names}
-        ```
-
-        User's question:
-        
-        {ai_prompt}
-        """)  # noqa
-        log_variable('OpenAI template', template)
-        response = agent(template)
+        log_variable('OpenAI template', prompt)
+        response = agent(prompt)
 
         log(f"Agent Cost:           ${agent.history()[0].cost:.5f}")
         log(f"Agent Tokens:          {agent.history()[0].total_tokens:,}")
@@ -1078,7 +1085,7 @@ def filter_data(
 
     Input('date_floor_dropdown', 'value'),
 
-    Input('graph_type_dropdown', 'options'),
+    # Input('graph_type_dropdown', 'options'),
     Input('graph_type_dropdown', 'value'),
     Input('sort_categories_dropdown', 'value'),
     Input('n_bins_slider', 'value'),
@@ -1131,7 +1138,7 @@ def update_controls_and_graph(  # noqa
             facet_variable: str | None,
             date_floor: str | None,
 
-            graph_types: list[dict],
+            # graph_types: list[dict],
             graph_type: str,
             sort_categories: str,
             n_bins: int,
@@ -1197,7 +1204,7 @@ def update_controls_and_graph(  # noqa
     log_variable('free_x_y_axis', free_x_y_axis)
     log_variable('show_axes_histogram', show_axes_histogram)
     log_variable('num_facet_columns', num_facet_columns)
-    log_variable('graph_types', graph_types)
+    # log_variable('graph_types', graph_types)
     log_variable('graph_type', graph_type)
     log_variable('sort_categories', sort_categories)
     log_variable('date_floor', date_floor)
@@ -1210,8 +1217,9 @@ def update_controls_and_graph(  # noqa
     log_variable('size_label_input', size_label_input)
     log_variable('facet_label_input', facet_label_input)
 
-    graph_types = [x['value'] for x in graph_types]
+    # graph_types = [x['value'] for x in graph_types]
     fig = {}
+    graph_types = []
     graph_data = pd.DataFrame()
     selected_graph_config = None
     numeric_na_removal_markdown = ''
@@ -1247,18 +1255,13 @@ def update_controls_and_graph(  # noqa
             graph_types = [x['name'] for x in possible_graph_types]
             # update graph_type if it's not valid (not in list) or if a new x/y variable has been
             # selected
-            if (
-                (
-                    graph_type not in graph_types
-                    # we want to return it to the default graph if the user changes selections
-                    # e.g. if we select numeric and then numeric, we want a scatter not histogram
-                    # (and we don't want to manually have to select scatter each time, it should
-                    # display the first option in the config)
-                    or ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown', 'z_variable_dropdown']  # noqa
-                )
-                # we don't want to override the value if it was changed by the AI
-                and not variables_changed_by_ai
-            ):
+            if graph_type not in graph_types:
+                # Always set a valid graph type if current one is invalid
+                if variables_changed_by_ai:
+                    log("The AI-selected graph type is not valid for the current combination of variables. Using default.")  # noqa: E501
+                graph_type = graph_types[0]
+            elif ctx.triggered_id in ['x_variable_dropdown', 'y_variable_dropdown', 'z_variable_dropdown'] and not variables_changed_by_ai:  # noqa: E501
+                # Reset to default when variables change only if not AI-selected
                 graph_type = graph_types[0]
 
             selected_graph_config = next(

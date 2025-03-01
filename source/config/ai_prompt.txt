@@ -1,0 +1,23 @@
+Select the appropriate visualization tool based on the user's question and the available column types:
+
+1. Analyze the columns requested in the user's question
+   - Match them to the columns listed in [VALID COLUMNS AND TYPES]
+   - Verify their data types (numeric, categorical, date, boolean, string)
+
+2. Choose a tool where:
+   - The column types match the parameter requirements:
+     - x_variable, y_variable, z_variable accept the appropriate data types
+     - All required parameters for the tool can be satisfied
+   - The visualization aligns with the user's intent
+
+3. Apply these parameter matching rules:
+   - Parameters requiring numeric data must use numeric columns
+   - Parameters requiring categorical/string/boolean data must use those column types
+   - Parameters requiring date data must use date columns
+
+4. For aggregations and special visualizations:
+   - Include numeric_aggregation when needed (default: sum)
+   - Use date_floor for time-based visualizations (default: month)
+   - Add optional parameters only if mentioned and type-compatible
+
+The tool selection must respect all type constraints to prevent execution errors.
