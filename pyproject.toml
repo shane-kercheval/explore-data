@@ -1,0 +1,27 @@
+[project]
+name = "explore-data"
+version = "0.1.0"
+requires-python = ">=3.12,<3.13"
+
+dependencies = [
+    "coverage",
+    "dash",
+    "dash_bootstrap_components",
+    "dash_daq",
+    "dash-extensions",
+    "helpsk",
+    "jupyter-contrib-nbextensions",
+    "llm-workflow",
+    "notebook",
+    "numpy",
+    "pandas",
+    "plotly",
+    "pytest",
+    "python-dateutil",
+    "python-dotenv",
+    "PyYAML",
+    "plotly-express",
+    "ruff",
+    "snowflake-connector-python",
+    "pyarrow>=18.1.0",
+]

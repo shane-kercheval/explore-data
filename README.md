@@ -10,45 +10,28 @@ This app uses OpenAI Functions to transform a description of a plot to the corre
 
 # Running the project
 
-## `.env`
-
-Create a `.env` file in the project directory with the following contents.
-
-```
-HOST='0.0.0.0'
-DEBUG=True
-PORT=8050
-PROJECT_PATH=.
-```
-
-If you want to query Snowflake, add this information to the `.env` file:
-
-```
-SNOWFLAKE_USER=my.email@address.com
-SNOWFLAKE_ACCOUNT=account.id
-SNOWFLAKE_AUTHENTICATOR=externalbrowser
-SNOWFLAKE_WAREHOUSE=WAREHOUSE_NAME
-SNOWFLAKE_DATABASE=DATABASE_NAME
-```
-
-Note: if `SNOWFLAKE_AUTHENTICATOR` is set to `externalbrowser` you will probably not be able to run the app in a docker container.
-
-If you want to use the AI feature that allows you to describe the graph in plain text and have AI select the appropriate values, add this information to the `.env` file:
-
-```
-OPENAI_API_KEY=sk-<your key>
-```
-
-## Launching
-
-Run the following commands to start the program.
-
-```
-pip install uv
-make run-app
-```
+- `pip install uv`
+- `make run-app`
 
 # Querying Snowflake
+
+## Configuration
+
+- To enable the `Query Snowflake` tab, you must create a configuration file in the format below
+- The name and location of the configuration file can be either of the following:
+    - `.snowflake.config` located in the project directory (same directory as `app.py`)
+    - Any file name/path of your choosing, as long as you set the `SNOWFLAKE_CONFIG_PATH` variable in the `.env` file.
+
+```
+[snowflake]
+user=my.email@address.com
+account=account.id
+authenticator=externalbrowser
+warehouse=WAREHOUSE_NAME
+database=DATABASE_NAME
+```
+
+Note: if `authenticator` is set to `externalbrowser` you will probably not be able to run the app in a docker container, and instead can create a virtual/conda environment. Follow the steps in the `Running the project -> Conda` section above.
 
 ## Default Queries
 

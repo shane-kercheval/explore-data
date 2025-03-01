@@ -180,12 +180,12 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             },
                         ),
                     ]),
-                    dbc.Tab(label="Load .csv or .pkl from file", children=[
+                    dbc.Tab(label="Load .csv or .parquet from file", children=[
                         html.Br(),
                         dcc.Upload(
                             id='upload-data',
                             children=html.Div([
-                                'Drag and Drop .csv or .pkl or ',
+                                'Drag and drop .csv or .parquet file here. ',
                                 html.A('Select Files', style={'color': 'blue'}),
                             ]),
                             style={
@@ -293,19 +293,19 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     "Clear",
                                     className='btn-custom',
                                     id="clear-settings-button",
-                                    style={'margin': '10px 10px 0 0', 'padding': '10px 15px'},
+                                    style={'margin': '10px 10px 0 0', 'padding': '10px 11px'},
                                 ),
                                 dbc.Button(
                                     "X⇔Y",
                                     className='btn-custom',
                                     id="swap-x-y-button",
-                                    style={'margin': '10px 10px 0 0', 'padding': '10px 10px'},
+                                    style={'margin': '10px 10px 0 0', 'padding': '10px 8px'},
                                 ),
                                 dbc.Button(
                                     "C⇔F",
                                     className='btn-custom',
                                     id="swap-color-facet-button",
-                                    style={'margin': '10px 10px 0 0', 'padding': '10px 10px'},
+                                    style={'margin': '10px 10px 0 0', 'padding': '10px 8px'},
                                 ),
                             ]),
                         ]),
@@ -802,11 +802,13 @@ def load_data(  # noqa
             try:
                 if '.pkl' in upload_data_filename:
                     log("loading from .pkl")
-                    data = pd.read_pickle(io.BytesIO( base64.b64decode(content_string)))
-                if '.csv' in upload_data_filename:
+                    data = pd.read_pickle(io.BytesIO(decoded))
+                elif '.csv' in upload_data_filename:
                     log("loading from .csv")
-                    # Assume that the user uploaded a CSV file
                     data = pd.read_csv(io.StringIO(decoded.decode('utf-8')))
+                elif '.parquet' in upload_data_filename:
+                    log("loading from .parquet")
+                    data = pd.read_parquet(io.BytesIO(decoded))
                 elif 'xls' in upload_data_filename:
                     log("loading from .xls")
                     # Assume that the user uploaded an excel file

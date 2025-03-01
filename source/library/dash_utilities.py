@@ -453,7 +453,7 @@ def plot_retention(
         retention = retention.iloc[:-1, :-1]
         # for columns "2" and above, remove the last non-na value
         for column in range(2, retention.shape[1] - 2):
-            column = str(column)
+            column = str(column)  # noqa: PLW2901
             retention[column].last_valid_index()
             retention.loc[retention[column].last_valid_index(), column] = np.nan
 
