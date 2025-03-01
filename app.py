@@ -98,8 +98,15 @@ ENABLE_AI = os.getenv('OPENAI_API_KEY') is not None
 AI_PLACEHOLDER = "Describe the graph you want to create." if ENABLE_AI \
     else "Add 'OPENAI_API_KEY=<TOKEN>' with your OpenAI token to the .env file to enable AI. Restart docker and app and try again."  # noqa
 
-SNOWFLAKE_CONFIG_PATH = os.getenv('SNOWFLAKE_CONFIG_PATH')
-ENABLE_SNOWFLAKE = os.path.isfile(SNOWFLAKE_CONFIG_PATH)
+SNOWFLAKE_USER=os.getenv('SNOWFLAKE_USER')
+SNOWFLAKE_ACCOUNT=os.getenv('SNOWFLAKE_ACCOUNT')
+SNOWFLAKE_AUTHENTICATOR=os.getenv('SNOWFLAKE_AUTHENTICATOR')
+SNOWFLAKE_WAREHOUSE=os.getenv('SNOWFLAKE_WAREHOUSE')
+SNOWFLAKE_DATABASE=os.getenv('SNOWFLAKE_DATABASE')
+
+ENABLE_SNOWFLAKE = SNOWFLAKE_USER and SNOWFLAKE_ACCOUNT and SNOWFLAKE_AUTHENTICATOR \
+    and SNOWFLAKE_WAREHOUSE and SNOWFLAKE_DATABASE
+
 DEFAULT_QUERIES = ''
 if os.path.isfile('queries.txt'):
     with open('queries.txt') as f:
@@ -812,8 +819,16 @@ def load_data(  # noqa
         elif triggered == 'query_snowflake_button.n_clicks':
             log("Querying Snowflake")
             try:
-                with Snowflake.from_config(SNOWFLAKE_CONFIG_PATH, config_key='snowflake') as db:
-                    data  = db.query(query_snowflake_text)
+                # with Snowflake.from_config(SNOWFLAKE_CONFIG_PATH, config_key='snowflake') as db:
+                snowflake = Snowflake(
+                    user=SNOWFLAKE_USER,
+                    account=SNOWFLAKE_ACCOUNT,
+                    authenticator=SNOWFLAKE_AUTHENTICATOR,
+                    warehouse=SNOWFLAKE_WAREHOUSE,
+                    database=SNOWFLAKE_DATABASE,
+                )
+                with snowflake:
+                    data  = snowflake.query(query_snowflake_text)
             except Exception as e:
                 data = None
                 snowflake_error_message = f"{type(e).__name__}: {e}"
@@ -940,7 +955,7 @@ def set_variables_from_ai(
     if ai_prompt:
         tools = build_tools_from_graph_configs(GRAPH_CONFIGS['configurations'], column_types)
         agent = OpenAIFunctions(
-            model_name='gpt-3.5-turbo-1106',
+            model_name='gpt-4o-mini',
             tools=tools,
         )
         formatted_colum_names = '\n'.join([f"{k}: {v}" for k, v in column_types.items()])
