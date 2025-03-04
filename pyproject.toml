@@ -9,7 +9,7 @@ dependencies = [
     "dash_bootstrap_components",
     "dash_daq",
     "dash-extensions",
-    "helpsk>=0.1.61",
+    "helpsk>=0.1.63",
     "jupyter-contrib-nbextensions",
     "llm-workflow",
     "notebook",
