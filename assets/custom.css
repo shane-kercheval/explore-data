@@ -127,6 +127,92 @@ input:focus, textarea:focus {
     line-height: 1.4 !important;
 }
 
+/* ---------- Query history list (under the Snowflake/BigQuery query boxes) ---------- */
+
+.query-history-list {
+    margin-top: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    max-height: 220px;
+    overflow-y: auto;
+}
+
+.query-history-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 10px;
+    font-size: var(--font-size-xs);
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.query-history-row:last-child {
+    border-bottom: none;
+}
+
+.query-history-row:hover {
+    background: var(--surface-muted);
+}
+
+.query-history-title {
+    font-weight: 600;
+    color: var(--primary-color);
+    white-space: nowrap;
+    flex: 0 0 auto;
+}
+
+.query-history-preview {
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1 1 auto;
+    min-width: 0;
+    text-align: right;
+}
+
+.query-history-delete {
+    flex: 0 0 auto;
+    padding: 0 2px;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--text-muted);
+    opacity: 0.35;
+    cursor: pointer;
+}
+
+.query-history-row:hover .query-history-delete {
+    opacity: 1;
+}
+
+.query-history-delete:hover {
+    color: #c0392b;
+}
+
+.query-history-empty {
+    padding: 6px 10px;
+    font-size: var(--font-size-xs);
+    color: var(--text-muted);
+}
+
+.query-history-row.is-editing {
+    visibility: hidden;
+}
+
+.query-history-title-input {
+    padding: 2px 6px !important;
+    font-size: var(--font-size-xs) !important;
+}
+
+.query-history-title-input--overlay {
+    position: fixed;
+    z-index: 2000;
+    box-sizing: border-box;
+    background: white;
+}
+
 /* ---------- Dropdowns (single + multi "tag" selections) ---------- */
 
 .Select-control {

@@ -62,9 +62,9 @@ make run-app
 
 # Querying Snowflake / BigQuery
 
-## Default Queries
+## Query History
 
-You can create a `queries.txt` file to the project directory (same directory as `app.py`) and the content of the file (e.g. default query or queries) will be populated in the text-box used to query Snowflake and BigQuery.
+Every query you run (whether it succeeds or fails) is cached to a local `.query_history/` directory (one file per source, gitignored), keeping the 20 most recently used per source. Recent queries show up as a clickable list under the query box — click one to load it back into the text box, or double-click a row to give it a user-friendly title. The query box is pre-filled with your most recently used query on startup.
 
 ## Known Issues
 

@@ -4,6 +4,7 @@ from dash import html, dcc
 import dash_daq as daq
 from source.library.dash_utilities import log_variable
 from source.library.utilities import to_date
+from source.library.query_history import truncate_sql_preview
 
 
 CLASS__GRAPH_PANEL_SECTION = 'graph_panel_section'
@@ -338,4 +339,52 @@ def create_input_control(
             placeholder=placeholder,
             style={'width': '100%'},
         ),
+    )
+
+
+def create_query_history_rows(entries: list[dict], source: str) -> list:  # noqa: ARG001
+    """
+    Create the clickable rows of recently-run queries shown under a query textarea.
+
+    Each row loads its query into the textarea on click, can be double-clicked to
+    add/edit a user-friendly title, and has a small "remove" button to delete it. All
+    three interactions are handled entirely client-side (see `_query_history_click_js`
+    in app.py) rather than via Dash's `n_clicks`, since a Dash-tracked click prop causes
+    React to re-render the row from Dash's virtual DOM on every click - including
+    mid-double-click - which stomps on the in-place editable <input> the double-click
+    handler injects. Used both for the initial layout and as the return value of
+    callbacks that update `{source}_query_history_list`.
+    """
+    if not entries:
+        return [html.Div("No saved queries yet.", className='query-history-empty')]
+
+    rows = []
+    for entry in entries:
+        title = entry.get('title')
+        row_children = []
+        if title:
+            row_children.append(html.Span(title, className='query-history-title'))
+        row_children.append(
+            html.Span(truncate_sql_preview(entry['sql']), className='query-history-preview'),
+        )
+        row_children.append(
+            html.Span('×', className='query-history-delete', title='Remove this saved query'),  # noqa: RUF001
+        )
+        rows.append(
+            html.Div(
+                className='query-history-row',
+                title=entry['sql'],
+                **{'data-sql': entry['sql'], 'data-title': title or ''},
+                children=row_children,
+            ),
+        )
+    return rows
+
+
+def create_query_history_list(entries: list[dict], source: str) -> html.Div:
+    """Create the stable wrapper div (used once in the static layout) around history rows."""
+    return html.Div(
+        id=f'{source}_query_history_list',
+        className='query-history-list',
+        children=create_query_history_rows(entries, source),
     )
