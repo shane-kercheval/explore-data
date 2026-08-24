@@ -132,6 +132,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     dcc.Store(id='generated_filter_code'),
     dcc.Store(id='column_types'),
     dcc.Store(id='variables_changed_by_ai'),
+    dcc.Store(id='sidebar-width-store', storage_type='local'),
+    html.Div(id='sidebar-resize-init', style={'display': 'none'}),
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
             dcc.Loading(type="default", children=[
@@ -147,13 +149,13 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             'Query',
                             id='query_snowflake_button',
                             n_clicks=0,
-                            style={'width': '200px', 'margin': '0 8px 0 0'},
+                            style={'margin': '0 8px 0 0'},
                         ),
                         html.Br(),html.Br(),
                         dcc.Textarea(
                             id='query_snowflake_text',
                             value=DEFAULT_QUERIES,
-                            style={'width': '100%', 'height': 400, 'padding': '10px'},
+                            style={'width': '100%', 'height': 280, 'padding': '10px'},
                         ),
                         dbc.Alert(
                             "Error.",
@@ -170,13 +172,13 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             'Query',
                             id='query_bigquery_button',
                             n_clicks=0,
-                            style={'width': '200px', 'margin': '0 8px 0 0'},
+                            style={'margin': '0 8px 0 0'},
                         ),
                         html.Br(),html.Br(),
                         dcc.Textarea(
                             id='query_bigquery_text',
                             value=DEFAULT_QUERIES,
-                            style={'width': '100%', 'height': 400, 'padding': '10px'},
+                            style={'width': '100%', 'height': 280, 'padding': '10px'},
                         ),
                         dbc.Alert(
                             "Error.",
@@ -193,7 +195,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             'Load csv from URL',
                             id='load_from_url_button',
                             n_clicks=0,
-                            style={'width': '200px', 'margin': '0 8px 0 0'},
+                            style={'margin': '0 8px 0 0'},
                         ),
                         dcc.Input(
                             id='load_from_url',
@@ -237,7 +239,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             'Generate',
                             id='load_random_data_button',
                             n_clicks=0,
-                            style={'width': '200px', 'margin': '0 8px 0 0'},
+                            style={'margin': '0 8px 0 0'},
                         ),
                     ]),
                 ]),
@@ -251,7 +253,10 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
         ]),
         dbc.Tab(label="Visualize", children=[
             dbc.Row([
-                dbc.Col(sm=4, md=4, lg=4, xl=3, xxl=2, children=[
+                dbc.Col(
+                    id='visualize-sidebar-col',
+                    style={'flex': '0 0 350px', 'maxWidth': '350px'},
+                    children=[
                     dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
                         dbc.CardHeader(
                             dbc.Button(
@@ -322,19 +327,19 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     "Clear",
                                     className='btn-custom',
                                     id="clear-settings-button",
-                                    style={'margin': '10px 10px 0 0', 'padding': '10px 11px'},
+                                    style={'margin': '8px 8px 0 0'},
                                 ),
                                 dbc.Button(
                                     "X⇔Y",
                                     className='btn-custom',
                                     id="swap-x-y-button",
-                                    style={'margin': '10px 10px 0 0', 'padding': '10px 8px'},
+                                    style={'margin': '8px 8px 0 0'},
                                 ),
                                 dbc.Button(
                                     "C⇔F",
                                     className='btn-custom',
                                     id="swap-color-facet-button",
-                                    style={'margin': '10px 10px 0 0', 'padding': '10px 8px'},
+                                    style={'margin': '8px 8px 0 0'},
                                 ),
                             ]),
                         ]),
@@ -353,7 +358,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     "Apply",
                                     className='btn-custom',
                                     id="filter-apply-button",
-                                    style={'margin': '0 20px 20px 0'},
+                                    style={'margin': '0 8px 12px 0'},
                                 ),
                                 create_dropdown_control(
                                     label="Variables",
@@ -551,13 +556,13 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                         "Generate Graph",
                                         className='btn-custom',
                                         id="ai-apply-button",
-                                        style={'margin': '0 20px 20px 0'},
+                                        style={'margin': '0 8px 12px 0'},
                                         disabled=not ENABLE_AI,
                                     ),
                                     dcc.Textarea(
                                         id='ai_prompt_textarea',
                                         placeholder = AI_PLACEHOLDER,
-                                        style={'width': '100%', 'height': 200, 'padding': '10px'},
+                                        style={'width': '100%', 'height': 140, 'padding': '10px'},
                                         disabled=not ENABLE_AI,
                                     ),
                                 ]),
@@ -578,13 +583,13 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     "Apply",
                                     className='btn-custom',
                                     id="labels-apply-button",
-                                    style={'margin': '0 20px 20px 0'},
+                                    style={'margin': '0 8px 12px 0'},
                                 ),
                                 dbc.Button(
                                     "Clear",
                                     className='btn-custom',
                                     id="labels-clear-button",
-                                    style={'margin': '0 20px 20px 0'},
+                                    style={'margin': '0 8px 12px 0'},
                                 ),
                                 create_input_control(
                                     label="Title",
@@ -632,7 +637,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         ]),
                     ]),
                 ]),
-                dbc.Col(sm=8, md=8, lg=8, xl=9, xxl= 10, children=[
+                html.Div(id='sidebar-resize-handle', className='sidebar-resize-handle'),
+                dbc.Col(style={'flex': '1 1 0%', 'minWidth': 0}, children=[
                     dbc.Alert(
                         "Unsupported selection.",
                         color="danger",
@@ -768,6 +774,66 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
         ]),
     ]),
 ])
+
+
+app.clientside_callback(
+    """
+    function(storedWidth) {
+        const sidebar = document.getElementById('visualize-sidebar-col');
+        const handle = document.getElementById('sidebar-resize-handle');
+        if (!sidebar || !handle) {
+            return '';
+        }
+
+        const MIN_WIDTH = 200;
+        const MAX_WIDTH = 600;
+        const width = storedWidth || 350;
+        sidebar.style.flexBasis = width + 'px';
+        sidebar.style.maxWidth = width + 'px';
+
+        if (!handle.dataset.wired) {
+            handle.dataset.wired = 'true';
+            let dragging = false;
+            let startX = 0;
+            let startWidth = 0;
+
+            handle.addEventListener('mousedown', function(event) {
+                dragging = true;
+                startX = event.clientX;
+                startWidth = sidebar.getBoundingClientRect().width;
+                document.body.classList.add('is-resizing-sidebar');
+                event.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function(event) {
+                if (!dragging) {
+                    return;
+                }
+                const newWidth = Math.min(
+                    MAX_WIDTH,
+                    Math.max(MIN_WIDTH, startWidth + (event.clientX - startX)),
+                );
+                sidebar.style.flexBasis = newWidth + 'px';
+                sidebar.style.maxWidth = newWidth + 'px';
+            });
+
+            document.addEventListener('mouseup', function() {
+                if (!dragging) {
+                    return;
+                }
+                dragging = false;
+                document.body.classList.remove('is-resizing-sidebar');
+                const finalWidth = Math.round(sidebar.getBoundingClientRect().width);
+                window.dash_clientside.set_props('sidebar-width-store', {data: finalWidth});
+            });
+        }
+
+        return '';
+    }
+    """,
+    Output('sidebar-resize-init', 'children'),
+    Input('sidebar-width-store', 'data'),
+)
 
 
 @app.callback(
