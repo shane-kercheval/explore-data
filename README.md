@@ -33,6 +33,18 @@ SNOWFLAKE_DATABASE=DATABASE_NAME
 
 Note: if `SNOWFLAKE_AUTHENTICATOR` is set to `externalbrowser` you will probably not be able to run the app in a docker container.
 
+If you want to query BigQuery, add this information to the `.env` file:
+
+```
+BIGQUERY_PROJECT=my-gcp-project-id
+```
+
+Authentication uses Application Default Credentials (ADC). Before running the app, authenticate once via the `gcloud` CLI:
+
+```
+gcloud auth application-default login
+```
+
 If you want to use the AI feature that allows you to describe the graph in plain text and have AI select the appropriate values, add this information to the `.env` file:
 
 ```
@@ -48,11 +60,11 @@ pip install uv
 make run-app
 ```
 
-# Querying Snowflake
+# Querying Snowflake / BigQuery
 
 ## Default Queries
 
-You can create a `queries.txt` file to the project directory (same directory as `app.py`) and the content of the file (e.g. default query or queries) will be populated in the text-box used to query Snowflake.
+You can create a `queries.txt` file to the project directory (same directory as `app.py`) and the content of the file (e.g. default query or queries) will be populated in the text-box used to query Snowflake and BigQuery.
 
 ## Known Issues
 

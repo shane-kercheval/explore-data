@@ -12,6 +12,7 @@ import plotly.graph_objs as go
 import pandas as pd
 import helpsk.pandas as hp
 from helpsk.database import Snowflake
+from source.library.database import BigQuery
 import dash_bootstrap_components as dbc
 from source.library.dash_ui import (
     create_cohort_adoption_rate_control,
@@ -106,6 +107,9 @@ SNOWFLAKE_DATABASE=os.getenv('SNOWFLAKE_DATABASE')
 ENABLE_SNOWFLAKE = SNOWFLAKE_USER and SNOWFLAKE_ACCOUNT and SNOWFLAKE_AUTHENTICATOR \
     and SNOWFLAKE_WAREHOUSE and SNOWFLAKE_DATABASE
 
+BIGQUERY_PROJECT=os.getenv('BIGQUERY_PROJECT')
+ENABLE_BIGQUERY = BIGQUERY_PROJECT is not None
+
 DEFAULT_QUERIES = ''
 if os.path.isfile('queries.txt'):
     with open('queries.txt') as f:
@@ -133,7 +137,10 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
             dcc.Loading(type="default", children=[
             html.Br(),
             dbc.Row([
-                dbc.Tabs(active_tab='tab-0' if ENABLE_SNOWFLAKE else 'tab-1', children=[
+                dbc.Tabs(
+                    active_tab='tab-0' if ENABLE_SNOWFLAKE
+                    else ('tab-1' if ENABLE_BIGQUERY else 'tab-2'),
+                    children=[
                     dbc.Tab(label="Query Snowflake", disabled=ENABLE_SNOWFLAKE is False, children=[
                         html.Br(),
                         html.Button(
@@ -152,6 +159,29 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             "Error.",
                             color="danger",
                             id="snowflake_error",
+                            dismissable=True,
+                            is_open=False,
+                            fade=False,
+                        ),
+                    ]),
+                    dbc.Tab(label="Query BigQuery", disabled=ENABLE_BIGQUERY is False, children=[
+                        html.Br(),
+                        html.Button(
+                            'Query',
+                            id='query_bigquery_button',
+                            n_clicks=0,
+                            style={'width': '200px', 'margin': '0 8px 0 0'},
+                        ),
+                        html.Br(),html.Br(),
+                        dcc.Textarea(
+                            id='query_bigquery_text',
+                            value=DEFAULT_QUERIES,
+                            style={'width': '100%', 'height': 400, 'padding': '10px'},
+                        ),
+                        dbc.Alert(
+                            "Error.",
+                            color="danger",
+                            id="bigquery_error",
                             dismissable=True,
                             is_open=False,
                             fade=False,
@@ -755,21 +785,27 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('column_types', 'data'),
     Output('snowflake_error', 'is_open'),
     Output('snowflake_error', 'children'),
+    Output('bigquery_error', 'is_open'),
+    Output('bigquery_error', 'children'),
     Input('query_snowflake_button', 'n_clicks'),
+    Input('query_bigquery_button', 'n_clicks'),
     Input('load_random_data_button', 'n_clicks'),
     Input('load_from_url_button', 'n_clicks'),
     Input('upload-data', 'contents'),
     State('query_snowflake_text', 'value'),
+    State('query_bigquery_text', 'value'),
     State('upload-data', 'filename'),
     State('load_from_url', 'value'),
     prevent_initial_call=True,
 )
 def load_data(  # noqa
         query_snowflake_button: int,
+        query_bigquery_button: int,
         load_random_data_button: int,
         load_from_url_button: int,
         upload_data_contents: str,
         query_snowflake_text: str,
+        query_bigquery_text: str,
         upload_data_filename: str,
         load_from_url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
@@ -787,7 +823,9 @@ def load_data(  # noqa
     filtered_data = None
     column_types = None
     snowflake_error_message = None
+    bigquery_error_message = None
     log_variable('query_snowflake_button', query_snowflake_button)
+    log_variable('query_bigquery_button', query_bigquery_button)
     log_variable('load_random_data_button', load_random_data_button)
     log_variable('load_from_url_button', load_from_url_button)
 
@@ -834,6 +872,17 @@ def load_data(  # noqa
                 data = None
                 snowflake_error_message = f"{type(e).__name__}: {e}"
                 log_error(snowflake_error_message)
+
+        elif triggered == 'query_bigquery_button.n_clicks':
+            log("Querying BigQuery")
+            try:
+                bigquery = BigQuery(project=BIGQUERY_PROJECT)
+                with bigquery:
+                    data = bigquery.query(query_bigquery_text)
+            except Exception as e:
+                data = None
+                bigquery_error_message = f"{type(e).__name__}: {e}"
+                log_error(bigquery_error_message)
 
         elif triggered == 'load_from_url_button.n_clicks' and load_from_url:
             log("Loading from CSV URL")
@@ -905,6 +954,8 @@ def load_data(  # noqa
         column_types,
         snowflake_error_message is not None,
         snowflake_error_message,
+        bigquery_error_message is not None,
+        bigquery_error_message,
     )
 
 
