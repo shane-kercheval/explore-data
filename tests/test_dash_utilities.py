@@ -44,7 +44,7 @@ def test_log_error(capsys):  # noqa
     captured = capsys.readouterr()
     assert captured.out == ">>>>>>>>>ERROR: `test`\n"
 
-def test_values_to_dropdown_options():  # noqa
+def test_values_to_dropdown_options():
     """Test values_to_dropdown_options function."""
     assert values_to_dropdown_options([]) == []
     assert values_to_dropdown_options(["a", "b"]) == [
@@ -867,7 +867,7 @@ def test_convert_to_graph_data__create_cohorts_from(capsys, mock_data2):  # noqa
         '2022-12-26', '2023-01-02', '2023-01-02', '2023-01-02',
     ]
 
-def test_convert_to_graph_data__exclude_from_top_n_transformation():  # noqa
+def test_convert_to_graph_data__exclude_from_top_n_transformation():
     data = pd.DataFrame({
         'strings': ['a', 'b', 'c', 'a', 'b', 'd', 'e', 'f'],
         'strings2': ['a', 'b', 'c', 'a', 'b', 'd', 'e', 'f'],
@@ -893,7 +893,7 @@ def test_convert_to_graph_data__exclude_from_top_n_transformation():  # noqa
         'a', 'b', '<Other>', 'a', 'b', '<Other>', '<Other>', '<Other>',
     ]
 
-def test_get_combinations():  # noqa
+def test_get_combinations():
     assert generate_combinations([[None], ['a', 'b'], [None]]) == [(None, 'a', None), (None, 'b', None)]  # noqa
     assert generate_combinations([[None], ['a', 'b']]) == [(None, 'a'), (None, 'b')]
     assert generate_combinations([[1], ['a', 'b']]) == [(1, 'a'), (1, 'b')]
@@ -996,7 +996,7 @@ def test_generate_graph__all_configurations(  # noqa
                     series = pd.to_datetime(graph_data[type_to_column_lookup[x_var]], errors='coerce')  # noqa
                     graph_data[type_to_column_lookup[x_var]] = series.dt.strftime('%Y-%m-%d')
 
-                if (graph_type['name'] == 'bar - count distinct' or graph_type['name'] == 'cohorted adoption rates') and y_var == x_var:  # noqa
+                if (graph_type['name'] in ('bar - count distinct', 'cohorted adoption rates', 'cohorted conversion rates')) and y_var == x_var:  # noqa
                     with pytest.raises(InvalidConfigurationError):
                         fig, code = generate_graph(
                             data=graph_data.copy(),
@@ -1104,8 +1104,11 @@ def test_generate_graph__all_configurations(  # noqa
                 for color_var, size_var, facet_var in optional_combinations:
                     if graph_type['name'] == 'P(Y | X)' and (facet_var == x_var or facet_var == y_var):  # noqa
                         continue
-                    if (graph_type['name'] == 'bar - count distinct'
-                            and y_var in [x_var, color_var, size_var, facet_var]
+                    if (
+                        (graph_type['name'] == 'bar - count distinct'
+                            and y_var in [x_var, color_var, size_var, facet_var])
+                        or (graph_type['name'] in ('cohorted adoption rates', 'cohorted conversion rates')  # noqa
+                            and y_var == x_var)
                         ):
                         # ensure y variable (which is what we are counting distinct on) is not the
                         # same as x, color, or facet variable
@@ -1199,7 +1202,7 @@ def test_generate_graph__all_configurations(  # noqa
                         else:
                             assert graph_type['name'] in code
 
-def test_generate_graph__error(  # noqa
+def test_generate_graph__error(
         capsys,  # noqa
         mock_data2: list[str],
         ):
@@ -1351,7 +1354,7 @@ def test_category_orders__boolean(order_type, expected_output):  # noqa
     )
     assert result == expected_output
 
-def test_no_selected_order():  # noqa
+def test_no_selected_order():
     category_order_data = pd.DataFrame({
         'numeric': [1, 2, 3, 4, 5, 6],
         'category_1': ['x', 'y', 'y', 'x', 'z', 'y'],
@@ -1366,7 +1369,7 @@ def test_no_selected_order():  # noqa
     )
     assert result == {}
 
-def test_unknown_order_type_raises_exception():  # noqa
+def test_unknown_order_type_raises_exception():
     category_order_data = pd.DataFrame({
         'numeric': [1, 2, 3, 4, 5, 6],
         'category_1': ['x', 'y', 'y', 'x', 'z', 'y'],
@@ -1402,7 +1405,7 @@ def test_get_category_orders_with_more_than_50_values(order_type):  # noqa
     result['valid'] = ['a', 'b']
     assert 'invalid' not in result
 
-def test_duplicates_in_selected_variables():  # noqa
+def test_duplicates_in_selected_variables():
     category_order_data = pd.DataFrame({
         'numeric': [1, 2, 3, 4, 5, 6],
         'category_1': ['x', 'y', 'y', 'x', 'z', 'y'],

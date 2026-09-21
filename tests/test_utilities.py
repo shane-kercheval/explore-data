@@ -108,18 +108,18 @@ to_date_string_test_data = [
 def test_convert_to_date_string(value, expected):  # noqa
     assert to_date(value) == expected
 
-def test_convert_to_date_none():  # noqa
+def test_convert_to_date_none():
     assert pd.isna(to_date(None))
 
-def test_convert_to_date_empty_string():  # noqa
+def test_convert_to_date_empty_string():
     assert pd.isna(to_date(None))
 
-def test_convert_to_date_datetime_with_microseconds():  # noqa
+def test_convert_to_date_datetime_with_microseconds():
     input_datetime = datetime(2023, 8, 22, 15, 30, 45, 123456)
     expected_date = date(2023, 8, 22)
     assert to_date(input_datetime) == expected_date
 
-def test_to_date_string():  # noqa
+def test_to_date_string():
     # test to_date_string function with string, date, and datetime
     assert to_date_string("2023-08-22") == "2023-08-22"
     assert to_date_string(date(2023, 8, 22)) == "2023-08-22"
@@ -1807,7 +1807,7 @@ def test_filter_dataframe_multiple_filters(mock_data2):  # noqa
     assert filtered_df['categories_with_missing'].tolist() == ['a', np.nan]
     assert filtered_df['categories_with_missing2'].tolist() == [np.nan, np.nan]
 
-def test_create_random_dataframe():  # noqa
+def test_create_random_dataframe():
     assert len(create_random_dataframe(500, sporadic_missing=False)) == 500
     assert len(create_random_dataframe(500, sporadic_missing=True)) == 500
 
