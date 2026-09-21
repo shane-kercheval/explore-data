@@ -9,6 +9,8 @@ dependencies = [
     "dash_bootstrap_components",
     "dash_daq",
     "dash-extensions",
+    "db-dtypes",
+    "google-cloud-bigquery",
     "helpsk>=0.1.63",
     "jupyter-contrib-nbextensions",
     "llm-workflow",

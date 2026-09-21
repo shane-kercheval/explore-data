@@ -5,13 +5,15 @@ import math
 import io
 import yaml
 import base64
-from dash import ctx, callback_context, dash_table
+from dash import ctx, callback_context, dash_table, no_update
 from dash.dependencies import ALL
+from dash.exceptions import PreventUpdate
 import plotly.express as px
 import plotly.graph_objs as go
 import pandas as pd
 import helpsk.pandas as hp
 from helpsk.database import Snowflake
+from source.library.database import BigQuery
 import dash_bootstrap_components as dbc
 from source.library.dash_ui import (
     create_cohort_adoption_rate_control,
@@ -22,8 +24,11 @@ from source.library.dash_ui import (
     create_slider_control,
     create_min_max_control,
     create_date_range_control,
+    create_query_history_list,
+    create_query_history_rows,
     CLASS__GRAPH_PANEL_SECTION,
 )
+from source.library.query_history import load_history, record_query, update_title, delete_query
 from source.library.dash_utilities import (
     MISSING,
     InvalidConfigurationError,
@@ -106,10 +111,13 @@ SNOWFLAKE_DATABASE=os.getenv('SNOWFLAKE_DATABASE')
 ENABLE_SNOWFLAKE = SNOWFLAKE_USER and SNOWFLAKE_ACCOUNT and SNOWFLAKE_AUTHENTICATOR \
     and SNOWFLAKE_WAREHOUSE and SNOWFLAKE_DATABASE
 
-DEFAULT_QUERIES = ''
-if os.path.isfile('queries.txt'):
-    with open('queries.txt') as f:
-        DEFAULT_QUERIES = f.read()
+BIGQUERY_PROJECT=os.getenv('BIGQUERY_PROJECT')
+ENABLE_BIGQUERY = BIGQUERY_PROJECT is not None
+
+SNOWFLAKE_QUERY_HISTORY = load_history('snowflake')
+BIGQUERY_QUERY_HISTORY = load_history('bigquery')
+DEFAULT_SNOWFLAKE_QUERY = SNOWFLAKE_QUERY_HISTORY[0]['sql'] if SNOWFLAKE_QUERY_HISTORY else ''
+DEFAULT_BIGQUERY_QUERY = BIGQUERY_QUERY_HISTORY[0]['sql'] if BIGQUERY_QUERY_HISTORY else ''
 
 app = DashProxy(
     __name__,
@@ -128,25 +136,31 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     dcc.Store(id='generated_filter_code'),
     dcc.Store(id='column_types'),
     dcc.Store(id='variables_changed_by_ai'),
+    dcc.Store(id='sidebar-width-store', storage_type='local'),
+    html.Div(id='sidebar-resize-init', style={'display': 'none'}),
+    html.Div(id='query-history-page-load', style={'display': 'none'}),
     dbc.Tabs([
         dbc.Tab(label="Load Data", children=[
             dcc.Loading(type="default", children=[
             html.Br(),
             dbc.Row([
-                dbc.Tabs(active_tab='tab-0' if ENABLE_SNOWFLAKE else 'tab-1', children=[
+                dbc.Tabs(
+                    active_tab='tab-0' if ENABLE_SNOWFLAKE
+                    else ('tab-1' if ENABLE_BIGQUERY else 'tab-2'),
+                    children=[
                     dbc.Tab(label="Query Snowflake", disabled=ENABLE_SNOWFLAKE is False, children=[
                         html.Br(),
                         html.Button(
                             'Query',
                             id='query_snowflake_button',
                             n_clicks=0,
-                            style={'width': '200px', 'margin': '0 8px 0 0'},
+                            style={'margin': '0 8px 0 0'},
                         ),
                         html.Br(),html.Br(),
                         dcc.Textarea(
                             id='query_snowflake_text',
-                            value=DEFAULT_QUERIES,
-                            style={'width': '100%', 'height': 400, 'padding': '10px'},
+                            value=DEFAULT_SNOWFLAKE_QUERY,
+                            style={'width': '100%', 'height': 280, 'padding': '10px'},
                         ),
                         dbc.Alert(
                             "Error.",
@@ -156,6 +170,37 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             is_open=False,
                             fade=False,
                         ),
+                        create_query_history_list(SNOWFLAKE_QUERY_HISTORY, source='snowflake'),
+                        dcc.Store(id='snowflake-title-edit-store'),
+                        dcc.Store(id='snowflake-delete-store'),
+                        html.Div(id='snowflake-history-js-init', style={'display': 'none'}),
+                    ]),
+                    dbc.Tab(label="Query BigQuery", disabled=ENABLE_BIGQUERY is False, children=[
+                        html.Br(),
+                        html.Button(
+                            'Query',
+                            id='query_bigquery_button',
+                            n_clicks=0,
+                            style={'margin': '0 8px 0 0'},
+                        ),
+                        html.Br(),html.Br(),
+                        dcc.Textarea(
+                            id='query_bigquery_text',
+                            value=DEFAULT_BIGQUERY_QUERY,
+                            style={'width': '100%', 'height': 280, 'padding': '10px'},
+                        ),
+                        dbc.Alert(
+                            "Error.",
+                            color="danger",
+                            id="bigquery_error",
+                            dismissable=True,
+                            is_open=False,
+                            fade=False,
+                        ),
+                        create_query_history_list(BIGQUERY_QUERY_HISTORY, source='bigquery'),
+                        dcc.Store(id='bigquery-title-edit-store'),
+                        dcc.Store(id='bigquery-delete-store'),
+                        html.Div(id='bigquery-history-js-init', style={'display': 'none'}),
                     ]),
                     dbc.Tab(label="Load .csv from URL", children=[
                         html.Br(),
@@ -163,7 +208,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             'Load csv from URL',
                             id='load_from_url_button',
                             n_clicks=0,
-                            style={'width': '200px', 'margin': '0 8px 0 0'},
+                            style={'margin': '0 8px 0 0'},
                         ),
                         dcc.Input(
                             id='load_from_url',
@@ -207,7 +252,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             'Generate',
                             id='load_random_data_button',
                             n_clicks=0,
-                            style={'width': '200px', 'margin': '0 8px 0 0'},
+                            style={'margin': '0 8px 0 0'},
                         ),
                     ]),
                 ]),
@@ -221,7 +266,10 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
         ]),
         dbc.Tab(label="Visualize", children=[
             dbc.Row([
-                dbc.Col(sm=4, md=4, lg=4, xl=3, xxl=2, children=[
+                dbc.Col(
+                    id='visualize-sidebar-col',
+                    style={'flex': '0 0 350px', 'maxWidth': '350px'},
+                    children=[
                     dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
                         dbc.CardHeader(
                             dbc.Button(
@@ -292,19 +340,19 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     "Clear",
                                     className='btn-custom',
                                     id="clear-settings-button",
-                                    style={'margin': '10px 10px 0 0', 'padding': '10px 11px'},
+                                    style={'margin': '8px 8px 0 0'},
                                 ),
                                 dbc.Button(
                                     "X⇔Y",
                                     className='btn-custom',
                                     id="swap-x-y-button",
-                                    style={'margin': '10px 10px 0 0', 'padding': '10px 8px'},
+                                    style={'margin': '8px 8px 0 0'},
                                 ),
                                 dbc.Button(
                                     "C⇔F",
                                     className='btn-custom',
                                     id="swap-color-facet-button",
-                                    style={'margin': '10px 10px 0 0', 'padding': '10px 8px'},
+                                    style={'margin': '8px 8px 0 0'},
                                 ),
                             ]),
                         ]),
@@ -323,7 +371,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     "Apply",
                                     className='btn-custom',
                                     id="filter-apply-button",
-                                    style={'margin': '0 20px 20px 0'},
+                                    style={'margin': '0 8px 12px 0'},
                                 ),
                                 create_dropdown_control(
                                     label="Variables",
@@ -521,13 +569,13 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                         "Generate Graph",
                                         className='btn-custom',
                                         id="ai-apply-button",
-                                        style={'margin': '0 20px 20px 0'},
+                                        style={'margin': '0 8px 12px 0'},
                                         disabled=not ENABLE_AI,
                                     ),
                                     dcc.Textarea(
                                         id='ai_prompt_textarea',
                                         placeholder = AI_PLACEHOLDER,
-                                        style={'width': '100%', 'height': 200, 'padding': '10px'},
+                                        style={'width': '100%', 'height': 140, 'padding': '10px'},
                                         disabled=not ENABLE_AI,
                                     ),
                                 ]),
@@ -548,13 +596,13 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                                     "Apply",
                                     className='btn-custom',
                                     id="labels-apply-button",
-                                    style={'margin': '0 20px 20px 0'},
+                                    style={'margin': '0 8px 12px 0'},
                                 ),
                                 dbc.Button(
                                     "Clear",
                                     className='btn-custom',
                                     id="labels-clear-button",
-                                    style={'margin': '0 20px 20px 0'},
+                                    style={'margin': '0 8px 12px 0'},
                                 ),
                                 create_input_control(
                                     label="Title",
@@ -602,7 +650,8 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         ]),
                     ]),
                 ]),
-                dbc.Col(sm=8, md=8, lg=8, xl=9, xxl= 10, children=[
+                html.Div(id='sidebar-resize-handle', className='sidebar-resize-handle'),
+                dbc.Col(style={'flex': '1 1 0%', 'minWidth': 0}, children=[
                     dbc.Alert(
                         "Unsupported selection.",
                         color="danger",
@@ -740,6 +789,203 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
 ])
 
 
+app.clientside_callback(
+    """
+    function(storedWidth) {
+        const sidebar = document.getElementById('visualize-sidebar-col');
+        const handle = document.getElementById('sidebar-resize-handle');
+        if (!sidebar || !handle) {
+            return '';
+        }
+
+        const MIN_WIDTH = 200;
+        const MAX_WIDTH = 600;
+        const width = storedWidth || 350;
+        sidebar.style.flexBasis = width + 'px';
+        sidebar.style.maxWidth = width + 'px';
+
+        if (!handle.dataset.wired) {
+            handle.dataset.wired = 'true';
+            let dragging = false;
+            let startX = 0;
+            let startWidth = 0;
+
+            handle.addEventListener('mousedown', function(event) {
+                dragging = true;
+                startX = event.clientX;
+                startWidth = sidebar.getBoundingClientRect().width;
+                document.body.classList.add('is-resizing-sidebar');
+                event.preventDefault();
+            });
+
+            document.addEventListener('mousemove', function(event) {
+                if (!dragging) {
+                    return;
+                }
+                const newWidth = Math.min(
+                    MAX_WIDTH,
+                    Math.max(MIN_WIDTH, startWidth + (event.clientX - startX)),
+                );
+                sidebar.style.flexBasis = newWidth + 'px';
+                sidebar.style.maxWidth = newWidth + 'px';
+            });
+
+            document.addEventListener('mouseup', function() {
+                if (!dragging) {
+                    return;
+                }
+                dragging = false;
+                document.body.classList.remove('is-resizing-sidebar');
+                const finalWidth = Math.round(sidebar.getBoundingClientRect().width);
+                window.dash_clientside.set_props('sidebar-width-store', {data: finalWidth});
+            });
+        }
+
+        return '';
+    }
+    """,
+    Output('sidebar-resize-init', 'children'),
+    Input('sidebar-width-store', 'data'),
+)
+
+
+def _query_history_click_js(source: str, textarea_id: str) -> str:
+    """
+    Client-side click (load query) / double-click (rename) wiring for a history list.
+
+    Both interactions are handled here, client-side, rather than via Dash's `n_clicks`:
+    a Dash-tracked click prop makes React re-render the row from Dash's virtual DOM on
+    every click - including mid-double-click. The rename input is therefore rendered as
+    a floating overlay appended to `document.body` (positioned over the row via its
+    bounding box) rather than injected into the row itself: mutating a React-owned
+    node's `innerHTML` directly desyncs React's fiber tree from the real DOM, silently
+    corrupting that node the next time React re-renders it (as happens here, right
+    after a rename, when the server sends back the updated row). A plain click loads
+    the row's query immediately; double-click is handled by the browser's native
+    trailing 'dblclick' event on top of that, not by delaying/disambiguating the click.
+    """
+    return (
+        """
+        function(children) {
+            const container = document.getElementById('""" + source + """_query_history_list');
+            if (!container) {
+                return '';
+            }
+            if (container.dataset.wired) {
+                return '';
+            }
+            container.dataset.wired = 'true';
+
+            function startEdit(row) {
+                if (row.classList.contains('is-editing')) {
+                    return;
+                }
+                const sql = row.dataset.sql;
+                const rect = row.getBoundingClientRect();
+                row.classList.add('is-editing');
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = row.dataset.title || '';
+                input.placeholder = 'Add a title…';
+                input.className = 'query-history-title-input query-history-title-input--overlay';
+                input.style.left = rect.left + 'px';
+                input.style.top = rect.top + 'px';
+                input.style.width = rect.width + 'px';
+                input.style.height = rect.height + 'px';
+                document.body.appendChild(input);
+                input.focus();
+                input.select();
+
+                let settled = false;
+                function cleanup() {
+                    row.classList.remove('is-editing');
+                    input.remove();
+                }
+                function commit() {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    const title = input.value.trim();
+                    cleanup();
+                    window.dash_clientside.set_props('""" + source + """-title-edit-store', {
+                        data: {sql: sql, title: title},
+                    });
+                }
+                function cancel() {
+                    if (settled) {
+                        return;
+                    }
+                    settled = true;
+                    cleanup();
+                }
+
+                input.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter') {
+                        input.blur();
+                    } else if (event.key === 'Escape') {
+                        cancel();
+                    }
+                });
+                input.addEventListener('blur', commit);
+            }
+
+            container.addEventListener('click', function(event) {
+                const row = event.target.closest('.query-history-row');
+                if (!row || !container.contains(row) || row.classList.contains('is-editing')) {
+                    return;
+                }
+                if (event.target.closest('.query-history-delete')) {
+                    if (window.confirm('Remove this saved query?')) {
+                        window.dash_clientside.set_props('""" + source + """-delete-store', {
+                            data: {sql: row.dataset.sql},
+                        });
+                    }
+                    return;
+                }
+                // Load immediately - no debounce. Both clicks of a double-click load the
+                // same (unchanged) value, harmlessly, while the trailing 'dblclick' below
+                // independently opens the rename overlay; delaying this to disambiguate
+                // single- vs double-click meant a click could load stale text into the
+                // box seconds after the user had already started typing over it or hit
+                // Query with what was there before.
+                window.dash_clientside.set_props('""" + textarea_id + """', {
+                    value: row.dataset.sql,
+                });
+            });
+
+            container.addEventListener('dblclick', function(event) {
+                if (event.target.closest('.query-history-delete')) {
+                    return;
+                }
+                const row = event.target.closest('.query-history-row');
+                if (!row || !container.contains(row)) {
+                    return;
+                }
+                startEdit(row);
+            });
+
+            return '';
+        }
+        """
+    )
+
+
+app.clientside_callback(
+    _query_history_click_js('snowflake', 'query_snowflake_text'),
+    Output('snowflake-history-js-init', 'children'),
+    Input('snowflake_query_history_list', 'children'),
+)
+
+
+app.clientside_callback(
+    _query_history_click_js('bigquery', 'query_bigquery_text'),
+    Output('bigquery-history-js-init', 'children'),
+    Input('bigquery_query_history_list', 'children'),
+)
+
+
 @app.callback(
     Output('x_variable_dropdown', 'options'),
     Output('y_variable_dropdown', 'options'),
@@ -755,21 +1001,29 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
     Output('column_types', 'data'),
     Output('snowflake_error', 'is_open'),
     Output('snowflake_error', 'children'),
+    Output('bigquery_error', 'is_open'),
+    Output('bigquery_error', 'children'),
+    Output('snowflake_query_history_list', 'children', allow_duplicate=True),
+    Output('bigquery_query_history_list', 'children', allow_duplicate=True),
     Input('query_snowflake_button', 'n_clicks'),
+    Input('query_bigquery_button', 'n_clicks'),
     Input('load_random_data_button', 'n_clicks'),
     Input('load_from_url_button', 'n_clicks'),
     Input('upload-data', 'contents'),
     State('query_snowflake_text', 'value'),
+    State('query_bigquery_text', 'value'),
     State('upload-data', 'filename'),
     State('load_from_url', 'value'),
     prevent_initial_call=True,
 )
 def load_data(  # noqa
         query_snowflake_button: int,
+        query_bigquery_button: int,
         load_random_data_button: int,
         load_from_url_button: int,
         upload_data_contents: str,
         query_snowflake_text: str,
+        query_bigquery_text: str,
         upload_data_filename: str,
         load_from_url: str) -> tuple:
     """Triggered when the user clicks on the Load button."""
@@ -787,7 +1041,11 @@ def load_data(  # noqa
     filtered_data = None
     column_types = None
     snowflake_error_message = None
+    bigquery_error_message = None
+    snowflake_history_rows = no_update
+    bigquery_history_rows = no_update
     log_variable('query_snowflake_button', query_snowflake_button)
+    log_variable('query_bigquery_button', query_bigquery_button)
     log_variable('load_random_data_button', load_random_data_button)
     log_variable('load_from_url_button', load_from_url_button)
 
@@ -820,6 +1078,12 @@ def load_data(  # noqa
         elif triggered == 'query_snowflake_button.n_clicks':
             log("Querying Snowflake")
             try:
+                history = record_query('snowflake', query_snowflake_text)
+                snowflake_history_rows = create_query_history_rows(history, source='snowflake')
+            except Exception as e:
+                # Never let a history-caching failure block the actual query below.
+                log_error(f"Failed to record query history: {type(e).__name__}: {e}")
+            try:
                 # with Snowflake.from_config(SNOWFLAKE_CONFIG_PATH, config_key='snowflake') as db:
                 snowflake = Snowflake(
                     user=SNOWFLAKE_USER,
@@ -834,6 +1098,23 @@ def load_data(  # noqa
                 data = None
                 snowflake_error_message = f"{type(e).__name__}: {e}"
                 log_error(snowflake_error_message)
+
+        elif triggered == 'query_bigquery_button.n_clicks':
+            log("Querying BigQuery")
+            try:
+                history = record_query('bigquery', query_bigquery_text)
+                bigquery_history_rows = create_query_history_rows(history, source='bigquery')
+            except Exception as e:
+                # Never let a history-caching failure block the actual query below.
+                log_error(f"Failed to record query history: {type(e).__name__}: {e}")
+            try:
+                bigquery = BigQuery(project=BIGQUERY_PROJECT)
+                with bigquery:
+                    data = bigquery.query(query_bigquery_text)
+            except Exception as e:
+                data = None
+                bigquery_error_message = f"{type(e).__name__}: {e}"
+                log_error(bigquery_error_message)
 
         elif triggered == 'load_from_url_button.n_clicks' and load_from_url:
             log("Loading from CSV URL")
@@ -905,6 +1186,80 @@ def load_data(  # noqa
         column_types,
         snowflake_error_message is not None,
         snowflake_error_message,
+        bigquery_error_message is not None,
+        bigquery_error_message,
+        snowflake_history_rows,
+        bigquery_history_rows,
+    )
+
+
+def _make_update_query_title_callback(source: str) -> None:
+    """Register the callback that persists a title edited via double-click on a history row."""
+    @app.callback(
+        Output(f'{source}_query_history_list', 'children', allow_duplicate=True),
+        Input(f'{source}-title-edit-store', 'data'),
+        prevent_initial_call=True,
+    )
+    def update_query_title(data: dict) -> list:
+        if not data:
+            raise PreventUpdate
+        try:
+            history = update_title(source, data['sql'], data['title'])
+        except Exception as e:
+            log_error(f"Failed to update query title: {type(e).__name__}: {e}")
+            history = load_history(source)
+        return create_query_history_rows(history, source=source)
+
+
+_make_update_query_title_callback('snowflake')
+_make_update_query_title_callback('bigquery')
+
+
+def _make_delete_query_callback(source: str) -> None:
+    """Register the callback that removes a saved query (clicked via its row's "x")."""
+    @app.callback(
+        Output(f'{source}_query_history_list', 'children', allow_duplicate=True),
+        Input(f'{source}-delete-store', 'data'),
+        prevent_initial_call=True,
+    )
+    def delete_saved_query(data: dict) -> list:
+        if not data:
+            raise PreventUpdate
+        try:
+            history = delete_query(source, data['sql'])
+        except Exception as e:
+            log_error(f"Failed to delete cached query: {type(e).__name__}: {e}")
+            history = load_history(source)
+        return create_query_history_rows(history, source=source)
+
+
+_make_delete_query_callback('snowflake')
+_make_delete_query_callback('bigquery')
+
+
+@app.callback(
+    Output('snowflake_query_history_list', 'children', allow_duplicate=True),
+    Output('bigquery_query_history_list', 'children', allow_duplicate=True),
+    Output('query_snowflake_text', 'value'),
+    Output('query_bigquery_text', 'value'),
+    Input('query-history-page-load', 'children'),
+    prevent_initial_call='initial_duplicate',
+)
+def refresh_query_history_on_page_load(_: None) -> tuple:
+    """
+    Re-read query history from disk on every page load (including a plain refresh).
+
+    The rest of the layout is a static object built once at server startup, so without
+    this, a browser refresh would keep showing whatever history existed when the server
+    started rather than queries recorded since.
+    """
+    snowflake_history = load_history('snowflake')
+    bigquery_history = load_history('bigquery')
+    return (
+        create_query_history_rows(snowflake_history, source='snowflake'),
+        create_query_history_rows(bigquery_history, source='bigquery'),
+        snowflake_history[0]['sql'] if snowflake_history else '',
+        bigquery_history[0]['sql'] if bigquery_history else '',
     )
 
 

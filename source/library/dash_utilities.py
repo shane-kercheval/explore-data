@@ -446,6 +446,12 @@ def plot_retention(
         intervals=intervals,
         min_events=min_events,
     )
+    # `retention_matrix` emits one column per elapsed period ('0', '1', '2', ...), so data
+    # spanning fewer than two periods yields no '1' column at all and there is no retention
+    # to plot. Bail out the same way the degenerate-shape check below does, rather than
+    # raising KeyError on retention['1'].
+    if '1' not in retention.columns:
+        return go.Figure()
     retention = retention[retention['1'].notna()]
 
     if not show_unfinished_cohorts:
@@ -929,6 +935,13 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         )
         """)
     elif graph_type == 'cohorted conversion rates':
+        # `plot_cohorted_*` measures elapsed time from a base timestamp to a conversion
+        # timestamp, so the same column for both is meaningless (the difference is always
+        # zero). It also breaks downstream: helpsk selects
+        # df[[base_timestamp, conversion_timestamp, cohort]], which produces a duplicate
+        # column, and row lookups then return a Series instead of a scalar.
+        if x_variable == y_variable:
+            raise InvalidConfigurationError("Cannot use the same variable for the base and conversion timestamps")  # noqa
         log_variable('columns', graph_data.columns.tolist())
         log(x_variable in graph_data.columns)
         log(y_variable in graph_data.columns)
@@ -964,6 +977,13 @@ def generate_graph(  # noqa: PLR0912, PLR0915
         fig.update_yaxes(tickformat=',.2%')
         """)
     elif graph_type == 'cohorted adoption rates':
+        # `plot_cohorted_*` measures elapsed time from a base timestamp to a conversion
+        # timestamp, so the same column for both is meaningless (the difference is always
+        # zero). It also breaks downstream: helpsk selects
+        # df[[base_timestamp, conversion_timestamp, cohort]], which produces a duplicate
+        # column, and row lookups then return a Series instead of a scalar.
+        if x_variable == y_variable:
+            raise InvalidConfigurationError("Cannot use the same variable for the base and conversion timestamps")  # noqa
         log_variable('columns', graph_data.columns.tolist())
         log(x_variable in graph_data.columns)
         log(y_variable in graph_data.columns)
