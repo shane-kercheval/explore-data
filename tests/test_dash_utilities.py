@@ -1420,3 +1420,37 @@ def test_duplicates_in_selected_variables():
             selected_category_order='unknown_order_type',
             column_types=column_types,
         )
+
+
+@pytest.mark.parametrize(('graph_type', 'y_variable'), [
+    ('bar - count distinct', 'strings'),
+    ('box', 'floats'),
+])
+def test_generate_graph__date_floor_uses_category_axis(
+        mock_data2: pd.DataFrame,
+        graph_type: str,
+        y_variable: str,
+        ) -> None:
+    """With a date floor, dates are period labels; a date axis would label them with times."""
+    column_types = t.get_column_types(mock_data2)
+    none_args = dict.fromkeys([
+        'z_variable', 'color_variable', 'size_variable', 'facet_variable', 'num_facet_columns',
+        'selected_category_order', 'numeric_aggregation', 'bar_mode',
+        'cohort_conversion_rate_snapshots', 'cohort_conversion_rate_units', 'show_record_count',
+        'cohort_adoption_rate_range', 'cohort_adoption_rate_units', 'last_n_cohorts',
+        'show_unfinished_cohorts', 'opacity', 'n_bins', 'min_retention_events',
+        'num_retention_periods', 'log_x_axis', 'log_y_axis', 'free_x_axis', 'free_y_axis',
+        'show_axes_histogram', 'title', 'graph_labels',
+    ])
+    for date_floor, expected_type in [('day', 'category'), (None, None)]:
+        fig, code = generate_graph(
+            data=mock_data2.copy(),
+            graph_type=graph_type,
+            x_variable='dates',
+            y_variable=y_variable,
+            date_floor=date_floor,
+            column_types=column_types,
+            **none_args,
+        )
+        assert fig.layout.xaxis.type == expected_type
+        assert ("type='category'" in code) == (expected_type == 'category')
