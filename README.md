@@ -31,8 +31,6 @@ SNOWFLAKE_WAREHOUSE=WAREHOUSE_NAME
 SNOWFLAKE_DATABASE=DATABASE_NAME
 ```
 
-Note: if `SNOWFLAKE_AUTHENTICATOR` is set to `externalbrowser` you will probably not be able to run the app in a docker container.
-
 If you want to query BigQuery, add this information to the `.env` file:
 
 ```
@@ -57,7 +55,7 @@ Run the following commands to start the program.
 
 ```
 pip install uv
-make run-app
+make run
 ```
 
 # Querying Snowflake / BigQuery
