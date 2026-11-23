@@ -12,8 +12,6 @@ dependencies = [
     "db-dtypes",
     "google-cloud-bigquery",
     "helpsk>=0.1.63",
-    "jupyter-contrib-nbextensions",
-    "notebook",
     "numpy",
     "pandas",
     "plotly",
