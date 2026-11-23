@@ -2,11 +2,13 @@ The data explorer is a plotly dash app that makes exploring datasets easy.
 
 ![Loading GIF](https://github.com/shane-kercheval/explore-data/blob/main/explore-data.gif)
 
+<!-- AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
 # AI Generated Graphs
 
 ![Loading GIF](https://github.com/shane-kercheval/explore-data/blob/main/ai-generated.gif)
 
 This app uses OpenAI Functions to transform a description of a plot to the correct variable selections within the app. In order to enable this functionality, you must update the `.env` file with your OpenAI API token with the entry: `OPENAI_API_KEY=<YOUR TOKEN>`.
+-->
 
 # Running the project
 
@@ -43,11 +45,13 @@ Authentication uses Application Default Credentials (ADC). Before running the ap
 gcloud auth application-default login
 ```
 
+<!-- AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
 If you want to use the AI feature that allows you to describe the graph in plain text and have AI select the appropriate values, add this information to the `.env` file:
 
 ```
 OPENAI_API_KEY=sk-<your key>
 ```
+-->
 
 ## Launching
 

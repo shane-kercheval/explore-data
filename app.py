@@ -43,7 +43,8 @@ from source.library.dash_utilities import (
     log_function,
     log_variable,
 )
-from source.library.utilities import build_tools_from_graph_configs
+# AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
+# from source.library.utilities import build_tools_from_graph_configs
 from dash_extensions.enrich import (
     DashProxy,
     Output,
@@ -54,7 +55,8 @@ from dash_extensions.enrich import (
     dcc,
     ServersideOutputTransform,
 )
-from llm_workflow.agents import OpenAIFunctions
+# AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
+# from llm_workflow.agents import OpenAIFunctions
 import source.library.types as t
 
 
@@ -98,9 +100,10 @@ bar_mode_options = [
 with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/graphing_configurations.yml')) as f:  # noqa
     GRAPH_CONFIGS = yaml.safe_load(f)
 
-ENABLE_AI = os.getenv('OPENAI_API_KEY') is not None
-AI_PLACEHOLDER = "Describe the graph you want to create." if ENABLE_AI \
-    else "Add 'OPENAI_API_KEY=<TOKEN>' with your OpenAI token to the .env file to enable AI. Restart docker and app and try again."  # noqa
+# AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
+# ENABLE_AI = os.getenv('OPENAI_API_KEY') is not None
+# AI_PLACEHOLDER = "Describe the graph you want to create." if ENABLE_AI \
+#     else "Add 'OPENAI_API_KEY=<TOKEN>' with your OpenAI token to the .env file to enable AI. Restart docker and app and try again."  # noqa
 
 SNOWFLAKE_USER=os.getenv('SNOWFLAKE_USER')
 SNOWFLAKE_ACCOUNT=os.getenv('SNOWFLAKE_ACCOUNT')
@@ -554,34 +557,35 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                             ]),
                         ]),
                     ]),
-                    dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
-                        dbc.CardHeader(
-                            dbc.Button(
-                                "AI (Beta)",
-                                id="panel-ai-toggle",
-                                className="panel_toggle_button",
-                            ),
-                        ),
-                        dbc.Collapse(id="collapse-ai", is_open=False, children=[
-                            dbc.CardBody([
-                                dcc.Loading(type="default", children=[
-                                    dbc.Button(
-                                        "Generate Graph",
-                                        className='btn-custom',
-                                        id="ai-apply-button",
-                                        style={'margin': '0 8px 12px 0'},
-                                        disabled=not ENABLE_AI,
-                                    ),
-                                    dcc.Textarea(
-                                        id='ai_prompt_textarea',
-                                        placeholder = AI_PLACEHOLDER,
-                                        style={'width': '100%', 'height': 140, 'padding': '10px'},
-                                        disabled=not ENABLE_AI,
-                                    ),
-                                ]),
-                            ]),
-                        ]),
-                    ]),
+                    # AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
+                    # dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
+                    #     dbc.CardHeader(
+                    #         dbc.Button(
+                    #             "AI (Beta)",
+                    #             id="panel-ai-toggle",
+                    #             className="panel_toggle_button",
+                    #         ),
+                    #     ),
+                    #     dbc.Collapse(id="collapse-ai", is_open=False, children=[
+                    #         dbc.CardBody([
+                    #             dcc.Loading(type="default", children=[
+                    #                 dbc.Button(
+                    #                     "Generate Graph",
+                    #                     className='btn-custom',
+                    #                     id="ai-apply-button",
+                    #                     style={'margin': '0 8px 12px 0'},
+                    #                     disabled=not ENABLE_AI,
+                    #                 ),
+                    #                 dcc.Textarea(
+                    #                     id='ai_prompt_textarea',
+                    #                     placeholder = AI_PLACEHOLDER,
+                    #                     style={'width': '100%', 'height': 140, 'padding': '10px'},  # noqa: E501
+                    #                     disabled=not ENABLE_AI,
+                    #                 ),
+                    #             ]),
+                    #         ]),
+                    #     ]),
+                    # ]),
                     dbc.Card(style={'margin': '10px 0 10px 0'}, children=[
                         dbc.CardHeader(
                             dbc.Button(
@@ -1263,114 +1267,115 @@ def refresh_query_history_on_page_load(_: None) -> tuple:
     )
 
 
-@app.callback(
-    Output('x_variable_dropdown', 'value', allow_duplicate=True),
-    Output('y_variable_dropdown', 'value', allow_duplicate=True),
-    Output('z_variable_dropdown', 'value', allow_duplicate=True),
-    Output('color_variable_dropdown', 'value', allow_duplicate=True),
-    Output('size_variable_dropdown', 'value', allow_duplicate=True),
-    Output('facet_variable_dropdown', 'value', allow_duplicate=True),
-    Output('graph_type_dropdown', 'value', allow_duplicate=True),
-    Output('date_floor_dropdown', 'value', allow_duplicate=True),
-    Output('numeric_aggregation_dropdown', 'value', allow_duplicate=True),
-    Output('variables_changed_by_ai', 'data', allow_duplicate=True),
-    Output('ai_prompt_textarea', 'value'),  # this is simply to make the progress bar work
-    # i.e. (dcc.Loading)
-    Input('ai-apply-button', 'n_clicks'),
-    State('ai_prompt_textarea', 'value'),
-    State('column_types', 'data'),
-    State('date_floor_dropdown', 'value'),
-    State('numeric_aggregation_dropdown', 'value'),
-    prevent_initial_call=True,
-)
-def set_variables_from_ai(
-        n_clicks: int,  # noqa: ARG001
-        ai_prompt: str,
-        column_types: dict,
-        date_floor: str,
-        numeric_aggregation: str,
-        ) -> tuple:
-    """
-    Triggered when the user clicks on the AI button, which uses the OpenAI "functions" (i.e. agent)
-    to infer the correct graph settings based on the user's question.
+# AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
+# @app.callback(
+#     Output('x_variable_dropdown', 'value', allow_duplicate=True),
+#     Output('y_variable_dropdown', 'value', allow_duplicate=True),
+#     Output('z_variable_dropdown', 'value', allow_duplicate=True),
+#     Output('color_variable_dropdown', 'value', allow_duplicate=True),
+#     Output('size_variable_dropdown', 'value', allow_duplicate=True),
+#     Output('facet_variable_dropdown', 'value', allow_duplicate=True),
+#     Output('graph_type_dropdown', 'value', allow_duplicate=True),
+#     Output('date_floor_dropdown', 'value', allow_duplicate=True),
+#     Output('numeric_aggregation_dropdown', 'value', allow_duplicate=True),
+#     Output('variables_changed_by_ai', 'data', allow_duplicate=True),
+#     Output('ai_prompt_textarea', 'value'),  # this is simply to make the progress bar work
+#     # i.e. (dcc.Loading)
+#     Input('ai-apply-button', 'n_clicks'),
+#     State('ai_prompt_textarea', 'value'),
+#     State('column_types', 'data'),
+#     State('date_floor_dropdown', 'value'),
+#     State('numeric_aggregation_dropdown', 'value'),
+#     prevent_initial_call=True,
+# )
+# def set_variables_from_ai(
+#         n_clicks: int,
+#         ai_prompt: str,
+#         column_types: dict,
+#         date_floor: str,
+#         numeric_aggregation: str,
+#         ) -> tuple:
+#     """
+#     Triggered when the user clicks on the AI button, which uses the OpenAI "functions" (i.e. agent)  # noqa: E501
+#     to infer the correct graph settings based on the user's question.
 
-    Note: Unlike other variables, if the date_floor isn't specified by the AI, then we want to use
-    the current value. A) the AI may mistakenly not return the date_floor, and B) leaving the
-    current value won't affect the non-date graphs (unlike leaving the current value of other
-    variables).
-    """
-    x_variable = None
-    y_variable = None
-    z_variable = None
-    color_variable = None
-    size_variable = None
-    facet_variable = None
-    graph_type = None
-    variables_changed_by_ai = False
+#     Note: Unlike other variables, if the date_floor isn't specified by the AI, then we want to use  # noqa: E501
+#     the current value. A) the AI may mistakenly not return the date_floor, and B) leaving the
+#     current value won't affect the non-date graphs (unlike leaving the current value of other
+#     variables).
+#     """
+#     x_variable = None
+#     y_variable = None
+#     z_variable = None
+#     color_variable = None
+#     size_variable = None
+#     facet_variable = None
+#     graph_type = None
+#     variables_changed_by_ai = False
 
-    if ai_prompt:
-        tools = build_tools_from_graph_configs(GRAPH_CONFIGS['configurations'], column_types)
-        agent = OpenAIFunctions(
-            model_name='gpt-4o-mini',
-            tools=tools,
-        )
-        formatted_colum_names = '\n'.join([f"{k}: {v}" for k, v in column_types.items()])
-        # read in prompt from source/config/ai_prompt.txt
-        with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/ai_prompt.txt')) as f:
-            prompt = f.read().strip()
-        prompt += f"\n\n[VALID COLUMNS AND TYPES]:\n\n{formatted_colum_names}\n\n[USER'S QUESTION]:\n\n{ai_prompt}\n"  # noqa: E501
+#     if ai_prompt:
+#         tools = build_tools_from_graph_configs(GRAPH_CONFIGS['configurations'], column_types)
+#         agent = OpenAIFunctions(
+#             model_name='gpt-4o-mini',
+#             tools=tools,
+#         )
+#         formatted_colum_names = '\n'.join([f"{k}: {v}" for k, v in column_types.items()])
+#         # read in prompt from source/config/ai_prompt.txt
+#         with open(os.path.join(os.getenv('PROJECT_PATH'), 'source/config/ai_prompt.txt')) as f:
+#             prompt = f.read().strip()
+#         prompt += f"\n\n[VALID COLUMNS AND TYPES]:\n\n{formatted_colum_names}\n\n[USER'S QUESTION]:\n\n{ai_prompt}\n"  # noqa: E501
 
-        log_variable('OpenAI template', prompt)
-        response = agent(prompt)
+#         log_variable('OpenAI template', prompt)
+#         response = agent(prompt)
 
-        log(f"Agent Cost:           ${agent.history()[0].cost:.5f}")
-        log(f"Agent Tokens:          {agent.history()[0].total_tokens:,}")
-        log(f"Agent Prompt Tokens:   {agent.history()[0].input_tokens:,}")
-        log(f"Agent Response Tokens: {agent.history()[0].response_tokens:,}")
+#         log(f"Agent Cost:           ${agent.history()[0].cost:.5f}")
+#         log(f"Agent Tokens:          {agent.history()[0].total_tokens:,}")
+#         log(f"Agent Prompt Tokens:   {agent.history()[0].input_tokens:,}")
+#         log(f"Agent Response Tokens: {agent.history()[0].response_tokens:,}")
 
-        if response:
-            tool, args = response[0]
-            log_variable('OpenAI functions args', args)
-            variables_changed_by_ai = True
-            if 'x_variable' in args and args['x_variable'] in column_types:
-                x_variable = args['x_variable']
-            if 'y_variable' in args and args['y_variable'] in column_types:
-                y_variable = args['y_variable']
-            if 'z_variable' in args and args['z_variable'] in column_types:
-                z_variable = args['z_variable']
-            if 'color_variable' in args and args['color_variable'] in column_types:
-                color_variable = args['color_variable']
-            if 'size_variable' in args and args['size_variable'] in column_types:
-                size_variable = args['size_variable']
-            if 'facet_variable' in args and args['facet_variable'] in column_types:
-                facet_variable = args['facet_variable']
-            if 'date_floor' in args:
-                date_floor = args['date_floor']
-            if 'numeric_aggregation' in args:
-                numeric_aggregation = args['numeric_aggregation']
+#         if response:
+#             tool, args = response[0]
+#             log_variable('OpenAI functions args', args)
+#             variables_changed_by_ai = True
+#             if 'x_variable' in args and args['x_variable'] in column_types:
+#                 x_variable = args['x_variable']
+#             if 'y_variable' in args and args['y_variable'] in column_types:
+#                 y_variable = args['y_variable']
+#             if 'z_variable' in args and args['z_variable'] in column_types:
+#                 z_variable = args['z_variable']
+#             if 'color_variable' in args and args['color_variable'] in column_types:
+#                 color_variable = args['color_variable']
+#             if 'size_variable' in args and args['size_variable'] in column_types:
+#                 size_variable = args['size_variable']
+#             if 'facet_variable' in args and args['facet_variable'] in column_types:
+#                 facet_variable = args['facet_variable']
+#             if 'date_floor' in args:
+#                 date_floor = args['date_floor']
+#             if 'numeric_aggregation' in args:
+#                 numeric_aggregation = args['numeric_aggregation']
 
-            graph_type = tool.graph_name
+#             graph_type = tool.graph_name
 
-    log_variable('x_variable', x_variable)
-    log_variable('y_variable', y_variable)
-    log_variable('z_variable', z_variable)
-    log_variable('color_variable', color_variable)
-    log_variable('size_variable', size_variable)
-    log_variable('facet_variable', facet_variable)
-    log_variable('graph_type', graph_type)
-    return (
-        x_variable,
-        y_variable,
-        z_variable,
-        color_variable,
-        size_variable,
-        facet_variable,
-        graph_type,
-        date_floor,
-        numeric_aggregation,
-        variables_changed_by_ai,
-        ai_prompt,
-    )
+#     log_variable('x_variable', x_variable)
+#     log_variable('y_variable', y_variable)
+#     log_variable('z_variable', z_variable)
+#     log_variable('color_variable', color_variable)
+#     log_variable('size_variable', size_variable)
+#     log_variable('facet_variable', facet_variable)
+#     log_variable('graph_type', graph_type)
+#     return (
+#         x_variable,
+#         y_variable,
+#         z_variable,
+#         color_variable,
+#         size_variable,
+#         facet_variable,
+#         graph_type,
+#         date_floor,
+#         numeric_aggregation,
+#         variables_changed_by_ai,
+#         ai_prompt,
+#     )
 
 
 @app.callback(
@@ -1994,18 +1999,19 @@ def toggle_graph_options_panel(n: int, is_open: bool) -> bool:
         return not is_open
     return is_open
 
-@app.callback(
-    Output("collapse-ai", "is_open"),
-    Input("panel-ai-toggle", "n_clicks"),
-    State("collapse-ai", "is_open"),
-    prevent_initial_call=True,
-)
-def toggle_ai_panel(n: int, is_open: bool) -> bool:
-    """Toggle the ai panel."""
-    log_function('toggle_ai_panel')
-    if n:
-        return not is_open
-    return is_open
+# AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
+# @app.callback(
+#     Output("collapse-ai", "is_open"),
+#     Input("panel-ai-toggle", "n_clicks"),
+#     State("collapse-ai", "is_open"),
+#     prevent_initial_call=True,
+# )
+# def toggle_ai_panel(n: int, is_open: bool) -> bool:
+#     """Toggle the ai panel."""
+#     log_function('toggle_ai_panel')
+#     if n:
+#         return not is_open
+#     return is_open
 
 
 @app.callback(

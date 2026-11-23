@@ -13,7 +13,6 @@ dependencies = [
     "google-cloud-bigquery",
     "helpsk>=0.1.63",
     "jupyter-contrib-nbextensions",
-    "llm-workflow",
     "notebook",
     "numpy",
     "pandas",
