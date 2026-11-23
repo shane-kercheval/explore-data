@@ -157,6 +157,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         html.Button(
                             'Query',
                             id='query_snowflake_button',
+                            className='btn-custom',
                             n_clicks=0,
                             style={'margin': '0 8px 0 0'},
                         ),
@@ -184,6 +185,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         html.Button(
                             'Query',
                             id='query_bigquery_button',
+                            className='btn-custom',
                             n_clicks=0,
                             style={'margin': '0 8px 0 0'},
                         ),
@@ -211,6 +213,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         html.Button(
                             'Load csv from URL',
                             id='load_from_url_button',
+                            className='btn-custom',
                             n_clicks=0,
                             style={'margin': '0 8px 0 0'},
                         ),
@@ -255,6 +258,7 @@ app.layout = dbc.Container(className="app-container", fluid=True, style={"max-wi
                         html.Button(
                             'Generate',
                             id='load_random_data_button',
+                            className='btn-custom',
                             n_clicks=0,
                             style={'margin': '0 8px 0 0'},
                         ),

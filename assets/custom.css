@@ -29,7 +29,8 @@ body {
 
 /* ---------- Buttons ---------- */
 
-button, .btn-custom {
+/* Dash 4 dropdowns and the plotly toolbar are <button> elements, so these rules target a class. */
+.btn-custom {
     padding: 5px 12px;
     font-size: var(--font-size-sm);
     font-weight: 500;
@@ -41,12 +42,12 @@ button, .btn-custom {
     transition: background-color 0.15s ease;
 }
 
-button:disabled {
+.btn-custom:disabled {
     color: black !important;
     background-color: lightgray !important;
 }
 
-button:hover, .btn-custom:hover {
+.btn-custom:hover {
     background-color: var(--secondary-color);
 }
 
@@ -213,116 +214,35 @@ input:focus, textarea:focus {
     background: white;
 }
 
-/* ---------- Dropdowns (single + multi "tag" selections) ---------- */
+/* ---------- Dropdowns ---------- */
 
-.Select-control {
-    display: flex !important;
-    align-items: center !important;
-    min-height: 30px !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius-sm) !important;
+/* Dash 4 components take their accent (focus ring, selected option) from this variable. */
+body {
+    --Dash-Fill-Interactive-Strong: var(--secondary-color);
 }
 
-/* single-selects need a definite height so the absolutely-positioned
-   placeholder/value (which fills top:0/bottom:0) can resolve against it;
-   multi-selects are left to grow via min-height so wrapped tags aren't clipped */
-.Select--single .Select-control {
-    height: 30px !important;
-}
-
-.Select-control:hover {
-    box-shadow: none !important;
-    border-color: var(--secondary-color) !important;
-}
-
-.Select-placeholder, .Select--single > .Select-control .Select-value {
-    display: flex !important;
-    align-items: center !important;
-    position: absolute !important;
-    top: 0 !important;
-    bottom: 0 !important;
-    left: 0 !important;
-    right: 0 !important;
-    line-height: normal !important;
-    font-size: var(--font-size-sm) !important;
-    padding-left: 8px !important;
-}
-
-.Select-input {
-    height: 28px !important;
-    display: flex !important;
-    align-items: center !important;
-    padding-left: 8px !important;
-}
-
-.Select-input > input {
-    padding: 0 !important;
-    margin: 0 !important;
-    font-size: var(--font-size-sm) !important;
-    line-height: normal !important;
-}
-
-.Select-arrow-zone, .Select-clear-zone {
-    display: flex !important;
-    align-items: center !important;
-    flex: 0 0 auto !important;
-    height: 28px !important;
-}
-
-.Select-multi-value-wrapper {
-    display: flex !important;
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    flex-wrap: wrap !important;
-    align-items: center !important;
-    gap: 4px !important;
-    padding: 0 4px !important;
-}
-
-.Select--multi .Select-value {
-    display: inline-flex !important;
-    flex-direction: row-reverse;
-    align-items: center !important;
-    gap: 4px;
-    position: static !important;
-    background-color: var(--surface-muted) !important;
-    border: 1px solid var(--border-color) !important;
-    border-radius: var(--radius-sm) !important;
-    color: var(--primary-color) !important;
-    font-size: var(--font-size-xs) !important;
-    line-height: 18px !important;
-    padding: 1px 7px !important;
-    margin: 2px 4px 2px 0 !important;
-}
-
-.Select--multi .Select-value-label {
-    padding: 0 !important;
-}
-
-.Select--multi .Select-value-icon {
-    border-right: none !important;
-    padding: 0 !important;
-    font-weight: 600;
-    color: var(--text-muted) !important;
-    cursor: pointer;
-}
-
-.Select-value-icon:hover {
-    background-color: transparent !important;
-    color: #c0392b !important;
-}
-
-.Select-menu-outer {
-    font-size: var(--font-size-sm);
-    border: 1px solid var(--border-color) !important;
+.dash-dropdown {
+    min-height: 30px;
+    border-color: var(--border-color);
     border-radius: var(--radius-sm);
-    margin-top: 2px;
+    font-size: var(--font-size-sm);
 }
 
-.Select-option {
-    padding: 6px 10px !important;
-    font-size: var(--font-size-sm) !important;
-    line-height: 1.3 !important;
+.dash-dropdown:hover {
+    border-color: var(--secondary-color);
+}
+
+.dash-dropdown-content {
+    font-size: var(--font-size-sm);
+    /* Dash sets max-height inline from the maxHeight prop (default 200px). */
+    max-height: min(400px, calc(100vh - 100px)) !important;
+}
+
+/* The search box sticks 8px below the top of the scrolling list; without these, options
+   scroll through that gap and the highlighted option paints over the box. */
+.dash-dropdown-search-container {
+    z-index: 1;
+    box-shadow: 0 0 0 8px white;
 }
 
 /* ---------- Scrollbar ---------- */

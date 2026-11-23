@@ -659,8 +659,11 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             title={f'"{title}"' if title else None},
             labels={graph_labels},
         )
-        fig
         """)
+        if date_floor and t.is_date(x_variable, column_types):
+            # Floored dates are period labels such as '2026-11-23'; a date axis would add times.
+            graph_code += "fig.update_xaxes(type='category', categoryorder='category ascending')\n"
+        graph_code += "fig\n"
     elif graph_type == 'line':
         graph_code += textwrap.dedent(f"""
         import plotly.express as px
@@ -770,6 +773,9 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             labels={graph_labels},
         )
         """)
+        if date_floor and t.is_date(x_variable, column_types):
+            # Floored dates are period labels such as '2026-11-23'; a date axis would add times.
+            graph_code += "fig.update_xaxes(type='category', categoryorder='category ascending')\n"
     elif graph_type == 'heatmap':
         if t.is_numeric(z_variable, column_types):
             numeric_aggregation = f"'{numeric_aggregation}'" if numeric_aggregation else None
