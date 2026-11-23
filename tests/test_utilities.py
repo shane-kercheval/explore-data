@@ -59,7 +59,7 @@ def test_convert_columns_to_datetime(mock_data1):  # noqa
     assert data_converted['dates_with_missing'].equals(pd.to_datetime(mock_data1['dates_with_missing']))  # noqa
 
     # Check that non-date columns remain unchanged
-    assert pd.api.types.is_object_dtype(data_converted['random_strings'])
+    assert pd.api.types.is_string_dtype(data_converted['random_strings'])
     assert pd.api.types.is_integer_dtype(data_converted['integers'])
     assert pd.api.types.is_float_dtype(data_converted['integers_with_missing'])
     assert pd.api.types.is_float_dtype(data_converted['floats'])
@@ -970,30 +970,30 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     assert filtered_df['integers'].tolist() == [1, 2, 3, 4, 5]
     assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].tolist()[0:5]  # noqa
 
-    # testing w/ 'a', 'b', and None
+    # testing w/ 'a', 'b', and None; pandas 3 stores both None and np.nan in a string column as
+    # NaN, so None matches both missing rows.
     filters = {
         'strings_with_missing2': ['a', 'b', None],
     }
     filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
-    assert len(filtered_df) == 4
+    assert len(filtered_df) == 5
     assert code
-    assert filtered_df['integers'].tolist() == [1, 2, 4, 5]
-    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0, 1, 3, 4]].tolist()  # noqa
+    assert filtered_df['integers'].tolist() == [1, 2, 3, 4, 5]
+    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].tolist()  # noqa
 
-    # testing w/ 'a', 'b', and np.nan
+    # testing filtering on 'a', 'b', and np.nan
     filters = {
         'strings_with_missing2': ['a', 'b', np.nan],
     }
     filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
-    assert len(filtered_df) == 4
+    assert len(filtered_df) == 5
     assert code
-    assert filtered_df['integers'].tolist() == [2, 3, 4, 5]
-    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[1, 2, 3, 4]].tolist()  # noqa
-
+    assert filtered_df['integers'].tolist() == [1, 2, 3, 4, 5]
+    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0, 1, 2, 3, 4]].tolist()  # noqa
 
     # testing filtering on only 'a'
     filters = {
@@ -1014,10 +1014,10 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
-    assert len(filtered_df) == 1
+    assert len(filtered_df) == 2
     assert code
-    assert filtered_df['integers'].tolist() == [3]
-    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[2]].tolist()  # noqa
+    assert filtered_df['integers'].tolist() == [1, 3]
+    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0, 2]].tolist()  # noqa
 
     # testing filtering on only None
     filters = {
@@ -1026,34 +1026,35 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
-    assert len(filtered_df) == 1
+    assert len(filtered_df) == 2
     assert code
-    assert filtered_df['integers'].tolist() == [1]
-    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0]].tolist()  # noqa
+    assert filtered_df['integers'].tolist() == [1, 3]
+    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0, 2]].tolist()  # noqa
 
-    # testing on 'b' and nan
+    # testing filtering on 'b' and nan
     filters = {
         'strings_with_missing2': ['b', np.nan],
     }
     filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
-    assert len(filtered_df) == 3
+    assert len(filtered_df) == 4
     assert code
-    assert filtered_df['integers'].tolist() == [2, 3, 5]
-    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[1, 2, 4]].tolist()  # noqa
+    assert filtered_df['integers'].tolist() == [1, 2, 3, 5]
+    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0, 1, 2, 4]].tolist()  # noqa
 
-    # testing on 'a' and nan
+    # testing filtering on 'a' and nan
     filters = {
         'strings_with_missing2': ['a', np.nan],
     }
     filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
-    assert len(filtered_df) == 2
+    assert len(filtered_df) == 3
     assert code
-    assert filtered_df['integers'].tolist() == [3, 4]
-    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[2, 3]].tolist()  # noqa
+    assert filtered_df['integers'].tolist() == [1, 3, 4]
+    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0, 2, 3]].tolist()  # noqa
+
 
 def test_filter_dataframe_categories_no_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""

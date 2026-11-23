@@ -4,7 +4,7 @@ import os
 import re
 import tempfile
 from contextlib import suppress
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 HISTORY_DIR = '.query_history'
 MAX_ENTRIES = 20
@@ -106,7 +106,7 @@ def record_query(source: str, sql: str) -> list[dict]:
     entries.insert(0, {
         'sql': sql,
         'title': existing.get('title') if existing else None,
-        'last_used': datetime.now(timezone.utc).isoformat(),
+        'last_used': datetime.now(UTC).isoformat(),
     })
     entries = entries[:MAX_ENTRIES]
     _save_history(source, entries)

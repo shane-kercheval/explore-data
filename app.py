@@ -43,6 +43,7 @@ from source.library.dash_utilities import (
     log_function,
     log_variable,
 )
+from source.library.utilities import create_random_dataframe
 # AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
 # from source.library.utilities import build_tools_from_graph_configs
 from dash_extensions.enrich import (
@@ -1127,7 +1128,6 @@ def load_data(  # noqa
             data = pd.read_csv(load_from_url)
         elif triggered == 'load_random_data_button.n_clicks':
             log("Loading DataFrame with random data")
-            from source.library.utilities import create_random_dataframe
             data = create_random_dataframe(num_rows=10_000, sporadic_missing=True)
             log(f"Loaded data w/ {data.shape[0]:,} rows and {data.shape[1]:,} columns")
         else:
@@ -2553,4 +2553,4 @@ def update_show_unfinished_cohorts_div_style(graph_type: str) -> dict:
 
 
 if __name__ == '__main__':
-    app.run_server(host=HOST, debug=DEBUG, port=PORT)
+    app.run(host=HOST, debug=DEBUG, port=PORT)

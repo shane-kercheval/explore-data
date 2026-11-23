@@ -138,6 +138,9 @@ def create_random_dataframe(num_rows: int, sporadic_missing: bool = False) -> pd
         fake_df.loc[missing_indices, 'Categories2'] = None
         fake_df['Categories2'] = pd.Categorical(fake_df['Categories2'], categories=['Category A', 'Category B', 'Category C'])  # noqa
 
+        # object dtype so the bool columns can hold missing values (pandas 3 rejects NaN in bool).
+        fake_df['Booleans1'] = fake_df['Booleans1'].astype(object)
+        fake_df['Booleans2'] = fake_df['Booleans2'].astype(object)
         missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
         fake_df.loc[missing_indices, 'Booleans1'] = np.nan
         missing_indices = np.random.choice(num_rows, num_missing, replace=False)  # noqa
