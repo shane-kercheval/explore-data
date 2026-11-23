@@ -231,3 +231,26 @@ def test_create_type_dict(mock_data1):  # noqa
     assert not t.is_boolean(column='dates_with_missing', column_types=column_types)
     assert not t.is_discrete(column='dates_with_missing', column_types=column_types)
     assert t.is_continuous(column='dates_with_missing', column_types=column_types)
+
+
+def test_get_column_types__object_columns_from_databases() -> None:
+    """
+    Database connectors return object columns whose values pass more than one type check (e.g.
+    empty strings parse as both numbers and dates). Each column must still get exactly one type.
+    """
+    data = pd.DataFrame({
+        'empty_strings': ['', '', ''],
+        'digit_strings': ['1', '22', None],
+        'json_text': ['{"a": 1}', None, '{"b": 2}'],
+        'object_integers': pd.Series([1, None, 3], dtype=object),
+        'all_missing': pd.Series([None, None, None], dtype=object),
+        'dicts': [{'a': 1}, None, {'b': 2}],
+    })
+    assert t.get_column_types(data) == {
+        'empty_strings': 'string',
+        'digit_strings': 'string',
+        'json_text': 'string',
+        'object_integers': 'numeric',
+        'all_missing': 'string',
+        'dicts': 'string',
+    }

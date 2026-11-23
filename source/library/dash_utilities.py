@@ -6,6 +6,7 @@ from pandas.api.types import is_bool_dtype
 from source.library.utilities import filter_dataframe, to_date
 import source.library.types as t
 import helpsk.pandas as hp
+from helpsk.conversions import retention_matrix
 import plotly.graph_objs as go
 
 
@@ -409,7 +410,7 @@ def get_category_orders(
                     categories = sorted(
                         data[variable].unique().tolist(),
                         reverse=reverse,
-                        key=lambda x: str(x),
+                        key=str,
                     )
                     category_orders[variable] = categories
                 elif 'total' in selected_category_order:
@@ -435,8 +436,6 @@ def plot_retention(
     if intervals not in ['day', 'week', 'month']:
         raise InvalidConfigurationError(f"Invalid interval selected for retention heatmap ({intervals}).")  # noqa
 
-    from helpsk.conversions import retention_matrix
-    import pandas as pd
 
     graph_data[time_series] = pd.to_datetime(graph_data[time_series])
     retention = retention_matrix(
@@ -697,7 +696,7 @@ def generate_graph(  # noqa: PLR0912, PLR0915
             # ascending/descending
             categories = sorted(
                 data[x_variable].unique().tolist(),
-                key=lambda x: str(x),
+                key=str,
             )
             category_orders[x_variable] = categories
 

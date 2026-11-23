@@ -1,14 +1,17 @@
 """Test utilities.py."""
-import os
+# AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
+# import os
 import numpy as np
 import pytest
 import pandas as pd
 from datetime import date, datetime
 
-import yaml
+# AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
+# import yaml
 import source.library.types as t
 from source.library.utilities import (
-    build_tools_from_graph_configs,
+    # AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
+    # build_tools_from_graph_configs,
     dataframe_columns_to_datetime,
     filter_dataframe,
     to_date,
@@ -56,7 +59,7 @@ def test_convert_columns_to_datetime(mock_data1):  # noqa
     assert data_converted['dates_with_missing'].equals(pd.to_datetime(mock_data1['dates_with_missing']))  # noqa
 
     # Check that non-date columns remain unchanged
-    assert pd.api.types.is_object_dtype(data_converted['random_strings'])
+    assert pd.api.types.is_string_dtype(data_converted['random_strings'])
     assert pd.api.types.is_integer_dtype(data_converted['integers'])
     assert pd.api.types.is_float_dtype(data_converted['integers_with_missing'])
     assert pd.api.types.is_float_dtype(data_converted['floats'])
@@ -967,30 +970,30 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     assert filtered_df['integers'].tolist() == [1, 2, 3, 4, 5]
     assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].tolist()[0:5]  # noqa
 
-    # testing w/ 'a', 'b', and None
+    # testing w/ 'a', 'b', and None; pandas 3 stores both None and np.nan in a string column as
+    # NaN, so None matches both missing rows.
     filters = {
         'strings_with_missing2': ['a', 'b', None],
     }
     filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
-    assert len(filtered_df) == 4
+    assert len(filtered_df) == 5
     assert code
-    assert filtered_df['integers'].tolist() == [1, 2, 4, 5]
-    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0, 1, 3, 4]].tolist()  # noqa
+    assert filtered_df['integers'].tolist() == [1, 2, 3, 4, 5]
+    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].tolist()  # noqa
 
-    # testing w/ 'a', 'b', and np.nan
+    # testing filtering on 'a', 'b', and np.nan
     filters = {
         'strings_with_missing2': ['a', 'b', np.nan],
     }
     filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
-    assert len(filtered_df) == 4
+    assert len(filtered_df) == 5
     assert code
-    assert filtered_df['integers'].tolist() == [2, 3, 4, 5]
-    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[1, 2, 3, 4]].tolist()  # noqa
-
+    assert filtered_df['integers'].tolist() == [1, 2, 3, 4, 5]
+    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0, 1, 2, 3, 4]].tolist()  # noqa
 
     # testing filtering on only 'a'
     filters = {
@@ -1011,10 +1014,10 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
-    assert len(filtered_df) == 1
+    assert len(filtered_df) == 2
     assert code
-    assert filtered_df['integers'].tolist() == [3]
-    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[2]].tolist()  # noqa
+    assert filtered_df['integers'].tolist() == [1, 3]
+    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0, 2]].tolist()  # noqa
 
     # testing filtering on only None
     filters = {
@@ -1023,34 +1026,35 @@ def test_filter_dataframe_string_with_missing2(mock_data2):  # noqa
     filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
-    assert len(filtered_df) == 1
+    assert len(filtered_df) == 2
     assert code
-    assert filtered_df['integers'].tolist() == [1]
-    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0]].tolist()  # noqa
+    assert filtered_df['integers'].tolist() == [1, 3]
+    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0, 2]].tolist()  # noqa
 
-    # testing on 'b' and nan
+    # testing filtering on 'b' and nan
     filters = {
         'strings_with_missing2': ['b', np.nan],
     }
     filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
-    assert len(filtered_df) == 3
+    assert len(filtered_df) == 4
     assert code
-    assert filtered_df['integers'].tolist() == [2, 3, 5]
-    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[1, 2, 4]].tolist()  # noqa
+    assert filtered_df['integers'].tolist() == [1, 2, 3, 5]
+    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0, 1, 2, 4]].tolist()  # noqa
 
-    # testing on 'a' and nan
+    # testing filtering on 'a' and nan
     filters = {
         'strings_with_missing2': ['a', np.nan],
     }
     filtered_df, code = filter_dataframe(mock_data2, filters, column_types)
     assert mock_data2 is not filtered_df
     assert mock_data2.shape[1] == filtered_df.shape[1]
-    assert len(filtered_df) == 2
+    assert len(filtered_df) == 3
     assert code
-    assert filtered_df['integers'].tolist() == [3, 4]
-    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[2, 3]].tolist()  # noqa
+    assert filtered_df['integers'].tolist() == [1, 3, 4]
+    assert filtered_df['strings_with_missing2'].tolist() == mock_data2['strings_with_missing2'].iloc[[0, 2, 3]].tolist()  # noqa
+
 
 def test_filter_dataframe_categories_no_missing(mock_data2):  # noqa
     """Test filter_dataframe function."""
@@ -1811,124 +1815,125 @@ def test_create_random_dataframe():
     assert len(create_random_dataframe(500, sporadic_missing=False)) == 500
     assert len(create_random_dataframe(500, sporadic_missing=True)) == 500
 
-def test_build_tools_from_graph_configs__credit(graphing_configurations: dict, credit_data: pd.DataFrame):  # noqa
-    """
-    This test has a few checks to make sure that the graphing configurations are being translated
-    into tools correctly. However, it is not exhaustive. The structure or information may change.
-    I write the tools to a yml file so that when I run the test, I can see what has changed.
-    """  # noqa: D404
-    column_types = t.get_column_types(credit_data)
-    tools = build_tools_from_graph_configs(graphing_configurations, column_types)
-    for tool in tools:
-        assert tool.description
-        assert isinstance(tool.description, str)
-        assert len(tool.description) > 0
-        assert tool.inputs
-        assert isinstance(tool.inputs, dict)
-        assert len(tool.inputs) > 0
-        assert tool.required
-        assert isinstance(tool.required, list)
-        assert len(tool.required) > 0
+# AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
+# def test_build_tools_from_graph_configs__credit(graphing_configurations: dict, credit_data: pd.DataFrame):  # noqa
+#     """
+#     This test has a few checks to make sure that the graphing configurations are being translated
+#     into tools correctly. However, it is not exhaustive. The structure or information may change.
+#     I write the tools to a yml file so that when I run the test, I can see what has changed.
+#     """
+#     column_types = t.get_column_types(credit_data)
+#     tools = build_tools_from_graph_configs(graphing_configurations, column_types)
+#     for tool in tools:
+#         assert tool.description
+#         assert isinstance(tool.description, str)
+#         assert len(tool.description) > 0
+#         assert tool.inputs
+#         assert isinstance(tool.inputs, dict)
+#         assert len(tool.inputs) > 0
+#         assert tool.required
+#         assert isinstance(tool.required, list)
+#         assert len(tool.required) > 0
 
-    # test an individual tool
-    # gets numeric/non-umeric config
-    config = [
-        c for c in graphing_configurations
-        if c['selected_variables'] == {'x_variable': ['numeric'], 'y_variable': None}
-    ]
-    assert len(config) == 1
-    config = config[0]
-    # boxplot should have agent & description
-    assert config['graph_types'][0]['name'] == 'box'
-    config = config['graph_types'][0]
-    assert config['agent'] and 'description' in config['agent']  # noqa
-    # get the tool
-    tool = tools[0]
-    assert config['agent']['description'] in tool.description
-    assert '{{x_variable}}' in config['description']
-    assert '{{x_variable}}' not in tool.description
-    assert set(tool.inputs.keys()) == {'x_variable', 'color_variable', 'facet_variable'}
-    assert tool.required == ['x_variable']
-    for tool_input in tool.inputs.values():
-        assert 'type' in tool_input
-        assert tool_input['type'] == 'string'
-        assert 'description' in tool_input
-        assert tool_input['description']
-        assert isinstance(tool_input['description'], str)
-        assert 'enum' in tool_input
-        assert tool_input['enum']
-        assert isinstance(tool_input['enum'], list)
+#     # test an individual tool
+#     # gets numeric/non-umeric config
+#     config = [
+#         c for c in graphing_configurations
+#         if c['selected_variables'] == {'x_variable': ['numeric'], 'y_variable': None}
+#     ]
+#     assert len(config) == 1
+#     config = config[0]
+#     # boxplot should have agent & description
+#     assert config['graph_types'][0]['name'] == 'box'
+#     config = config['graph_types'][0]
+#     assert config['agent'] and 'description' in config['agent']
+#     # get the tool
+#     tool = tools[0]
+#     assert config['agent']['description'] in tool.description
+#     assert '{{x_variable}}' in config['description']
+#     assert '{{x_variable}}' not in tool.description
+#     assert set(tool.inputs.keys()) == {'x_variable', 'color_variable', 'facet_variable'}
+#     assert tool.required == ['x_variable']
+#     for tool_input in tool.inputs.values():
+#         assert 'type' in tool_input
+#         assert tool_input['type'] == 'string'
+#         assert 'description' in tool_input
+#         assert tool_input['description']
+#         assert isinstance(tool_input['description'], str)
+#         assert 'enum' in tool_input
+#         assert tool_input['enum']
+#         assert isinstance(tool_input['enum'], list)
 
-    # let's save all the dicts to a file so that we can monitor anything that changes
-    file_path = os.path.join(
-        os.getenv('PROJECT_PATH'),
-        'tests/test_files/utilities/test_build_tools_from_graph_configs__credit.yml',
-    )
-    with open(file_path, 'w') as _handle:
-        yaml.dump([t.to_dict() for t in tools], _handle)
+#     # let's save all the dicts to a file so that we can monitor anything that changes
+#     file_path = os.path.join(
+#         os.getenv('PROJECT_PATH'),
+#         'tests/test_files/utilities/test_build_tools_from_graph_configs__credit.yml',
+#     )
+#     with open(file_path, 'w') as _handle:
+#         yaml.dump([t.to_dict() for t in tools], _handle)
 
-def test_build_tools_from_graph_configs__conversions(graphing_configurations: dict, conversions_data: pd.DataFrame):  # noqa
-    """
-    This test has a few checks to make sure that the graphing configurations are being translated
-    into tools correctly. However, it is not exhaustive. The structure or information may change.
-    I write the tools to a yml file so that when I run the test, I can see what has changed.
-    """  # noqa: D404
-    column_types = t.get_column_types(conversions_data)
-    tools = build_tools_from_graph_configs(graphing_configurations, column_types)
-    for tool in tools:
-        assert tool.description
-        assert isinstance(tool.description, str)
-        assert len(tool.description) > 0
-        assert tool.inputs
-        assert isinstance(tool.inputs, dict)
-        assert len(tool.inputs) > 0
-        assert tool.required
-        assert isinstance(tool.required, list)
-        assert len(tool.required) > 0
+# def test_build_tools_from_graph_configs__conversions(graphing_configurations: dict, conversions_data: pd.DataFrame):  # noqa
+#     """
+#     This test has a few checks to make sure that the graphing configurations are being translated
+#     into tools correctly. However, it is not exhaustive. The structure or information may change.
+#     I write the tools to a yml file so that when I run the test, I can see what has changed.
+#     """
+#     column_types = t.get_column_types(conversions_data)
+#     tools = build_tools_from_graph_configs(graphing_configurations, column_types)
+#     for tool in tools:
+#         assert tool.description
+#         assert isinstance(tool.description, str)
+#         assert len(tool.description) > 0
+#         assert tool.inputs
+#         assert isinstance(tool.inputs, dict)
+#         assert len(tool.inputs) > 0
+#         assert tool.required
+#         assert isinstance(tool.required, list)
+#         assert len(tool.required) > 0
 
-    # test an individual tool
-    # gets date/None config
-    config = [
-        c for c in graphing_configurations
-        if c['selected_variables'] == {'x_variable': ['date'], 'y_variable': None}
-    ]
-    assert len(config) == 1
-    config = config[0]
-    # default date graph should have agent & description/variables (i.e. date_floor)
-    assert config['graph_types'][0]['name'] == 'histogram'
-    config = config['graph_types'][0]
-    assert config['agent']
-    assert'description' in config['agent']
-    assert'variables' in config['agent']
-    # get the tool associated with date/None
-    tool = [
-        t for t in tools
-        if 'Shows record counts over time based on' in t.description
-    ]
-    assert len(tool) == 1
-    tool = tool[0]
-    assert config['agent']['description'] in tool.description
-    assert '{{x_variable}}' in config['description']
-    assert '{{x_variable}}' not in tool.description
-    assert set(tool.inputs.keys()) == {'x_variable', 'color_variable', 'facet_variable', 'date_floor'}  # noqa
-    assert tool.required == ['x_variable']
-    for tool_input in tool.inputs.values():
-        assert 'type' in tool_input
-        assert tool_input['type'] == 'string'
-        assert 'description' in tool_input
-        assert tool_input['description']
-        assert isinstance(tool_input['description'], str)
-        assert 'enum' in tool_input
-        assert tool_input['enum']
-        assert isinstance(tool_input['enum'], list)
+#     # test an individual tool
+#     # gets date/None config
+#     config = [
+#         c for c in graphing_configurations
+#         if c['selected_variables'] == {'x_variable': ['date'], 'y_variable': None}
+#     ]
+#     assert len(config) == 1
+#     config = config[0]
+#     # default date graph should have agent & description/variables (i.e. date_floor)
+#     assert config['graph_types'][0]['name'] == 'histogram'
+#     config = config['graph_types'][0]
+#     assert config['agent']
+#     assert'description' in config['agent']
+#     assert'variables' in config['agent']
+#     # get the tool associated with date/None
+#     tool = [
+#         t for t in tools
+#         if 'Shows record counts over time based on' in t.description
+#     ]
+#     assert len(tool) == 1
+#     tool = tool[0]
+#     assert config['agent']['description'] in tool.description
+#     assert '{{x_variable}}' in config['description']
+#     assert '{{x_variable}}' not in tool.description
+#     assert set(tool.inputs.keys()) == {'x_variable', 'color_variable', 'facet_variable', 'date_floor'}  # noqa
+#     assert tool.required == ['x_variable']
+#     for tool_input in tool.inputs.values():
+#         assert 'type' in tool_input
+#         assert tool_input['type'] == 'string'
+#         assert 'description' in tool_input
+#         assert tool_input['description']
+#         assert isinstance(tool_input['description'], str)
+#         assert 'enum' in tool_input
+#         assert tool_input['enum']
+#         assert isinstance(tool_input['enum'], list)
 
-    assert config['agent']['variables'][0]['date_floor']['description'] == tool.inputs['date_floor']['description']  # noqa
-    assert config['agent']['variables'][0]['date_floor']['options'] == tool.inputs['date_floor']['enum']  # noqa
+#     assert config['agent']['variables'][0]['date_floor']['description'] == tool.inputs['date_floor']['description']  # noqa
+#     assert config['agent']['variables'][0]['date_floor']['options'] == tool.inputs['date_floor']['enum']  # noqa
 
-    # let's save all the dicts to a file so that we can monitor anything that changes
-    file_path = os.path.join(
-        os.getenv('PROJECT_PATH'),
-        'tests/test_files/utilities/test_build_tools_from_graph_configs__conversions.yml',
-    )
-    with open(file_path, 'w') as _handle:
-        yaml.dump([t.to_dict() for t in tools], _handle)
+#     # let's save all the dicts to a file so that we can monitor anything that changes
+#     file_path = os.path.join(
+#         os.getenv('PROJECT_PATH'),
+#         'tests/test_files/utilities/test_build_tools_from_graph_configs__conversions.yml',
+#     )
+#     with open(file_path, 'w') as _handle:
+#         yaml.dump([t.to_dict() for t in tools], _handle)

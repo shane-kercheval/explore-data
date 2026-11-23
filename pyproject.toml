@@ -1,7 +1,7 @@
 [project]
 name = "explore-data"
 version = "0.1.0"
-requires-python = ">=3.12,<3.13"
+requires-python = ">=3.15,<3.16"
 
 dependencies = [
     "coverage",
@@ -10,13 +10,10 @@ dependencies = [
     "dash_daq",
     "dash-extensions",
     "db-dtypes",
-    "google-cloud-bigquery",
-    "helpsk>=0.1.63",
-    "jupyter-contrib-nbextensions",
-    "llm-workflow",
-    "notebook",
+    "google-cloud-bigquery>=3.47.0",
+    "helpsk>=0.2.0",
     "numpy",
-    "pandas",
+    "pandas>=3.1.1",
     "plotly",
     "pytest",
     "python-dateutil",

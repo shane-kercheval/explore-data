@@ -1,19 +1,4 @@
-.PHONY: create_environment install_requirements run_app
-
-####
-# DOCKER
-####
-# docker_build:
-# 	docker compose -f docker-compose.yml build
-
-# docker_run: docker_build
-# 	docker compose -f docker-compose.yml up
-
-# docker_app:
-# 	docker compose -f docker-compose.yml up --build app
-
-# client:
-# 	open 'http://127.0.0.1:8050'
+.PHONY: run linting unittests doctests tests open_coverage
 
 run:
 	uv run python app.py

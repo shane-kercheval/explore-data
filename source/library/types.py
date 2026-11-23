@@ -18,47 +18,36 @@ def is_series_datetime(series: pd.Series) -> bool:
     if pd.api.types.is_numeric_dtype(series):
         return False
     try:
-        _ = pd.to_datetime(series)
-        return True
+        parsed = pd.to_datetime(series)
     except Exception:
         return False
+    # Empty strings and all-missing columns parse to all NaT without raising.
+    return bool(parsed.notna().any())
+
+
+def get_column_type(series: pd.Series) -> str:
+    """
+    Return one of 'numeric', 'date', 'string', 'categorical', 'boolean' for the series.
+
+    Object columns from databases often pass more than one check (e.g. '1' is numeric and a
+    string, and integers parse as dates), so the checks run in a fixed order and the first match
+    wins. Anything that matches no check (e.g. all missing values, dicts) is treated as a string.
+    """
+    if isinstance(series.dtype, pd.CategoricalDtype):
+        return CATEGORICAL
+    if hp.is_series_bool(series):
+        return BOOLEAN
+    if hp.is_series_numeric(series) and not hp.is_series_string(series):
+        return NUMERIC
+    # Date strings count as dates; callers convert them with `pd.to_datetime` when used.
+    if is_series_datetime(series):
+        return DATE
+    return STRING
 
 
 def get_column_types(data: pd.DataFrame) -> dict:
-    """
-    Create a dictionary with column names as keys and values of either 'numeric', 'date', 'string',
-    'categorical', 'boolean'.
-    """
-    # i can't convert columns to datetime here because the dataframe gets converted to a dict
-    # and loses the converted datetime dtypes
-    # but i need to still get the columns that should be treated as dates
-    date_columns = [x for x in data.columns.tolist() if is_series_datetime(data[x])]
-    all_columns = data.columns.tolist()
-    numeric_columns = hp.get_numeric_columns(data)
-    categorical_columns = hp.get_categorical_columns(data)
-    string_columns = [x for x in hp.get_string_columns(data) if x not in date_columns]
-    boolean_columns = [x for x in all_columns if hp.is_series_bool(data[x])]
-    # ensure all columns lists are mutually exclusive
-    sets = [set(lst) for lst in [numeric_columns, date_columns, categorical_columns, string_columns, boolean_columns]]  # noqa
-    assert sum(len(s) for s in sets) == len(set.union(*sets))
-
-    def _get_type(var: str) -> str:
-        if var in numeric_columns:
-            return 'numeric'
-        if var in date_columns:
-            return 'date'
-        if var in string_columns:
-            return 'string'
-        if var in categorical_columns:
-            return 'categorical'
-        if var in boolean_columns:
-            return 'boolean'
-        raise ValueError(f"Unknown type for {var}")
-
-    # for each column create a dictionary with column name as key and
-    # values of either 'numeric', 'date', 'string', 'categorical', 'boolean'
-    # this is used to determine which controls to show for each column
-    return {x:_get_type(x) for x in all_columns}
+    """Map each column name to its type; see `get_column_type`."""
+    return {column: get_column_type(data[column]) for column in data.columns}
 
 
 def get_all_columns(column_types: dict) -> list[str]:

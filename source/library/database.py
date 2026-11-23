@@ -1,5 +1,6 @@
 """BigQuery connector, implementing the helpsk.database.Database interface."""
 import pandas as pd
+from google.cloud import bigquery
 from helpsk.database import Database, ConnectionObject
 
 
@@ -17,7 +18,6 @@ class BigQuery(Database):
 
     def _open_connection_object(self) -> ConnectionObject:
         """Wraps logic for connecting to BigQuery."""
-        from google.cloud import bigquery
         return bigquery.Client(project=self._kwargs.get('project'))
 
     def _close_connection_object(self) -> None:

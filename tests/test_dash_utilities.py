@@ -130,7 +130,8 @@ def test_filter_data_from_ui_control__strings_with_missing(capsys, mock_data2): 
     assert 'floats' in code
     assert 'strings_with_missing2' in code
     assert filtered_data['floats'].tolist() == [1.1, 2.2, 3.3]
-    assert filtered_data['strings_with_missing2'].tolist() == [None, 'b', np.nan]
+    # pandas 3 stores None in a string column as NaN.
+    assert filtered_data['strings_with_missing2'].tolist() == [np.nan, 'b', np.nan]
     assert filtered_data['strings'].tolist() == ['a', 'b', 'c']
 
 def test_filter_data_from_ui_control__categorical_with_missing(capsys, mock_data2):  # noqa
@@ -542,7 +543,7 @@ def test_convert_to_graph_data__missing_categories(capsys, mock_data2):  # noqa
     assert mock_data2['categories_with_missing'].dtype.name == 'category'
     assert mock_data2['categories_with_missing2'].dtype.name == 'category'
 
-    new_data, markdown, code = convert_to_graph_data(
+    new_data, _markdown, _code = convert_to_graph_data(
         data=data_copy,
         column_types=column_types,
         selected_variables=selected_variables,
@@ -875,7 +876,7 @@ def test_convert_to_graph_data__exclude_from_top_n_transformation():
         'categories2': pd.Categorical(['a', 'b', 'c', 'a', 'b', 'd', 'e', 'f']),
     })
     column_types = t.get_column_types(data)
-    new_data, markdown, code = convert_to_graph_data(
+    new_data, markdown, _code = convert_to_graph_data(
         data=data,
         column_types=column_types,
         selected_variables=['strings', 'categories', 'categories2'],

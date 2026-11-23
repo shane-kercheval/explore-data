@@ -2,11 +2,13 @@ The data explorer is a plotly dash app that makes exploring datasets easy.
 
 ![Loading GIF](https://github.com/shane-kercheval/explore-data/blob/main/explore-data.gif)
 
+<!-- AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
 # AI Generated Graphs
 
 ![Loading GIF](https://github.com/shane-kercheval/explore-data/blob/main/ai-generated.gif)
 
 This app uses OpenAI Functions to transform a description of a plot to the correct variable selections within the app. In order to enable this functionality, you must update the `.env` file with your OpenAI API token with the entry: `OPENAI_API_KEY=<YOUR TOKEN>`.
+-->
 
 # Running the project
 
@@ -31,8 +33,6 @@ SNOWFLAKE_WAREHOUSE=WAREHOUSE_NAME
 SNOWFLAKE_DATABASE=DATABASE_NAME
 ```
 
-Note: if `SNOWFLAKE_AUTHENTICATOR` is set to `externalbrowser` you will probably not be able to run the app in a docker container.
-
 If you want to query BigQuery, add this information to the `.env` file:
 
 ```
@@ -45,11 +45,13 @@ Authentication uses Application Default Credentials (ADC). Before running the ap
 gcloud auth application-default login
 ```
 
+<!-- AI (Beta) disabled: llm-workflow requires torch. Uncomment to restore.
 If you want to use the AI feature that allows you to describe the graph in plain text and have AI select the appropriate values, add this information to the `.env` file:
 
 ```
 OPENAI_API_KEY=sk-<your key>
 ```
+-->
 
 ## Launching
 
@@ -57,7 +59,7 @@ Run the following commands to start the program.
 
 ```
 pip install uv
-make run-app
+make run
 ```
 
 # Querying Snowflake / BigQuery
